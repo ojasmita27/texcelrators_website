@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Texcelerators Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="dashboard-page">
+    <div class="dashboard-layout" data-dashboard-root>
+        <aside class="dashboard-sidebar">
+            <a class="dashboard-brand dashboard-brand-link" href="index.html" title="Back to home">
+                <img src="assets/images/logo.png" alt="Texcelerators Logo">
+                <div>
+                    <h1>Texcelerators</h1>
+                    <p>Payment Dashboard</p>
+                </div>
+            </a>
+
+            <nav class="sidebar-nav">
+                <a href="#overview" class="is-active" data-sidebar-link data-target="overview" data-for-roles="admin,member"><i class="fas fa-chart-line"></i>Overview</a>
+                <a href="#payments" data-sidebar-link data-target="payments" data-for-roles="member"><i class="fas fa-wallet"></i>My Payments</a>
+                <a href="#transactions" data-sidebar-link data-target="transactions" data-for-roles="member"><i class="fas fa-clock-rotate-left"></i>My Transactions</a>
+                <a href="#admin" data-sidebar-link data-target="admin" data-for-roles="admin"><i class="fas fa-user-shield"></i>Admin Panel</a>
+                <a href="#logout" id="logoutButton"><i class="fas fa-right-from-bracket"></i>Logout</a>
+            </nav>
+        </aside>
+
+        <main class="dashboard-main">
+            <header class="dashboard-topbar glass-panel">
+                <div class="topbar-user">
+                    <div class="topbar-avatar"></div>
+                    <div>
+                        <strong id="topbarName">Aarav Sharma</strong><br>
+                        <span id="topbarRole">Member</span>
+                    </div>
+                </div>
+                <div class="dashboard-subtle">Transparent member payments and club finances</div>
+            </header>
+
+            <div class="dashboard-grid">
+                <section class="dashboard-section glass-panel" id="overview" data-dashboard-section>
+                    <div class="welcome-banner">
+                        <div>
+                            <p class="dashboard-subtle">Welcome back</p>
+                            <h2 class="welcome-title">Welcome, <span id="welcomeName">Aarav Sharma</span></h2>
+                            <div class="role-pill"><i class="fas fa-id-badge"></i> <span id="welcomeRole">Member</span></div>
+                        </div>
+                        <div class="dashboard-cta">
+                            <button class="dashboard-button primary" id="payNowButton">Pay Now</button>
+                            <button class="dashboard-button" id="viewDetailsButton">View Details</button>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="dashboard-hero">
+                    <section class="dashboard-section glass-panel" id="payments" data-dashboard-section data-for-roles="member">
+                        <div class="section-heading-row">
+                            <h2>My Payments</h2>
+                            <span class="dashboard-subtle">Total fee: ₹13,500</span>
+                        </div>
+                        <div id="payments-container" class="metrics-grid"></div>
+                        <div class="payment-progress" aria-label="Installment progress">
+                            <span id="paymentProgress"></span>
+                        </div>
+                        <div id="installments-container" class="installment-list"></div>
+                    </section>
+
+                    <section class="dashboard-section glass-panel payment-card" id="payment-qr" data-dashboard-section data-for-roles="member">
+                        <h2>Payment Section</h2>
+                        <div class="qr-card">
+                            <div id="qrCode" class="qr-code" aria-label="Payment QR code"></div>
+                            <div class="qr-details">
+                                <p class="dashboard-subtle">Amount to pay</p>
+                                <strong id="amountToPay" class="qr-amount">₹0</strong>
+                                <p class="card-meta">Scan the QR code to transfer the outstanding installment.</p>
+                                <input type="file" id="receiptInput" accept="image/*,.pdf" hidden>
+                                <button class="dashboard-button full-width" id="scanDoneButton">I Have Scanned QR</button>
+                                <button class="dashboard-button primary full-width" id="paidButton">Upload Receipt & Confirm</button>
+                                <p id="paymentFlowMessage" class="card-meta payment-flow-message">Step 1: Scan QR, then click "I Have Scanned QR".</p>
+                                <p class="card-meta receipt-note">Upload payment receipt for admin verification. Amount is added only after approval.</p>
+                                <div id="member-receipt-status" class="list-stack"></div>
+                            </div>
+                        </div>
+                    </section>
+                </section>
+
+                <section class="section-grid">
+                    <section class="dashboard-section glass-panel" id="transactions" data-dashboard-section data-for-roles="member,admin">
+                        <h2 data-for-roles-text="member,admin">Transaction History</h2>
+                        <div id="transactions-container" class="table-card"></div>
+                    </section>
+
+                    <section class="dashboard-section glass-panel" id="member-expenses" data-dashboard-section data-for-roles="member">
+                        <div class="section-heading-row">
+                            <h2>Club Expenses</h2>
+                            <span class="dashboard-subtle">Read-only for members</span>
+                        </div>
+                        <div id="member-expenses-container" class="list-stack"></div>
+                    </section>
+
+                    <section class="dashboard-section glass-panel" id="admin" data-dashboard-section data-for-roles="admin">
+                        <div class="section-heading-row">
+                            <h2>Admin Panel</h2>
+                            <span class="dashboard-subtle">Manage club data</span>
+                        </div>
+
+                        <div class="finance-grid admin-finance">
+                            <div class="finance-card glass-panel">
+                                <span class="card-caption">Total Income</span>
+                                <strong id="totalIncomeCard" class="dashboard-stat-value">₹0</strong>
+                            </div>
+                            <div class="finance-card glass-panel">
+                                <span class="card-caption">Total Expenses</span>
+                                <strong id="totalExpensesCard" class="dashboard-stat-value">₹0</strong>
+                            </div>
+                            <div class="finance-card glass-panel">
+                                <span class="card-caption">Total Club Funds</span>
+                                <strong id="totalFundsCard" class="dashboard-stat-value">₹0</strong>
+                            </div>
+                        </div>
+
+                        <div class="chart-stack" style="margin-top: 1rem;">
+                            <div class="chart-line">
+                                <span class="card-caption">Income strength</span>
+                                <div class="chart-track"><span id="incomeBar"></span></div>
+                            </div>
+                            <div class="chart-line">
+                                <span class="card-caption">Expense ratio</span>
+                                <div class="chart-track"><span id="expenseBar"></span></div>
+                            </div>
+                            <div class="chart-line">
+                                <span class="card-caption">Net balance</span>
+                                <div class="chart-track"><span id="netBar"></span></div>
+                            </div>
+                        </div>
+
+                        <div class="section-heading-row" style="margin-top: 1rem;">
+                            <h2>Add Payment</h2>
+                            <span class="dashboard-subtle">Admin entries are auto-approved</span>
+                        </div>
+                        <form id="adminPaymentForm" class="expense-form">
+                            <select id="adminPaymentMember" required>
+                                <option value="">Select Member</option>
+                            </select>
+                            <input type="number" id="adminPaymentAmount" placeholder="Amount" min="1" required>
+                            <input type="date" id="adminPaymentDate" required>
+                            <input type="file" id="adminReceiptInput" accept="image/*,.pdf" required>
+                            <button type="submit" class="dashboard-button primary full-width">Add Payment</button>
+                        </form>
+                        <div id="adminReceiptPreview" class="receipt-preview"></div>
+
+                        <div class="section-heading-row" style="margin-top: 1rem;">
+                            <h2>Add Member</h2>
+                            <span class="dashboard-subtle">Create member accounts with temporary passwords</span>
+                        </div>
+                        <form id="adminMemberForm" class="expense-form">
+                            <input type="text" id="adminMemberName" placeholder="Full name" required>
+                            <input type="email" id="adminMemberEmail" placeholder="Email" required>
+                            <select id="adminMemberYear" required>
+                                <option value="">Year</option>
+                                <option value="1st">1st Year</option>
+                                <option value="2nd">2nd Year</option>
+                                <option value="3rd">3rd Year</option>
+                            </select>
+                            <input type="password" id="adminMemberTempPassword" placeholder="Temporary password" required>
+                            <button type="submit" class="dashboard-button primary full-width">Add Member</button>
+                        </form>
+
+                        <div class="section-heading-row" style="margin-top: 1rem;">
+                            <h2>Payment Verification Queue</h2>
+                            <span class="dashboard-subtle">Approve receipts before updating balances</span>
+                        </div>
+                        <div id="receipt-verification-container" class="list-stack"></div>
+                    </section>
+                </section>
+
+                <section class="section-grid admin-grid">
+                    <section class="dashboard-section glass-panel" id="members-section" data-dashboard-section data-for-roles="admin">
+                        <h2>All Members</h2>
+                        <div id="members-container" class="table-card"></div>
+                    </section>
+
+                    <section class="dashboard-section glass-panel" id="expenses-section" data-dashboard-section data-for-roles="admin">
+                        <div class="section-heading-row">
+                            <h2>Expenses</h2>
+                            <span class="dashboard-subtle">Add and review club spending</span>
+                        </div>
+                        <form id="expenseForm" class="expense-form">
+                            <input type="text" id="expenseTitle" placeholder="Title" required>
+                            <input type="number" id="expenseAmount" placeholder="Amount" min="1" required>
+                            <input type="date" id="expenseDate" required>
+                            <button type="submit" class="dashboard-button primary full-width">Add Expense</button>
+                        </form>
+                        <div id="expenses-container" class="list-stack"></div>
+                    </section>
+                </section>
+            </div>
+
+            <footer class="dashboard-footer">Texcelerators payment dashboard prototype. Built for future Node.js and MongoDB integration.</footer>
+        </main>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
