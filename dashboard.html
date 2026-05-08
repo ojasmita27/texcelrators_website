@@ -54,11 +54,26 @@
                     </div>
                 </section>
 
+                <section class="dashboard-section glass-panel insight-strip" data-dashboard-section data-for-roles="admin,member">
+                    <div class="insight-card">
+                        <span class="card-caption">Realtime access</span>
+                        <strong>Secure JWT flow with MongoDB-backed club data.</strong>
+                    </div>
+                    <div class="insight-card">
+                        <span class="card-caption">Member workflow</span>
+                        <strong>Payments, receipts, and balances stay in sync.</strong>
+                    </div>
+                    <div class="insight-card">
+                        <span class="card-caption">Admin controls</span>
+                        <strong>Verify, remove, reactivate, and reset without leaving the dashboard.</strong>
+                    </div>
+                </section>
+
                 <section class="dashboard-hero">
                     <section class="dashboard-section glass-panel" id="payments" data-dashboard-section data-for-roles="member">
                         <div class="section-heading-row">
                             <h2>My Payments</h2>
-                            <span class="dashboard-subtle">Total fee: ₹13,500</span>
+                            <span class="dashboard-subtle" id="totalFeeLabel">Total fee: —</span>
                         </div>
                         <div id="payments-container" class="metrics-grid"></div>
                         <div class="payment-progress" aria-label="Installment progress">
@@ -145,28 +160,11 @@
                                 <option value="">Select Member</option>
                             </select>
                             <input type="number" id="adminPaymentAmount" placeholder="Amount" min="1" required>
-                            <input type="date" id="adminPaymentDate" required>
-                            <input type="file" id="adminReceiptInput" accept="image/*,.pdf" required>
+                            <input type="date" id="adminPaymentDate">
+                            <input type="file" id="adminReceiptInput" accept="image/*,.pdf">
                             <button type="submit" class="dashboard-button primary full-width">Add Payment</button>
                         </form>
                         <div id="adminReceiptPreview" class="receipt-preview"></div>
-
-                        <div class="section-heading-row" style="margin-top: 1rem;">
-                            <h2>Add Member</h2>
-                            <span class="dashboard-subtle">Create member accounts with temporary passwords</span>
-                        </div>
-                        <form id="adminMemberForm" class="expense-form">
-                            <input type="text" id="adminMemberName" placeholder="Full name" required>
-                            <input type="email" id="adminMemberEmail" placeholder="Email" required>
-                            <select id="adminMemberYear" required>
-                                <option value="">Year</option>
-                                <option value="1st">1st Year</option>
-                                <option value="2nd">2nd Year</option>
-                                <option value="3rd">3rd Year</option>
-                            </select>
-                            <input type="password" id="adminMemberTempPassword" placeholder="Temporary password" required>
-                            <button type="submit" class="dashboard-button primary full-width">Add Member</button>
-                        </form>
 
                         <div class="section-heading-row" style="margin-top: 1rem;">
                             <h2>Payment Verification Queue</h2>
@@ -179,6 +177,12 @@
                 <section class="section-grid admin-grid">
                     <section class="dashboard-section glass-panel" id="members-section" data-dashboard-section data-for-roles="admin">
                         <h2>All Members</h2>
+                        <form id="addMemberForm" class="expense-form" style="margin: 1rem 0;">
+                            <input type="text" id="addMemberName" placeholder="Member name" required>
+                            <input type="email" id="addMemberEmail" placeholder="Member email" required>
+                            <input type="text" id="addMemberTempPassword" placeholder="Temp password (optional)">
+                            <button type="submit" class="dashboard-button primary full-width">Add Member</button>
+                        </form>
                         <div id="members-container" class="table-card"></div>
                     </section>
 

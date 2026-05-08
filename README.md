@@ -165,4 +165,31 @@ For questions or issues, contact: hello@texcelerators.com
 
 ---
 
+## Backend (Node.js + Express + MongoDB)
+
+This repo now includes a beginner-friendly backend API with:
+- Admin-first setup, admin-created members (no self-register)
+- JWT auth + hashed passwords
+- Payments (member receipt upload, admin verify/manual)
+- Expenses (admin add, members read-only via dashboard data)
+
+Start here: `BACKEND_API_EXAMPLES.md`
+
+### Run backend (recommended)
+
+1. Copy `.env.example` → `.env`
+2. Set `MONGODB_URI` to MongoDB Atlas (recommended for production) or a local MongoDB instance
+3. Run:
+   - `npm install`
+   - `npm run dev`
+
+API base paths:
+- `/auth/*`
+- `/members/*`
+- `/payments/*`
+- `/expenses/*`
+- `/dashboard/*`
+
+---
+
 **Made with ❤️ for Texcelerators Tech Club**

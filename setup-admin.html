@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Setup Admin - Texcelerators</title>
+    <link rel="stylesheet" href="login-style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="background-decoration">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+        <div class="blob blob-3"></div>
+    </div>
+
+    <div class="login-container">
+        <div class="login-header">
+            <a href="login.html" class="back-button" title="Back to Login">
+                <i class="fas fa-arrow-left"></i>
+            </a>
+            <h1 class="login-title">
+                <span class="brand-icon">⚡</span>
+                Texcelerators
+            </h1>
+            <p class="login-subtitle">First Admin Setup</p>
+        </div>
+
+        <div class="glass-card">
+            <div class="member-note">
+                <i class="fas fa-shield-halved"></i>
+                <span>Create the first real admin account in MongoDB Atlas. After this, public admin registration stays disabled.</span>
+            </div>
+
+            <form class="login-form" id="setupAdminForm">
+                <div class="form-group">
+                    <label for="fullName" class="form-label">
+                        <i class="fas fa-id-card"></i>
+                        Full Name
+                    </label>
+                    <input type="text" id="fullName" name="fullName" class="form-input" placeholder="Enter full name" required>
+                    <span class="input-border"></span>
+                </div>
+
+                <div class="form-group">
+                    <label for="email" class="form-label">
+                        <i class="fas fa-envelope"></i>
+                        Email Address
+                    </label>
+                    <input type="email" id="email" name="email" class="form-input" placeholder="admin@texcelerators.com" required>
+                    <span class="input-border"></span>
+                </div>
+
+                <div class="form-group">
+                    <label for="password" class="form-label">
+                        <i class="fas fa-lock"></i>
+                        Password
+                    </label>
+                    <input type="password" id="password" name="password" class="form-input" placeholder="Create a strong password" minlength="6" required>
+                    <span class="input-border"></span>
+                </div>
+
+                <div class="form-group">
+                    <label for="confirmPassword" class="form-label">
+                        <i class="fas fa-lock"></i>
+                        Confirm Password
+                    </label>
+                    <input type="password" id="confirmPassword" name="confirmPassword" class="form-input" placeholder="Re-enter password" minlength="6" required>
+                    <span class="input-border"></span>
+                </div>
+
+                <button type="submit" class="login-button">
+                    <span>Create Admin</span>
+                    <i class="fas fa-user-shield"></i>
+                </button>
+            </form>
+
+            <div class="divider">
+                <span>Important</span>
+            </div>
+
+            <div class="member-note" style="margin-bottom: 0;">
+                <i class="fas fa-triangle-exclamation"></i>
+                <span>This page is temporary and should be removed after the first admin account is created.</span>
+            </div>
+        </div>
+
+        <div class="security-badge">
+            <i class="fas fa-lock"></i>
+            <span>Secure Initial Setup</span>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+    <script src="setup-admin-script.js"></script>
+</body>
+</html>

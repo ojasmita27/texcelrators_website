@@ -1,0 +1,30 @@
+{
+  "name": "texcelerators-backend",
+  "version": "1.0.0",
+  "description": "Texcelerators club management backend (Node.js + Express + MongoDB)",
+  "main": "server.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "npm run kill-backend && npm run kill-port && nodemon --signal SIGTERM server.js",
+    "restart": "npm run kill-backend && npm run kill-port && npm run dev",
+    "kill-port": "node scripts/kill-port.js 5000",
+    "kill-backend": "node scripts/kill-backend.js",
+    "cleanup-users": "node scripts/cleanup-dummy-users.js",
+    "migrate-user-status": "node scripts/migrate-user-status.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.14.3",
+    "morgan": "^1.10.0",
+    "multer": "^2.0.0"
+  },
+  "devDependencies": {
+    "mongodb-memory-server": "^10.1.4",
+    "nodemon": "^3.1.0"
+  }
+}

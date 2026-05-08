@@ -19,7 +19,7 @@
     <div class="login-container">
         <!-- Header -->
         <div class="login-header">
-            <a href="index.html" class="back-button" title="Back to Home">
+            <a href="index.html" class="back-button" id="backButton" title="Back to Home" aria-label="Go Back">
                 <i class="fas fa-arrow-left"></i>
             </a>
             <h1 class="login-title">
@@ -78,6 +78,19 @@
                     <span class="input-border"></span>
                 </div>
 
+                <!-- Role Select -->
+                <div class="form-group">
+                    <label for="loginRole" class="form-label">
+                        <i class="fas fa-user-tag"></i>
+                        Login As
+                    </label>
+                    <select id="loginRole" name="loginRole" class="form-input" required>
+                        <option value="member" selected>Member</option>
+                        <option value="admin">Admin</option>
+                    </select>
+                    <span class="input-border"></span>
+                </div>
+
                 <!-- Remember Me -->
                 <div class="form-checkbox">
                     <input type="checkbox" id="remember" name="remember">
@@ -88,6 +101,53 @@
                 <button type="submit" class="login-button">
                     <span>Sign In</span>
                     <i class="fas fa-arrow-right"></i>
+                </button>
+            </form>
+
+            <!-- Force Password Change (shown only when required) -->
+            <form class="login-form" id="changePasswordForm" style="display: none; margin-top: 1rem;">
+                <div class="member-note" style="margin-bottom: 1rem;">
+                    <i class="fas fa-key"></i>
+                    <span>First login detected. Please change your password.</span>
+                </div>
+
+                <div class="form-group">
+                    <label for="newPassword" class="form-label">
+                        <i class="fas fa-lock"></i>
+                        New Password
+                    </label>
+                    <input
+                        type="password"
+                        id="newPassword"
+                        name="newPassword"
+                        class="form-input"
+                        placeholder="Enter a new password"
+                        minlength="6"
+                        required
+                    >
+                    <span class="input-border"></span>
+                </div>
+
+                <div class="form-group">
+                    <label for="confirmNewPassword" class="form-label">
+                        <i class="fas fa-lock"></i>
+                        Confirm New Password
+                    </label>
+                    <input
+                        type="password"
+                        id="confirmNewPassword"
+                        name="confirmNewPassword"
+                        class="form-input"
+                        placeholder="Re-enter new password"
+                        minlength="6"
+                        required
+                    >
+                    <span class="input-border"></span>
+                </div>
+
+                <button type="submit" class="login-button">
+                    <span>Update Password</span>
+                    <i class="fas fa-check"></i>
                 </button>
             </form>
 
@@ -111,7 +171,8 @@
             <!-- Footer Info -->
             <div class="login-footer">
                 <p>
-                    Access is by invitation only. Contact the club admin.
+                    Not a member? 
+                    <a href="index.html" class="footer-link">Join us</a>
                 </p>
             </div>
         </div>

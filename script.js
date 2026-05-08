@@ -57,6 +57,13 @@ document.addEventListener('DOMContentLoaded', () => {
             observer.observe(element);
         });
 
+        document.querySelectorAll('[data-reveal]').forEach((element) => {
+            element.style.opacity = '0';
+            element.style.transform = 'translateY(24px)';
+            element.style.transition = 'opacity 0.7s ease, transform 0.7s ease';
+            observer.observe(element);
+        });
+
         sections.forEach((section, index) => {
             section.style.animation = `fadeIn 0.8s ease-out ${index * 0.1}s`;
             section.style.animationFillMode = 'both';
@@ -197,9 +204,112 @@ function renderDashboardApp() {
         return;
     }
 
+    // Backend API base
+    const storedApiBase = localStorage.getItem('API_BASE');
+    const API_BASE = storedApiBase === 'http://localhost:3000'
+        ? 'http://localhost:5000'
+        : (storedApiBase || 'http://localhost:5000');
+
+    // Auto-migrate old stored value
+    if (storedApiBase === 'http://localhost:3000') {
+        localStorage.setItem('API_BASE', 'http://localhost:5000');
+    }
+
+    if (!document.getElementById('dashboardToast')) {
+        const toast = document.createElement('div');
+        toast.id = 'dashboardToast';
+        toast.className = 'toast dashboard-toast';
+        toast.setAttribute('aria-live', 'polite');
+        document.body.appendChild(toast);
+    }
+
+    const dashboardToast = document.getElementById('dashboardToast');
+
+    function showDashboardToast(message, type = 'info') {
+        if (!dashboardToast) return;
+        dashboardToast.textContent = message;
+        dashboardToast.className = `toast dashboard-toast show ${type}`;
+
+        window.clearTimeout(showDashboardToast._timer);
+        showDashboardToast._timer = window.setTimeout(() => {
+            dashboardToast.className = 'toast dashboard-toast';
+        }, 2400);
+    }
+
+    function skeletonRow(width = '100%') {
+        return `<div class="skeleton-row"><span class="skeleton-line" style="width:${width}"></span></div>`;
+    }
+
+    function setDashboardLoadingState(isLoading) {
+        document.body.classList.toggle('dashboard-loading', isLoading);
+        if (!isLoading) return;
+
+        if (elements.paymentsContainer) elements.paymentsContainer.innerHTML = `${skeletonRow('72%')}${skeletonRow('88%')}${skeletonRow('64%')}${skeletonRow('80%')}`;
+        if (elements.installmentsContainer) elements.installmentsContainer.innerHTML = `${skeletonRow('100%')}${skeletonRow('92%')}${skeletonRow('84%')}`;
+        if (elements.transactionsContainer) elements.transactionsContainer.innerHTML = `<div class="skeleton-table">${skeletonRow('100%')}${skeletonRow('94%')}${skeletonRow('88%')}${skeletonRow('96%')}</div>`;
+        if (elements.membersContainer) elements.membersContainer.innerHTML = `<div class="skeleton-table">${skeletonRow('100%')}${skeletonRow('90%')}${skeletonRow('96%')}${skeletonRow('84%')}</div>`;
+        if (elements.expensesContainer) elements.expensesContainer.innerHTML = `${skeletonRow('96%')}${skeletonRow('86%')}${skeletonRow('92%')}`;
+        if (elements.receiptVerificationContainer) elements.receiptVerificationContainer.innerHTML = `${skeletonRow('100%')}${skeletonRow('92%')}`;
+        if (elements.memberExpensesContainer) elements.memberExpensesContainer.innerHTML = `${skeletonRow('100%')}${skeletonRow('84%')}${skeletonRow('90%')}`;
+    }
+
+    async function apiRequest(path, { method = 'GET', body = null, isForm = false } = {}) {
+        const token = localStorage.getItem('authToken');
+        if (!token) {
+            const err = new Error('Not authenticated');
+            err.status = 401;
+            throw err;
+        }
+
+        const headers = {
+            Authorization: `Bearer ${token}`
+        };
+        if (body && !isForm) {
+            headers['Content-Type'] = 'application/json';
+        }
+
+        const res = await fetch(`${API_BASE}${path}`, {
+            method,
+            headers,
+            body: body
+                ? (isForm ? body : JSON.stringify(body))
+                : undefined
+        });
+
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+            const msg = data && data.message ? data.message : 'Request failed';
+            const err = new Error(msg);
+            err.status = res.status;
+            err.data = data;
+            throw err;
+        }
+
+        return data;
+    }
+
+    function handleAuthFailure(err) {
+        const code = err && err.data && err.data.code;
+        if (code === 'PASSWORD_CHANGE_REQUIRED') {
+            // User must change password before using the dashboard.
+            window.location.href = 'login.html';
+            return true;
+        }
+
+        if (err && (err.status === 401 || err.status === 403)) {
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('currentUser');
+            window.location.href = 'login.html';
+            return true;
+        }
+
+        return false;
+    }
+
     // ===========================
     // LOAD USER DATA FROM LOCALSTORAGE
     // ===========================
+    const token = localStorage.getItem('authToken');
     let currentUser = null;
     try {
         const storedUser = localStorage.getItem('currentUser');
@@ -210,15 +320,15 @@ function renderDashboardApp() {
         console.error('Error parsing user data:', e);
     }
 
-    // If no user found, redirect to login
-    if (!currentUser) {
+    // If not authenticated, redirect to login
+    if (!token) {
         console.warn('No user found. Redirecting to login...');
         window.location.href = 'login.html';
         return;
     }
 
-    const userRole = currentUser.role;
-    console.log('Dashboard loaded for:', currentUser.name, 'Role:', userRole);
+    let userRole = (currentUser && currentUser.role) ? currentUser.role : 'member';
+    console.log('Dashboard loaded (token present). Role:', userRole);
 
     // ===========================
     // ROLE-BASED UI SETUP
@@ -245,80 +355,185 @@ function renderDashboardApp() {
         });
     }
 
-    const USERS_FALLBACK = [
-        { id: 'u1', email: 'admin@texcelerators.com', password: 'admin123', name: 'Admin User', role: 'admin', year: '3rd', isFirstLogin: false },
-        { id: 'u2', email: 'aarav@texcelerators.com', password: 'aarav@123', name: 'Aarav Sharma', role: 'member', year: '2nd', isFirstLogin: false },
-        { id: 'u3', email: 'meera@texcelerators.com', password: 'meera@123', name: 'Meera Patel', role: 'member', year: '2nd', isFirstLogin: false },
-        { id: 'u4', email: 'kabir@texcelerators.com', password: 'kabir@123', name: 'Kabir Singh', role: 'member', year: '1st', isFirstLogin: false },
-        { id: 'u5', email: 'ananya@texcelerators.com', password: 'ananya@123', name: 'Ananya Roy', role: 'member', year: '3rd', isFirstLogin: false },
-        { id: 'u6', email: 'rohan@texcelerators.com', password: 'rohan@123', name: 'Rohan Gupta', role: 'member', year: '1st', isFirstLogin: false },
-        { id: 'u7', email: 'isha@texcelerators.com', password: 'isha@123', name: 'Isha Verma', role: 'member', year: '2nd', isFirstLogin: false }
-    ];
-
-    function getUsersDatabase() {
-        const stored = localStorage.getItem('usersDatabase');
-        if (stored) {
-            try {
-                return JSON.parse(stored);
-            } catch (error) {
-                console.error('Failed to parse users database:', error);
-            }
-        }
-        localStorage.setItem('usersDatabase', JSON.stringify(USERS_FALLBACK));
-        return USERS_FALLBACK.slice();
-    }
-
-    function saveUsersDatabase(users) {
-        localStorage.setItem('usersDatabase', JSON.stringify(users));
-    }
-
-    const usersDatabase = getUsersDatabase();
-
     const state = {
-        user: { name: currentUser.name, email: currentUser.email, role: userRole },
-        users: usersDatabase,
-        memberFee: {
-            totalFee: 13500,
-            paidAmount: 8500,
-            remainingAmount: 5000,
-            nextDueAmount: 5000,
-            progress: 63
+        user: {
+            id: currentUser && currentUser.id ? currentUser.id : null,
+            name: currentUser && currentUser.name ? currentUser.name : 'Member',
+            email: currentUser && currentUser.email ? currentUser.email : '',
+            role: userRole
         },
-        installments: [
-            { title: 'First installment', amount: 5000, status: 'Paid', paid: true },
-            { title: 'Second installment', amount: 5000, status: 'Due', paid: false },
-            { title: 'Second year fee', amount: 3500, status: 'Paid', paid: true }
-        ],
-        payments: [
-            { id: 'p1', userId: 'u2', amount: 5000, date: '2026-04-02', status: 'verified', receiptName: 'aarav_apr_1.jpg', receiptPreview: '', receiptType: 'image' },
-            { id: 'p2', userId: 'u2', amount: 3500, date: '2026-04-09', status: 'verified', receiptName: 'aarav_apr_2.jpg', receiptPreview: '', receiptType: 'image' },
-            { id: 'p3', userId: 'u3', amount: 5000, date: '2026-04-11', status: 'verified', receiptName: 'meera_apr_1.jpg', receiptPreview: '', receiptType: 'image' },
-            { id: 'p4', userId: 'u4', amount: 5000, date: '2026-04-16', status: 'verified', receiptName: 'kabir_apr_1.jpg', receiptPreview: '', receiptType: 'image' },
-            { id: 'p5', userId: 'u5', amount: 3500, date: '2026-04-22', status: 'verified', receiptName: 'ananya_apr_1.jpg', receiptPreview: '', receiptType: 'image' }
-        ],
-        members: [
-            { id: 'u2', name: 'Aarav Sharma', paid: 8500, remaining: 5000 },
-            { id: 'u3', name: 'Meera Patel', paid: 13500, remaining: 0 },
-            { id: 'u4', name: 'Kabir Singh', paid: 5000, remaining: 8500 },
-            { id: 'u5', name: 'Ananya Roy', paid: 10000, remaining: 3500 },
-            { id: 'u6', name: 'Rohan Gupta', paid: 13500, remaining: 0 },
-            { id: 'u7', name: 'Isha Verma', paid: 3500, remaining: 10000 }
-        ],
-        expenses: [
-            { title: 'Arduino Kit', amount: 3200, date: '2026-04-02' },
-            { title: 'Sensors Pack', amount: 2400, date: '2026-04-10' },
-            { title: 'Workshop Banner', amount: 1800, date: '2026-04-15' },
-            { title: 'Competition Supplies', amount: 4200, date: '2026-04-21' }
-        ],
+        users: [],
+        memberFee: {
+            totalFee: 0,
+            paidAmount: 0,
+            remainingAmount: 0,
+            nextDueAmount: 0,
+            progress: 0
+        },
+        installments: [],
+        payments: [],
+        members: [],
+        expenses: [],
         finance: {
-            totalIncome: 58500,
-            totalExpenses: 11600,
-            totalFunds: 46900
+            totalIncome: 0,
+            totalExpenses: 0,
+            totalFunds: 0
         },
         paymentFlow: {
             qrScanned: false
         }
     };
+
+    function normalizePaymentStatus(status) {
+        if (status === 'approved') return 'verified';
+        return status;
+    }
+
+    function isImagePath(p) {
+        return typeof p === 'string' && /\.(jpg|jpeg|png|webp)$/i.test(p);
+    }
+
+    function mapApiPayment(p) {
+        const memberId = (p.member && (p.member._id || p.member.id)) ? String(p.member._id || p.member.id) : String(p.member);
+        const receiptPath = p.receiptPath || '';
+        const receiptPreview = receiptPath && isImagePath(receiptPath) ? `${API_BASE}${receiptPath}` : '';
+
+        return {
+            id: String(p._id || p.id),
+            userId: memberId,
+            amount: Number(p.amount) || 0,
+            date: (p.submittedAt ? new Date(p.submittedAt) : new Date()).toISOString().slice(0, 10),
+            status: normalizePaymentStatus(p.status),
+            receiptName: p.receiptOriginalName || (receiptPath ? receiptPath.split('/').slice(-1)[0] : 'NA'),
+            receiptPreview,
+            receiptType: receiptPreview ? 'image' : 'file'
+        };
+    }
+
+    function mapApiExpense(e) {
+        return {
+            title: e.title,
+            amount: Number(e.amount) || 0,
+            date: (e.date ? new Date(e.date) : new Date()).toISOString().slice(0, 10)
+        };
+    }
+
+    async function refreshDashboardFromApi() {
+        const data = await apiRequest('/dashboard/data');
+
+        if (data && data.settings && Number.isFinite(Number(data.settings.memberTotalFee))) {
+            state.memberFee.totalFee = Math.max(0, Number(data.settings.memberTotalFee));
+        } else if (!state.memberFee.totalFee) {
+            state.memberFee.totalFee = 13500;
+        }
+
+        if (data && data.user) {
+            state.user = {
+                id: data.user.id,
+                name: data.user.name,
+                email: data.user.email,
+                role: data.user.role
+            };
+            userRole = state.user.role;
+            localStorage.setItem('currentUser', JSON.stringify(data.user));
+        }
+
+        state.expenses = Array.isArray(data.expenses) ? data.expenses.map(mapApiExpense) : [];
+
+        if (userRole === 'admin') {
+            const members = Array.isArray(data.members) ? data.members : [];
+            state.users = [
+                { id: state.user.id, name: state.user.name, email: state.user.email, role: 'admin' },
+                ...members.map((m) => ({
+                    id: m.id,
+                    name: m.name,
+                    email: m.email,
+                    role: 'member',
+                    status: m.status || (m.active ? 'active' : 'inactive'),
+                    active: m.status ? m.status === 'active' : m.active !== false
+                }))
+            ];
+
+            const payments = Array.isArray(data.payments) ? data.payments : [];
+            state.payments = payments.map(mapApiPayment);
+
+            // Build member balances based on approved payments
+            const paidByMember = new Map();
+            state.payments.forEach((p) => {
+                if (p.status !== 'verified') return;
+                const prev = paidByMember.get(p.userId) || 0;
+                paidByMember.set(p.userId, prev + p.amount);
+            });
+
+            state.members = members.map((m) => {
+                const paid = paidByMember.get(String(m.id)) || 0;
+                const totalFee = state.memberFee.totalFee;
+                const status = m.status || (m.active ? 'active' : 'inactive');
+                return {
+                    id: String(m.id),
+                    name: m.name,
+                    status,
+                    active: status === 'active',
+                    paid,
+                    remaining: Math.max(0, totalFee - paid)
+                };
+            });
+
+            const summary = data.summary || {};
+            state.finance.totalIncome = Number(summary.paymentsApprovedTotal) || 0;
+            state.finance.totalExpenses = Number(summary.expensesTotal) || 0;
+            state.finance.totalFunds = Number(summary.balance) || 0;
+        } else {
+            state.users = [{ id: state.user.id, name: state.user.name, email: state.user.email, role: 'member' }];
+
+            const payments = Array.isArray(data.payments) ? data.payments : [];
+            state.payments = payments.map(mapApiPayment);
+
+            const approvedTotal = state.payments
+                .filter((p) => p.status === 'verified')
+                .reduce((sum, p) => sum + p.amount, 0);
+
+            state.memberFee.paidAmount = approvedTotal;
+            state.memberFee.remainingAmount = Math.max(0, state.memberFee.totalFee - approvedTotal);
+            state.memberFee.nextDueAmount = state.memberFee.remainingAmount > 5000 ? 5000 : state.memberFee.remainingAmount;
+            state.memberFee.progress = state.memberFee.totalFee
+                ? Math.round((approvedTotal / state.memberFee.totalFee) * 100)
+                : 0;
+            state.installments = getInstallmentsFromPaidAmount(approvedTotal, state.memberFee.totalFee);
+        }
+
+        if (userRole === 'member') {
+            // Ensure member record exists for fee rendering
+            state.members = [{
+                id: String(state.user.id),
+                name: state.user.name,
+                status: 'active',
+                active: true,
+                paid: state.memberFee.paidAmount,
+                remaining: state.memberFee.remainingAmount
+            }];
+        }
+    }
+
+    if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        document.querySelectorAll('[data-count-to]').forEach((counter) => {
+            const target = Number(counter.getAttribute('data-count-to') || '0');
+            const duration = 1200;
+            const start = performance.now();
+
+            const step = (now) => {
+                const progress = Math.min(1, (now - start) / duration);
+                const eased = 1 - Math.pow(1 - progress, 3);
+                counter.textContent = `${Math.round(target * eased)}+`;
+
+                if (progress < 1) {
+                    requestAnimationFrame(step);
+                }
+            };
+
+            requestAnimationFrame(step);
+        });
+    }
 
     const elements = {
         topbarName: document.getElementById('topbarName'),
@@ -358,7 +573,15 @@ function renderDashboardApp() {
         expenseForm: document.getElementById('expenseForm'),
         expenseTitle: document.getElementById('expenseTitle'),
         expenseAmount: document.getElementById('expenseAmount'),
-        expenseDate: document.getElementById('expenseDate')
+        expenseDate: document.getElementById('expenseDate'),
+
+        totalFeeLabel: document.getElementById('totalFeeLabel'),
+
+        // Admin member management
+        addMemberForm: document.getElementById('addMemberForm'),
+        addMemberName: document.getElementById('addMemberName'),
+        addMemberEmail: document.getElementById('addMemberEmail'),
+        addMemberTempPassword: document.getElementById('addMemberTempPassword')
     };
 
     function updatePaymentFlowUI() {
@@ -405,14 +628,20 @@ function renderDashboardApp() {
         return currentUserRecord ? currentUserRecord.id : null;
     }
 
-    function getInstallmentsFromPaidAmount(paidAmount) {
-        const firstPaid = paidAmount >= 5000;
-        const secondPaid = paidAmount >= 10000;
-        const thirdPaid = paidAmount >= 13500;
+    function getInstallmentsFromPaidAmount(paidAmount, totalFee) {
+        const safeTotal = Number.isFinite(Number(totalFee)) ? Math.max(0, Number(totalFee)) : 0;
+        const firstAmount = Math.min(5000, safeTotal);
+        const secondAmount = Math.min(5000, Math.max(0, safeTotal - firstAmount));
+        const thirdAmount = Math.max(0, safeTotal - firstAmount - secondAmount);
+
+        const firstPaid = firstAmount > 0 && paidAmount >= firstAmount;
+        const secondPaid = secondAmount > 0 && paidAmount >= (firstAmount + secondAmount);
+        const thirdPaid = thirdAmount > 0 && paidAmount >= safeTotal;
+
         return [
-            { title: 'First installment', amount: 5000, status: firstPaid ? 'Paid' : 'Due', paid: firstPaid },
-            { title: 'Second installment', amount: 5000, status: secondPaid ? 'Paid' : 'Due', paid: secondPaid },
-            { title: 'Second year fee', amount: 3500, status: thirdPaid ? 'Paid' : 'Due', paid: thirdPaid }
+            { title: 'First installment', amount: firstAmount, status: firstPaid ? 'Paid' : 'Due', paid: firstPaid },
+            { title: 'Second installment', amount: secondAmount, status: secondPaid ? 'Paid' : 'Due', paid: secondPaid },
+            { title: 'Second year fee', amount: thirdAmount, status: thirdPaid ? 'Paid' : 'Due', paid: thirdPaid }
         ];
     }
 
@@ -425,8 +654,10 @@ function renderDashboardApp() {
         state.memberFee.paidAmount = memberRecord.paid;
         state.memberFee.remainingAmount = memberRecord.remaining;
         state.memberFee.nextDueAmount = memberRecord.remaining > 5000 ? 5000 : memberRecord.remaining;
-        state.memberFee.progress = Math.round((memberRecord.paid / state.memberFee.totalFee) * 100);
-        state.installments = getInstallmentsFromPaidAmount(memberRecord.paid);
+        state.memberFee.progress = state.memberFee.totalFee
+            ? Math.round((memberRecord.paid / state.memberFee.totalFee) * 100)
+            : 0;
+        state.installments = getInstallmentsFromPaidAmount(memberRecord.paid, state.memberFee.totalFee);
     }
 
     function getReceiptPreviewInfo(file) {
@@ -453,16 +684,25 @@ function renderDashboardApp() {
 
     function populateAdminMemberSelect() {
         if (!elements.adminPaymentMember) return;
-        const memberOptions = state.users.filter((user) => user.role === 'member');
+        const memberOptions = state.users.filter((user) => user.role === 'member' && (user.status || (user.active ? 'active' : 'inactive')) === 'active');
         elements.adminPaymentMember.innerHTML = `
             <option value="">Select Member</option>
             ${memberOptions.map((member) => `<option value="${member.id}">${member.name}</option>`).join('')}
         `;
     }
 
+    function formatMemberStatus(status) {
+        const normalized = status || 'inactive';
+        return normalized.charAt(0).toUpperCase() + normalized.slice(1);
+    }
+
     function renderMemberPayments() {
         // Only show for members
         if (userRole !== 'member') return;
+
+        if (elements.totalFeeLabel) {
+            elements.totalFeeLabel.textContent = `Total fee: ${formatCurrency(state.memberFee.totalFee)}`;
+        }
 
         if (elements.paymentsContainer) {
             elements.paymentsContainer.innerHTML = '';
@@ -626,21 +866,34 @@ function renderDashboardApp() {
     function renderMembers() {
         if (!elements.membersContainer) return;
 
+        const isAdmin = userRole === 'admin';
+
         elements.membersContainer.innerHTML = `
             <table class="transaction-table members-table">
                 <thead>
                     <tr>
                         <th>Name</th>
+                        ${isAdmin ? '<th>Status</th>' : ''}
                         <th>Paid Amount</th>
                         <th>Remaining Balance</th>
+                        ${isAdmin ? '<th>Actions</th>' : ''}
                     </tr>
                 </thead>
                 <tbody>
                     ${state.members.map((member) => `
                         <tr>
                             <td>${member.name}</td>
+                            ${isAdmin ? `<td><span class="status-chip status-${member.status || 'inactive'}">${formatMemberStatus(member.status)}</span></td>` : ''}
                             <td>${formatCurrency(member.paid)}</td>
                             <td>${formatCurrency(member.remaining)}</td>
+                            ${isAdmin ? `
+                                <td>
+                                    <button type="button" class="dashboard-button" data-member-action="reset" data-member-id="${member.id}">Reset Password</button>
+                                    <button type="button" class="dashboard-button" data-member-action="deactivate" data-member-id="${member.id}" ${member.status === 'inactive' ? 'disabled' : ''}>Deactivate</button>
+                                    <button type="button" class="dashboard-button" data-member-action="remove" data-member-id="${member.id}" ${member.status === 'removed' ? 'disabled' : ''}>Remove</button>
+                                    <button type="button" class="dashboard-button" data-member-action="reactivate" data-member-id="${member.id}" ${member.status === 'active' ? 'disabled' : ''}>Reactivate</button>
+                                </td>
+                            ` : ''}
                         </tr>
                     `).join('')}
                 </tbody>
@@ -718,46 +971,49 @@ function renderDashboardApp() {
     }
 
     function verifyPayment(paymentId) {
-        const payment = state.payments.find((item) => item.id === paymentId);
-        if (!payment || payment.status !== 'pending') return;
-
-        payment.status = 'verified';
-
-        const memberUser = state.users.find((user) => user.id === payment.userId);
-        if (memberUser) {
-            state.members = state.members.map((member) => {
-                if (member.id !== payment.userId) return member;
-                return {
-                    ...member,
-                    paid: member.paid + payment.amount,
-                    remaining: Math.max(0, member.remaining - payment.amount)
-                };
-            });
-
-            if (memberUser.email === state.user.email) {
-                refreshCurrentMemberFeeState();
-                renderMemberPayments();
+        return apiRequest('/payments/verify', {
+            method: 'POST',
+            body: { paymentId, action: 'approve' }
+        }).then(async () => {
+            await refreshDashboardFromApi();
+            refreshCurrentMemberFeeState();
+            renderMemberPayments();
+            renderTransactions();
+            renderMembers();
+            renderExpenses();
+            renderMemberExpenses();
+            renderMemberReceiptStatus();
+            renderVerificationQueue();
+            renderFinance();
+            showDashboardToast('Payment verified successfully.', 'success');
+        }).catch((err) => {
+            console.error('Verify payment failed:', err);
+            if (!handleAuthFailure(err)) {
+                alert(err.message || 'Failed to verify payment');
             }
-        }
-
-        state.finance.totalIncome += payment.amount;
-        state.finance.totalFunds += payment.amount;
-
-        renderTransactions();
-        renderMembers();
-        renderFinance();
-        renderMemberReceiptStatus();
-        renderVerificationQueue();
+        });
     }
 
     function rejectPayment(paymentId) {
-        const payment = state.payments.find((item) => item.id === paymentId);
-        if (!payment || payment.status !== 'pending') return;
-
-        payment.status = 'rejected';
-        renderTransactions();
-        renderMemberReceiptStatus();
-        renderVerificationQueue();
+        return apiRequest('/payments/verify', {
+            method: 'POST',
+            body: { paymentId, action: 'reject', rejectedReason: 'Rejected by admin' }
+        }).then(async () => {
+            await refreshDashboardFromApi();
+            refreshCurrentMemberFeeState();
+            renderMemberPayments();
+            renderTransactions();
+            renderMembers();
+            renderMemberReceiptStatus();
+            renderVerificationQueue();
+            renderFinance();
+            showDashboardToast('Payment rejected.', 'success');
+        }).catch((err) => {
+            console.error('Reject payment failed:', err);
+            if (!handleAuthFailure(err)) {
+                alert(err.message || 'Failed to reject payment');
+            }
+        });
     }
 
     function addAdminPayment(event) {
@@ -765,56 +1021,36 @@ function renderDashboardApp() {
 
         const memberId = elements.adminPaymentMember?.value;
         const amount = Number(elements.adminPaymentAmount?.value);
-        const date = elements.adminPaymentDate?.value;
-        const receiptFile = elements.adminReceiptInput?.files && elements.adminReceiptInput.files[0];
 
-        if (!memberId || !amount || !date) {
-            alert('Please fill in member, amount, and date.');
+        if (!memberId || !amount) {
+            alert('Please fill in member and amount.');
             return;
         }
 
-        if (!receiptFile) {
-            alert('Receipt is required for every payment.');
-            return;
-        }
+        apiRequest('/payments/add', {
+            method: 'POST',
+            body: { memberId, amount, isManual: true, notes: 'Manual payment (admin)' }
+        }).then(async () => {
+            if (elements.adminPaymentForm) {
+                elements.adminPaymentForm.reset();
+            }
+            if (elements.adminReceiptPreview) {
+                elements.adminReceiptPreview.innerHTML = '';
+            }
 
-        const previewInfo = getReceiptPreviewInfo(receiptFile);
-
-        state.payments.unshift({
-            id: `p${Date.now()}`,
-            userId: memberId,
-            amount,
-            date,
-            status: 'verified',
-            receiptName: receiptFile.name,
-            receiptPreview: previewInfo.previewUrl,
-            receiptType: previewInfo.receiptType
+            await refreshDashboardFromApi();
+            renderTransactions();
+            renderMembers();
+            renderFinance();
+            renderVerificationQueue();
+            showDashboardToast('Payment added and approved.', 'success');
+            alert('Payment added and auto-approved.');
+        }).catch((err) => {
+            console.error('Admin add payment failed:', err);
+            if (!handleAuthFailure(err)) {
+                alert(err.message || 'Failed to add payment');
+            }
         });
-
-        state.members = state.members.map((member) => {
-            if (member.id !== memberId) return member;
-            return {
-                ...member,
-                paid: member.paid + amount,
-                remaining: Math.max(0, member.remaining - amount)
-            };
-        });
-
-        state.finance.totalIncome += amount;
-        state.finance.totalFunds += amount;
-
-        if (elements.adminPaymentForm) {
-            elements.adminPaymentForm.reset();
-        }
-        if (elements.adminReceiptPreview) {
-            elements.adminReceiptPreview.innerHTML = '';
-        }
-
-        renderTransactions();
-        renderMembers();
-        renderFinance();
-        renderVerificationQueue();
-        alert('Payment added and auto-approved.');
     }
 
     function addExpense(event) {
@@ -828,14 +1064,137 @@ function renderDashboardApp() {
             return;
         }
 
-        state.expenses.unshift({ title, amount, date });
-        state.finance.totalExpenses += amount;
-        state.finance.totalFunds -= amount;
+        apiRequest('/expenses/add', {
+            method: 'POST',
+            body: { title, amount, date }
+        }).then(async () => {
+            elements.expenseForm.reset();
+            await refreshDashboardFromApi();
+            renderExpenses();
+            renderMemberExpenses();
+            renderFinance();
+            showDashboardToast('Expense added successfully.', 'success');
+        }).catch((err) => {
+            console.error('Add expense failed:', err);
+            if (!handleAuthFailure(err)) {
+                alert(err.message || 'Failed to add expense');
+            }
+        });
+    }
 
-        elements.expenseForm.reset();
-        renderExpenses();
-        renderMemberExpenses();
-        renderFinance();
+    async function addMember(event) {
+        event.preventDefault();
+
+        const name = elements.addMemberName?.value?.trim();
+        const email = elements.addMemberEmail?.value?.trim();
+        const tempPassword = elements.addMemberTempPassword?.value?.trim();
+
+        if (!name || !email) {
+            alert('Please enter name and email');
+            return;
+        }
+
+        try {
+            const result = await apiRequest('/members/add', {
+                method: 'POST',
+                body: {
+                    name,
+                    email,
+                    tempPassword: tempPassword || undefined
+                }
+            });
+
+            if (elements.addMemberForm) {
+                elements.addMemberForm.reset();
+            }
+
+            await refreshDashboardFromApi();
+            populateAdminMemberSelect();
+            renderMembers();
+            showDashboardToast('Member created successfully.', 'success');
+
+            const generatedPassword = result && result.tempPassword ? result.tempPassword : '(not returned)';
+            alert(`Member created. Temporary password: ${generatedPassword}\n\nAsk the member to login and change it immediately.`);
+        } catch (err) {
+            console.error('Add member failed:', err);
+            if (!handleAuthFailure(err)) {
+                alert(err.message || 'Failed to add member');
+            }
+        }
+    }
+
+    async function deactivateMember(memberId) {
+        try {
+            await apiRequest('/members/deactivate', {
+                method: 'POST',
+                body: { memberId }
+            });
+            await refreshDashboardFromApi();
+            populateAdminMemberSelect();
+            renderMembers();
+            showDashboardToast('Member deactivated.', 'success');
+            alert('Member deactivated. They can no longer log in.');
+        } catch (err) {
+            console.error('Deactivate member failed:', err);
+            if (!handleAuthFailure(err)) {
+                alert(err.message || 'Failed to deactivate member');
+            }
+        }
+    }
+
+    async function removeMember(memberId) {
+        try {
+            await apiRequest('/members/remove', {
+                method: 'POST',
+                body: { memberId }
+            });
+            await refreshDashboardFromApi();
+            populateAdminMemberSelect();
+            renderMembers();
+            showDashboardToast('Member removed.', 'success');
+            alert('Member removed. Account remains in MongoDB for audit/history.');
+        } catch (err) {
+            console.error('Remove member failed:', err);
+            if (!handleAuthFailure(err)) {
+                alert(err.message || 'Failed to remove member');
+            }
+        }
+    }
+
+    async function reactivateMember(memberId) {
+        try {
+            await apiRequest('/members/reactivate', {
+                method: 'POST',
+                body: { memberId }
+            });
+            await refreshDashboardFromApi();
+            populateAdminMemberSelect();
+            renderMembers();
+            showDashboardToast('Member reactivated.', 'success');
+            alert('Member reactivated.');
+        } catch (err) {
+            console.error('Reactivate member failed:', err);
+            if (!handleAuthFailure(err)) {
+                alert(err.message || 'Failed to reactivate member');
+            }
+        }
+    }
+
+    async function resetMemberPassword(memberId) {
+        try {
+            const result = await apiRequest('/members/reset-password', {
+                method: 'POST',
+                body: { memberId }
+            });
+            const generatedPassword = result && result.tempPassword ? result.tempPassword : '(not returned)';
+            showDashboardToast('Password reset completed.', 'success');
+            alert(`Password reset. Temporary password: ${generatedPassword}\n\nMember must change password after login.`);
+        } catch (err) {
+            console.error('Reset password failed:', err);
+            if (!handleAuthFailure(err)) {
+                alert(err.message || 'Failed to reset password');
+            }
+        }
     }
 
     function bindSidebarNavigation() {
@@ -862,6 +1221,7 @@ function renderDashboardApp() {
             elements.logoutButton.addEventListener('click', (event) => {
                 event.preventDefault();
                 // Clear user session
+                localStorage.removeItem('authToken');
                 localStorage.removeItem('currentUser');
                 window.location.href = 'login.html';
             });
@@ -923,6 +1283,37 @@ function renderDashboardApp() {
             elements.adminPaymentForm.addEventListener('submit', addAdminPayment);
         }
 
+        if (elements.addMemberForm && userRole === 'admin') {
+            elements.addMemberForm.addEventListener('submit', addMember);
+        }
+
+        if (elements.membersContainer && userRole === 'admin') {
+            elements.membersContainer.addEventListener('click', (event) => {
+                const button = event.target.closest('[data-member-action]');
+                if (!button) return;
+
+                const action = button.getAttribute('data-member-action');
+                const memberId = button.getAttribute('data-member-id');
+                if (!memberId) return;
+
+                if (action === 'remove') {
+                    removeMember(memberId);
+                }
+
+                if (action === 'deactivate') {
+                    deactivateMember(memberId);
+                }
+
+                if (action === 'reactivate') {
+                    reactivateMember(memberId);
+                }
+
+                if (action === 'reset') {
+                    resetMemberPassword(memberId);
+                }
+            });
+        }
+
         if (elements.expenseForm && userRole === 'admin') {
             elements.expenseForm.addEventListener('submit', addExpense);
         }
@@ -944,7 +1335,7 @@ function renderDashboardApp() {
     }
 
     // Apply role-based UI
-    showRoleBasedUI();
+    // (Applied after first data load)
 
     // Hide member-only buttons for admin
     if (userRole === 'admin') {
@@ -959,27 +1350,106 @@ function renderDashboardApp() {
         if (elements.expenseForm) elements.expenseForm.style.display = 'none';
     }
 
-    refreshCurrentMemberFeeState();
-    updatePaymentFlowUI();
-    syncHeader();
-    populateAdminMemberSelect();
-    renderMemberPayments();
-    renderTransactions();
-    renderMembers();
-    renderExpenses();
-    renderMemberExpenses();
-    renderMemberReceiptStatus();
-    renderVerificationQueue();
-    renderFinance();
-    bindSidebarNavigation();
-    bindActions();
 
-    // Set the first visible section as active
-    const firstVisibleSection = document.querySelector('[data-for-roles]:not([style*="display: none"])');
-    if (firstVisibleSection && firstVisibleSection.hasAttribute('data-dashboard-section')) {
-        document.querySelectorAll('[data-dashboard-section]').forEach(s => s.classList.remove('is-active'));
-        firstVisibleSection.classList.add('is-active');
+    async function init() {
+        try {
+            setDashboardLoadingState(true);
+            await refreshDashboardFromApi();
+        } catch (err) {
+            console.error('Failed to load dashboard:', err);
+            if (!handleAuthFailure(err)) {
+                alert(err.message || 'Failed to load dashboard');
+            }
+            setDashboardLoadingState(false);
+            return;
+        }
+
+        // Apply role-based UI
+        showRoleBasedUI();
+
+        // Hide member-only buttons for admin
+        if (userRole === 'admin') {
+            if (elements.payNowButton) elements.payNowButton.style.display = 'none';
+            if (elements.viewDetailsButton) elements.viewDetailsButton.style.display = 'none';
+            if (elements.paidButton) elements.paidButton.style.display = 'none';
+            if (elements.expenseForm) elements.expenseForm.style.display = '';
+        } else if (userRole === 'member') {
+            if (elements.payNowButton) elements.payNowButton.style.display = '';
+            if (elements.viewDetailsButton) elements.viewDetailsButton.style.display = '';
+            if (elements.paidButton) elements.paidButton.style.display = '';
+            if (elements.expenseForm) elements.expenseForm.style.display = 'none';
+        }
+
+        refreshCurrentMemberFeeState();
+        updatePaymentFlowUI();
+        syncHeader();
+        populateAdminMemberSelect();
+        renderMemberPayments();
+        renderTransactions();
+        renderMembers();
+        renderExpenses();
+        renderMemberExpenses();
+        renderMemberReceiptStatus();
+        renderVerificationQueue();
+        renderFinance();
+        bindSidebarNavigation();
+        bindActions();
+        setDashboardLoadingState(false);
+
+        // Set the first visible section as active
+        const firstVisibleSection = document.querySelector('[data-for-roles]:not([style*="display: none"])');
+        if (firstVisibleSection && firstVisibleSection.hasAttribute('data-dashboard-section')) {
+            document.querySelectorAll('[data-dashboard-section]').forEach(s => s.classList.remove('is-active'));
+            firstVisibleSection.classList.add('is-active');
+        }
     }
+
+    // Override member receipt submit to call backend
+    async function submitReceiptForVerification(file) {
+        if (state.memberFee.remainingAmount <= 0) {
+            alert('This member has no remaining balance.');
+            return;
+        }
+
+        if (!file) {
+            alert('Please attach your payment receipt before submitting.');
+            return;
+        }
+
+        if (!state.paymentFlow.qrScanned) {
+            alert('Please scan the QR and click "I Have Scanned QR" first.');
+            return;
+        }
+
+        const paymentAmount = state.memberFee.nextDueAmount;
+        const form = new FormData();
+        form.append('amount', String(paymentAmount));
+        form.append('notes', 'Receipt payment');
+        form.append('receipt', file);
+
+        try {
+            await apiRequest('/payments/add', { method: 'POST', body: form, isForm: true });
+            state.paymentFlow.qrScanned = false;
+            await refreshDashboardFromApi();
+            refreshCurrentMemberFeeState();
+            renderMemberPayments();
+            renderTransactions();
+            renderMemberReceiptStatus();
+            renderVerificationQueue();
+            updatePaymentFlowUI();
+            if (elements.paymentFlowMessage) {
+                elements.paymentFlowMessage.textContent = `Payment submitted. Waiting for admin verification.`;
+            }
+            alert('Receipt uploaded successfully. Payment is pending admin verification.');
+        } catch (err) {
+            console.error('Submit payment failed:', err);
+            if (!handleAuthFailure(err)) {
+                alert(err.message || 'Failed to submit payment');
+            }
+        }
+    }
+
+    init();
 }
 
 renderDashboardApp();
