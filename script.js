@@ -27,6 +27,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
+            if (href === '#robots-showcase') {
+                event.preventDefault();
+                if (window.openRobotShowcase) {
+                    window.openRobotShowcase();
+                }
+                return;
+            }
+
             const target = document.querySelector(href);
             if (target) {
                 event.preventDefault();
@@ -50,7 +58,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }, observerOptions);
 
-        document.querySelectorAll('.project-card, .team-member, .stat-card, .gallery-item').forEach((element) => {
+        document.querySelectorAll('.project-card, .team-person-card, .mentor-spotlight-card, .team-member, .stat-card, .gallery-item').forEach((element) => {
             element.style.opacity = '0';
             element.style.transform = 'translateY(20px)';
             element.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
@@ -58,6 +66,13 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         document.querySelectorAll('[data-reveal]').forEach((element) => {
+            if (element.classList.contains('hero-slides') || element.classList.contains('hero-visual')) {
+                element.style.opacity = '1';
+                element.style.transform = 'none';
+                observer.observe(element);
+                return;
+            }
+
             element.style.opacity = '0';
             element.style.transform = 'translateY(24px)';
             element.style.transition = 'opacity 0.7s ease, transform 0.7s ease';
@@ -102,7 +117,34 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // ====== HERO CAROUSEL FUNCTIONALITY ======
+    initializeHeroCarousel();
+    initializeHeroMetrics();
+
+    // ====== IMAGE LAZY LOADER (data-src -> src) ======
+    initImageLazyLoad();
+    // ====== LOGO PARTICLES + SUBTLE MOTION ======
+    initializeLogoParticles();
+    // ====== ROBOTS SHOWCASE + DETAILS MODAL ======
+    initializeRobotShowcase();
+
     const utilityStyle = document.createElement('style');
+        // ====== ROBOTS CAROUSEL (AUTO-SLIDING) ======
+        initializeRobotsCarousel();
+        // ====== ACHIEVEMENTS PREMIUM INTERACTIONS ======
+        if (typeof initializeAchievements === 'function') {
+            try { initializeAchievements(); } catch (e) { console.error('Achievements init error', e); }
+        }
+        // ====== TEAM SHOWCASE ======
+        if (typeof initializeTeamShowcase === 'function') {
+            try { initializeTeamShowcase(); } catch (e) { console.error('Team init error', e); }
+        }
+        // ====== COLLABORATION PORTAL ======
+        if (typeof initializeCollaborationPortal === 'function') {
+            try { initializeCollaborationPortal(); } catch (e) { console.error('Collaboration init error', e); }
+        }
+        // ====== PREMIUM RIPPLE FEEDBACK ======
+        setupPremiumRipples();
     utilityStyle.textContent = `
         @keyframes fadeIn {
             from { opacity: 0; }
@@ -116,86 +158,1579 @@ document.addEventListener('DOMContentLoaded', () => {
     console.log('%cBackend integration coming soon!', 'font-size: 12px; color: #0099ff;');
 });
 
-function formatCurrency(value) {
-    return `₹${Number(value).toLocaleString('en-IN')}`;
+// ====== HERO CAROUSEL CODE ======
+function initializeHeroCarousel() {
+    const heroSlides = document.querySelectorAll('.hero-slide');
+    const prevBtn = document.querySelector('.hero-prev');
+    const nextBtn = document.querySelector('.hero-next');
+
+    if (!heroSlides.length) return;
+
+    let currentIndex = 0;
+    const totalSlides = heroSlides.length;
+    const autoPlayInterval = 4000; // 4 seconds (changed from 5s per requirements)
+    let autoPlayTimer = null;
+
+    function showSlide(index) {
+        // Remove active class from all slides
+        heroSlides.forEach((slide) => {
+            slide.classList.remove('active');
+            slide.setAttribute('aria-hidden', 'true');
+        });
+
+        // Add active class to current slide
+        heroSlides[index].classList.add('active');
+        heroSlides[index].setAttribute('aria-hidden', 'false');
+        currentIndex = index;
+    }
+
+    function nextSlide() {
+        const nextIndex = (currentIndex + 1) % totalSlides;
+        showSlide(nextIndex);
+        resetAutoPlay();
+    }
+
+    function prevSlide() {
+        const prevIndex = (currentIndex - 1 + totalSlides) % totalSlides;
+        showSlide(prevIndex);
+        resetAutoPlay();
+    }
+
+    function startAutoPlay() {
+        autoPlayTimer = setInterval(() => {
+            nextSlide();
+        }, autoPlayInterval);
+    }
+
+    function resetAutoPlay() {
+        if (autoPlayTimer) {
+            clearInterval(autoPlayTimer);
+        }
+        startAutoPlay();
+    }
+
+    // Event listeners for buttons
+    if (nextBtn) {
+        nextBtn.addEventListener('click', nextSlide);
+    }
+
+    if (prevBtn) {
+        prevBtn.addEventListener('click', prevSlide);
+    }
+
+    // Pause on hover
+    const heroContainer = document.querySelector('.hero');
+    if (heroContainer) {
+        heroContainer.addEventListener('mouseenter', () => {
+            if (autoPlayTimer) {
+                clearInterval(autoPlayTimer);
+            }
+        });
+
+        heroContainer.addEventListener('mouseleave', () => {
+            startAutoPlay();
+        });
+    }
+
+    // Initialize: show first slide and start auto-play
+    showSlide(0);
+    startAutoPlay();
 }
 
-function formatDate(value) {
-    return new Date(value).toLocaleDateString('en-IN', {
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric'
+function initializeHeroMetrics() {
+    const metrics = document.querySelectorAll('.hero-metric-number[data-count-to]');
+    if (!metrics.length) return;
+
+    const animateMetric = (element) => {
+        const target = parseInt(element.getAttribute('data-count-to'), 10) || 0;
+        const duration = 1400;
+        const start = performance.now();
+
+        function tick(now) {
+            const progress = Math.min((now - start) / duration, 1);
+            const value = Math.round(target * (0.12 + (progress * 0.88)));
+            element.textContent = String(progress >= 1 ? target : value);
+            if (progress < 1) {
+                requestAnimationFrame(tick);
+            }
+        }
+
+        requestAnimationFrame(tick);
+    };
+
+    if ('IntersectionObserver' in window) {
+        const observer = new IntersectionObserver((entries, obs) => {
+            entries.forEach((entry) => {
+                if (!entry.isIntersecting) return;
+                entry.target.querySelectorAll('.hero-metric-number[data-count-to]').forEach(animateMetric);
+                obs.disconnect();
+            });
+        }, { threshold: 0.35 });
+
+        const root = document.querySelector('.hero-cinematic .hero-metrics');
+        if (root) observer.observe(root);
+    } else {
+        metrics.forEach(animateMetric);
+    }
+}
+
+// Lazy-load images that use data-src attributes by swapping into src when visible
+function initImageLazyLoad() {
+    const lazyImgs = document.querySelectorAll('img[data-src]');
+    if (!lazyImgs.length) return;
+
+    const imgObserver = new IntersectionObserver((entries, observer) => {
+        entries.forEach(entry => {
+            if (!entry.isIntersecting) return;
+            const img = entry.target;
+            const real = img.getAttribute('data-src');
+            if (real) {
+                img.src = real;
+                img.removeAttribute('data-src');
+            }
+            observer.unobserve(img);
+        });
+    }, { rootMargin: '200px' });
+
+    // Observe all lazy images
+    lazyImgs.forEach(img => imgObserver.observe(img));
+
+    // Immediately load images that are already visible (above-the-fold)
+    lazyImgs.forEach(img => {
+        try {
+            const rect = img.getBoundingClientRect();
+            const inViewport = rect.top < (window.innerHeight || document.documentElement.clientHeight) + 200 && rect.bottom > -200;
+            if (inViewport) {
+                const real = img.getAttribute('data-src');
+                if (real) {
+                    img.src = real;
+                    img.removeAttribute('data-src');
+                    imgObserver.unobserve(img);
+                }
+            }
+        } catch (e) {
+            // ignore
+        }
     });
+
+    // Fallback: after a short delay, attempt to load any remaining lazy images
+    window.setTimeout(() => {
+        document.querySelectorAll('img[data-src]').forEach(img => {
+            const real = img.getAttribute('data-src');
+            if (real) {
+                img.src = real;
+                img.removeAttribute('data-src');
+            }
+        });
+    }, 700);
 }
 
-function createMetricCard(label, value, accentClass = '') {
-    const card = document.createElement('div');
-    card.className = `dashboard-stat-card glass-panel ${accentClass}`.trim();
-    card.innerHTML = `
-        <span class="dashboard-stat-label">${label}</span>
-        <strong class="dashboard-stat-value">${value}</strong>
-    `;
-    return card;
+// Lightweight particles for logo showcase (subtle, performant)
+function initializeLogoParticles() {
+    const canvas = document.getElementById('logoParticles');
+    if (!canvas || !canvas.getContext) return;
+    const ctx = canvas.getContext('2d');
+    let w = 0, h = 0, DPR = window.devicePixelRatio || 1;
+    const particles = [];
+
+    function resize() {
+        const rect = canvas.getBoundingClientRect();
+        w = Math.max(1, Math.floor(rect.width));
+        h = Math.max(1, Math.floor(rect.height));
+        canvas.width = Math.floor(w * DPR);
+        canvas.height = Math.floor(h * DPR);
+        canvas.style.width = w + 'px';
+        canvas.style.height = h + 'px';
+        ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    }
+
+    function createParticle() {
+        const angle = Math.random() * Math.PI * 2;
+        const radius = Math.random() * Math.min(w, h) * 0.18 + 6;
+        const speed = 0.12 + Math.random() * 0.28;
+        return {
+            x: w / 2 + Math.cos(angle) * (Math.random() * 30),
+            y: h / 2 + Math.sin(angle) * (Math.random() * 30),
+            vx: Math.cos(angle) * speed * (0.4 + Math.random() * 0.8),
+            vy: Math.sin(angle) * speed * (0.4 + Math.random() * 0.8),
+            r: Math.random() * 2.2 + 0.6,
+            life: 60 + Math.random() * 140,
+            alpha: 0.08 + Math.random() * 0.18
+        };
+    }
+
+    function tick() {
+        ctx.clearRect(0, 0, w, h);
+        // create a few particles gradually
+        if (particles.length < 48 && Math.random() < 0.6) particles.push(createParticle());
+
+        for (let i = particles.length - 1; i >= 0; i--) {
+            const p = particles[i];
+            p.x += p.vx;
+            p.y += p.vy;
+            p.life -= 1;
+            p.alpha *= 0.9998;
+
+            ctx.beginPath();
+            ctx.fillStyle = `rgba(0,212,255,${p.alpha})`;
+            ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+            ctx.fill();
+
+            if (p.life <= 0 || p.x < -20 || p.x > w + 20 || p.y < -20 || p.y > h + 20) {
+                particles.splice(i, 1);
+            }
+        }
+
+        requestAnimationFrame(tick);
+    }
+
+    window.addEventListener('resize', () => {
+        // small debounce
+        clearTimeout(initializeLogoParticles._rt);
+        initializeLogoParticles._rt = setTimeout(resize, 120);
+    });
+
+    // initial setup
+    resize();
+    tick();
 }
 
-function createInstallmentItem(title, amount, status, paid) {
-    const item = document.createElement('div');
-    item.className = `installment-item ${paid ? 'is-paid' : 'is-due'}`;
-    item.innerHTML = `
-        <div>
-            <strong>${title}</strong>
-            <span>${formatCurrency(amount)}</span>
-        </div>
-        <span class="status-pill ${paid ? 'paid' : 'pending'}">${status}</span>
-    `;
-    return item;
+const ROBOT_SHOWCASE_DATA = [
+    {
+        id: 'robosoccer',
+        name: 'RoboSoccer',
+        index: '01',
+        category: 'Competition Build',
+        description: 'High-performance soccer robot engineered with precision drive control and tactical maneuvering capabilities for competitive matches.',
+        competitionInfo: 'Competition Build',
+        features: ['Precision Drive Control', 'Tactical Maneuvering', 'Competition Matchplay'],
+        technologies: ['Precision Drive Control', 'Tactical Maneuvering', 'Competition Matchplay'],
+        teamContribution: 'Presented as part of the Texcelerators competitive robotics workflow, combining design, fabrication, and match preparation.',
+        achievements: [],
+        heroImage: 'assets/images/images/HomePage/Robots/RoboSoccer.jpg',
+        cardImage: 'assets/images/images/HomePage/Robots/RoboSoccer.jpg',
+        gallery: [
+            'assets/images/images/Robots/Story/Quark.jpg',
+            'assets/images/images/HomePage/Robots/RoboSoccer.jpg',
+            'assets/images/images/HomePage/Main SlideShow/Soldering.jpg'
+        ]
+    },
+    {
+        id: 'robosumo',
+        name: 'RoboSumo',
+        index: '02',
+        category: 'Combat Platform',
+        description: 'Championship sumo robot combining robust mechanical design with intelligent combat strategies for competitive dominance.',
+        competitionInfo: 'Combat Platform',
+        features: ['Robust Mechanical Design', 'Intelligent Combat Strategies', 'Competitive Dominance'],
+        technologies: ['Robust Mechanical Design', 'Intelligent Combat Strategies', 'Competitive Dominance'],
+        teamContribution: 'Built within the club\'s competition-focused robotics process, pairing mechanical strength with tactical decision-making.',
+        achievements: [
+            '3rd place in Robo Sumo (Quark 2025)'
+        ],
+        heroImage: 'assets/images/images/HomePage/Robots/RoboSumo.jpg',
+        cardImage: 'assets/images/images/HomePage/Robots/RoboSumo.jpg',
+        gallery: [
+            'assets/images/images/Robots/Story/Sail.jpg',
+            'assets/images/images/HomePage/Robots/RoboSumo.jpg',
+            'assets/images/images/HomePage/Achivements/BITSG2025Win.jpg'
+        ]
+    },
+    {
+        id: 'roborace',
+        name: 'RoboRace',
+        index: '03',
+        category: 'Rescue Platform',
+        description: 'Compact search and rescue robot designed to navigate through debris with ease and speed.',
+        competitionInfo: 'Rescue Platform',
+        features: ['Search and Rescue', 'Debris Navigation', 'High Speed'],
+        technologies: ['Search and Rescue', 'Debris Navigation', 'High Speed'],
+        teamContribution: 'Developed by the Texcelerators team as a compact rescue-focused build for high-mobility challenges.',
+        achievements: [],
+        heroImage: 'assets/images/images/HomePage/Robots/Roborace.JPG',
+        cardImage: 'assets/images/images/HomePage/Robots/Roborace.JPG',
+        gallery: [
+            'assets/images/images/Robots/Behind The Build/sketched.png',
+            'assets/images/images/HomePage/Robots/Roborace.JPG',
+            'assets/images/images/HomePage/Main SlideShow/IITB2024.JPG'
+        ]
+    },
+    {
+        id: 'rcboats',
+        name: 'RC Boats',
+        index: '04',
+        category: 'Inspection Concept',
+        description: 'Wall-climbing robot with biomimetic adhesion technology inspired by geckos for vertical infrastructure inspection.',
+        competitionInfo: 'Inspection Concept',
+        features: ['Biomimetic Adhesion', 'Vertical Inspection', 'Wall Climbing'],
+        technologies: ['Biomimetic Adhesion', 'Vertical Inspection', 'Wall Climbing'],
+        teamContribution: 'Shown as a club-built concept focused on vertical inspection and experimental adhesion mechanics.',
+        achievements: [
+            'RC Boats clean sweep (1st, 2nd, 3rd)',
+            '5th place in RC Boat Race'
+        ],
+        heroImage: 'assets/images/images/Robots/Story/Acrylic.png',
+        cardImage: 'assets/images/images/Robots/Story/Acrylic.png',
+        gallery: [
+            'assets/images/images/Robots/Story/Acrylic.png',
+            'assets/images/images/HomePage/Achivements/IITB2023.jpg',
+            'assets/images/images/HomePage/Achivements/IITB2024.jpg'
+        ]
+    },
+    {
+        id: 'fpvdrone',
+        name: 'FPV Drone',
+        index: '05',
+        category: 'Aerial Platform',
+        description: 'Advanced aerial robotics platform built for precision navigation, real-time surveillance, and immersive first-person flight control.',
+        competitionInfo: 'Aerial Platform',
+        features: ['FPV', 'Precision Navigation', 'Real-time Surveillance', 'First-person Flight Control'],
+        technologies: ['FPV', 'Precision Navigation', 'Real-time Surveillance', 'First-person Flight Control'],
+        teamContribution: 'Developed as part of the Texcelerators aerial robotics showcase with a focus on control and observation.',
+        achievements: [],
+        heroImage: 'assets/images/images/HomePage/Robots/Drone.jpg',
+        cardImage: 'assets/images/images/HomePage/Robots/Drone.jpg',
+        gallery: [
+            'assets/images/images/Robots/Behind The Build/sketched.png',
+            'assets/images/images/HomePage/Robots/Drone.jpg',
+            'assets/images/images/HomePage/Main SlideShow/Soldering.jpg'
+        ]
+    },
+    {
+        id: 'airavat',
+        name: 'Airavat',
+        index: '06',
+        category: 'Soccer Platform',
+        description: 'Premium competition soccer robot with AI-powered ball tracking and precision kicking mechanisms.',
+        competitionInfo: 'Soccer Platform',
+        features: ['AI Ball Tracking', 'Precision Kicking', 'Competition Soccer'],
+        technologies: ['AI Ball Tracking', 'Precision Kicking', 'Competition Soccer'],
+        teamContribution: 'Presented as a Texcelerators soccer build that combines perception and actuation in a competition context.',
+        achievements: [],
+        heroImage: 'assets/images/images/HomePage/Main SlideShow/BITSGATE2025.JPG',
+        cardImage: 'assets/images/images/HomePage/Main SlideShow/BITSGATE2025.JPG',
+        gallery: [
+            'assets/images/images/Robots/Story/Quark.jpg',
+            'assets/images/images/HomePage/Main SlideShow/BITSGATE2025.JPG',
+            'assets/images/images/HomePage/Achivements/IIITN2024.jpg'
+        ]
+    }
+];
+
+function initializeRobotShowcase() {
+    const showcaseSection = document.getElementById('robots-showcase');
+    const showcaseGrid = document.getElementById('robotsShowcaseGrid');
+    const filterContainer = document.getElementById('robotsCategoryFilters');
+    const searchInput = document.getElementById('robotSearchInput');
+    const resultCount = document.getElementById('robotsResultCount');
+    const exploreAllButton = document.getElementById('robotsExploreAll');
+    const modal = document.getElementById('robotDetailModal');
+
+    if (!showcaseSection || !showcaseGrid || !filterContainer || !searchInput || !resultCount || !modal) {
+        return;
+    }
+
+    const categories = ['All', ...new Set(ROBOT_SHOWCASE_DATA.map((robot) => robot.category))];
+    let activeCategory = 'All';
+    let activeQuery = '';
+    let lastTrigger = null;
+
+    function buildFilterButtons() {
+        filterContainer.innerHTML = categories.map((category) => `
+            <button type="button" class="robot-filter-chip${category === activeCategory ? ' active' : ''}" data-category="${category}">${category}</button>
+        `).join('');
+    }
+
+    function matchesFilter(robot) {
+        const haystack = [robot.name, robot.category, robot.description, ...(robot.features || []), ...(robot.technologies || [])].join(' ').toLowerCase();
+        const categoryMatch = activeCategory === 'All' || robot.category === activeCategory;
+        const queryMatch = !activeQuery || haystack.includes(activeQuery);
+        return categoryMatch && queryMatch;
+    }
+
+    function renderCards() {
+        const robots = ROBOT_SHOWCASE_DATA.filter(matchesFilter);
+        resultCount.textContent = `${robots.length} robot${robots.length === 1 ? '' : 's'}`;
+
+        if (!robots.length) {
+            showcaseGrid.innerHTML = `
+                <div class="robots-empty-state">
+                    <h3>No robots match the current filters.</h3>
+                    <p>Adjust the category or search term to continue exploring the current portfolio.</p>
+                </div>
+            `;
+            return;
+        }
+
+        showcaseGrid.innerHTML = robots.map((robot, index) => `
+            <article class="robot-showcase-card" role="listitem" data-robot-id="${robot.id}" data-category="${robot.category}" data-search="${[robot.name, robot.category, robot.description, ...(robot.features || []), ...(robot.technologies || [])].join(' ').toLowerCase()}" style="--card-delay:${index * 80}ms;">
+                <div class="robot-showcase-media">
+                    <img loading="lazy" src="${robot.cardImage}" alt="${robot.name}">
+                    <div class="robot-showcase-media-glow" aria-hidden="true"></div>
+                    <div class="robot-showcase-index">${robot.index}</div>
+                </div>
+                <div class="robot-showcase-copy">
+                    <div class="robot-topline">
+                        <span class="robot-index">${robot.index}</span>
+                        <span class="robot-status">${robot.category}</span>
+                    </div>
+                    <h3>${robot.name}</h3>
+                    <p>${robot.description}</p>
+                    <div class="robot-tags" aria-label="${robot.name} technologies">
+                        ${robot.technologies.map((tag) => `<span class="tech-tag">${tag}</span>`).join('')}
+                    </div>
+                    <div class="robot-actions">
+                        <button class="btn robot-btn project-details" type="button">View Details</button>
+                    </div>
+                </div>
+            </article>
+        `).join('');
+    }
+
+    function revealShowcaseSection() {
+        if (!showcaseSection.hidden) {
+            return;
+        }
+
+        showcaseSection.hidden = false;
+        showcaseSection.classList.add('is-visible');
+
+        window.requestAnimationFrame(() => {
+            showcaseSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+    }
+
+    function openRobotShowcase() {
+        revealShowcaseSection();
+        showcaseSection.hidden = false;
+        showcaseSection.classList.add('is-visible');
+        renderCards();
+        buildFilterButtons();
+    }
+
+    window.openRobotShowcase = openRobotShowcase;
+
+    function closeRobotModal() {
+        if (modal.hidden) return;
+
+        modal.classList.remove('is-open');
+        modal.setAttribute('aria-hidden', 'true');
+        document.body.classList.remove('robot-modal-open');
+
+        window.setTimeout(() => {
+            modal.hidden = true;
+        }, 220);
+
+        if (lastTrigger && typeof lastTrigger.focus === 'function') {
+            lastTrigger.focus();
+        }
+    }
+
+    function setModalGallery(robot, heroImage) {
+        const galleryRoot = document.getElementById('robotModalGallery');
+        if (!galleryRoot) return;
+
+        galleryRoot.innerHTML = robot.gallery.map((src, index) => `
+            <button type="button" class="robot-gallery-thumb${index === 0 ? ' active' : ''}" data-gallery-src="${src}" aria-label="${robot.name} gallery image ${index + 1}">
+                <img src="${src}" alt="${robot.name} gallery image ${index + 1}">
+            </button>
+        `).join('');
+
+        galleryRoot.querySelectorAll('.robot-gallery-thumb').forEach((thumb) => {
+            thumb.addEventListener('click', () => {
+                const src = thumb.getAttribute('data-gallery-src');
+                if (!src) return;
+
+                const hero = document.getElementById('robotModalHeroImage');
+                if (hero) {
+                    hero.src = src;
+                }
+
+                galleryRoot.querySelectorAll('.robot-gallery-thumb').forEach((button) => button.classList.remove('active'));
+                thumb.classList.add('active');
+            });
+        });
+
+        const hero = document.getElementById('robotModalHeroImage');
+        if (hero) {
+            hero.src = heroImage;
+        }
+    }
+
+    function openRobotModal(robotId) {
+        const robot = ROBOT_SHOWCASE_DATA.find((entry) => entry.id === robotId);
+        if (!robot) return;
+
+        lastTrigger = document.activeElement;
+
+        const hero = document.getElementById('robotModalHeroImage');
+        const kicker = document.getElementById('robotModalKicker');
+        const title = document.getElementById('robotModalTitle');
+        const description = document.getElementById('robotModalDescription');
+        const competition = document.getElementById('robotModalCompetition');
+        const features = document.getElementById('robotModalFeatures');
+        const technologies = document.getElementById('robotModalTechnologies');
+        const contribution = document.getElementById('robotModalContribution');
+        const achievements = document.getElementById('robotModalAchievements');
+
+        if (!hero || !kicker || !title || !description || !competition || !features || !technologies || !contribution || !achievements) {
+            return;
+        }
+
+        kicker.textContent = robot.category;
+        title.textContent = robot.name;
+        description.textContent = robot.description;
+        competition.textContent = robot.competitionInfo;
+        contribution.textContent = robot.teamContribution;
+        features.innerHTML = robot.features.map((item) => `<span class="tech-tag">${item}</span>`).join('');
+        technologies.innerHTML = robot.technologies.map((item) => `<span class="tech-tag">${item}</span>`).join('');
+
+        achievements.innerHTML = robot.achievements.length
+            ? robot.achievements.map((item) => `<li>${item}</li>`).join('')
+            : '<li>No robot-specific achievement is listed in the current project content.</li>';
+
+        hero.alt = `${robot.name} hero image`;
+        setModalGallery(robot, robot.heroImage || robot.cardImage);
+
+        modal.hidden = false;
+        modal.setAttribute('aria-hidden', 'false');
+        document.body.classList.add('robot-modal-open');
+        window.requestAnimationFrame(() => modal.classList.add('is-open'));
+    }
+
+    filterContainer.addEventListener('click', (event) => {
+        const button = event.target.closest('.robot-filter-chip');
+        if (!button) return;
+
+        activeCategory = button.getAttribute('data-category') || 'All';
+        buildFilterButtons();
+        renderCards();
+    });
+
+    searchInput.addEventListener('input', () => {
+        activeQuery = searchInput.value.trim().toLowerCase();
+        renderCards();
+    });
+
+    document.addEventListener('click', (event) => {
+        const detailsButton = event.target.closest('.project-details');
+        if (detailsButton) {
+            const card = detailsButton.closest('.robot-showcase-card, .robot-card');
+            const robotId = card && (card.getAttribute('data-robot-id') || card.getAttribute('data-project'));
+            if (robotId) {
+                openRobotModal(robotId);
+            }
+            return;
+        }
+
+        const closeTarget = event.target.closest('[data-close-robot-modal]');
+        if (closeTarget) {
+            event.preventDefault();
+            closeRobotModal();
+        }
+    });
+
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') {
+            closeRobotModal();
+        }
+    });
+
+    if (exploreAllButton) {
+        exploreAllButton.addEventListener('click', (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            openRobotShowcase();
+        });
+    }
+
+    buildFilterButtons();
+    renderCards();
+
+    if (window.location.hash === '#robots-showcase') {
+        openRobotShowcase();
+    }
+}
+function formatCurrency(value) {
+    const num = Number(value);
+    if (Number.isNaN(num)) return value === 0 ? '$0.00' : '';
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(num);
 }
 
-function createQrSvgData(text) {
-    const size = 220;
-    const cells = [
-        [1,1,1,1,1,1,1,0,1,0,1,1,1,1,1,1,1],
-        [1,0,0,0,0,0,1,0,0,1,0,0,0,0,0,0,1],
-        [1,0,1,1,1,0,1,1,1,0,1,0,1,1,1,0,1],
-        [1,0,1,1,1,0,1,0,1,1,0,0,1,1,1,0,1],
-        [1,0,1,1,1,0,1,1,0,1,1,0,1,1,1,0,1],
-        [1,0,0,0,0,0,1,0,1,0,1,0,0,0,0,0,1],
-        [1,1,1,1,1,1,1,0,1,0,1,1,1,1,1,1,1],
-        [0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0],
-        [1,0,1,0,1,1,0,1,0,1,1,0,1,0,1,0,1],
-        [0,1,0,1,0,0,1,0,1,0,0,1,0,1,0,1,0],
-        [1,0,1,0,1,0,1,1,1,1,0,1,0,1,0,1,1],
-        [0,1,0,1,0,1,0,0,1,0,1,0,1,0,1,0,0],
-        [1,1,0,1,1,0,1,0,1,1,1,0,1,1,0,1,1],
-        [1,0,1,0,0,1,0,1,0,0,0,1,0,0,1,0,1],
-        [1,0,1,1,1,0,1,0,1,1,1,0,1,1,1,0,1],
-        [1,0,0,0,0,0,1,1,0,0,1,0,0,0,0,0,1],
-        [1,1,1,1,1,1,1,0,1,0,1,1,1,1,1,1,1]
+// ====== CENTRALIZED ACHIEVEMENT DATA (MODULAR & SCALABLE) ======
+const ACHIEVEMENTS_DATA = [
+    {
+        id: 'bitsg2025',
+        title: 'BITS GOA 2025',
+        event: 'Quark 2025',
+        achievement: '3rd place in Robo Sumo',
+        date: '2025-02',
+        dateDisplay: 'February 2025',
+        image: 'assets/images/images/HomePage/Achivements/BITSG2025Win.jpg',
+        featured: true,
+        award: '3rd Place',
+        category: 'Competition'
+    },
+    {
+        id: 'iiitn2024',
+        title: 'IIIT Nagpur 2024',
+        event: 'Tantrafiesta',
+        achievement: '2nd & 3rd place finishes + Robo Rumble victory',
+        date: '2024-09',
+        dateDisplay: 'September 2024',
+        image: 'assets/images/images/HomePage/Achivements/IIITN2024.jpg',
+        featured: false,
+        award: '2nd, 3rd Place',
+        category: 'Competition'
+    },
+    {
+        id: 'iitb2023',
+        title: 'IIT Bombay 2023',
+        event: 'International Robotics Competition',
+        achievement: 'RC Boats clean sweep (1st, 2nd, 3rd place)',
+        date: '2023-12',
+        dateDisplay: 'December 2023',
+        image: 'assets/images/images/HomePage/Achivements/IITB2023.jpg',
+        featured: false,
+        award: 'Clean Sweep',
+        category: 'Competition'
+    },
+    {
+        id: 'technex2024',
+        title: 'TECHNEX 2024',
+        event: 'Tech Festival Showcase',
+        achievement: 'Coastal Clash clean sweep (1st, 2nd, 3rd)',
+        date: '2024-01',
+        dateDisplay: 'January 2024',
+        image: 'assets/images/images/HomePage/Achivements/TECHNEX2024.jpg',
+        featured: false,
+        award: 'Clean Sweep',
+        category: 'Competition'
+    },
+    {
+        id: 'iitb2024',
+        title: 'IIT Bombay 2024',
+        event: 'Robotics Championship',
+        achievement: '5th place in RC Boat Race',
+        date: '2024-12',
+        dateDisplay: 'December 2024',
+        image: 'assets/images/images/HomePage/Achivements/IITB2024.jpg',
+        featured: false,
+        award: '5th Place',
+        category: 'Competition'
+    },
+    {
+        id: 'technex2025',
+        title: 'TECHNEX 2025',
+        event: 'RC Division Racing',
+        achievement: 'Drift Fury RC car race 1st place victory',
+        date: '2025-01',
+        dateDisplay: 'January 2025',
+        image: 'assets/images/images/HomePage/Achivements/TECHNEX2025.jpg',
+        featured: false,
+        award: '1st Place',
+        category: 'Racing'
+    },
+    {
+        id: 'iiitn2023',
+        title: 'IIIT Nagpur 2023',
+        event: 'Tantrafiesta 2023',
+        achievement: 'Robo Rumble 3rd place finish',
+        date: '2023-09',
+        dateDisplay: 'September 2023',
+        image: 'assets/images/images/HomePage/Achivements/IIITN2023.jpg',
+        featured: false,
+        award: '3rd Place',
+        category: 'Competition'
+    },
+    {
+        id: 'iiitn2022',
+        title: 'IIIT Nagpur 2022',
+        event: 'Tantrafiesta 2022',
+        achievement: 'Robo Rumble 1st place inaugural victory',
+        date: '2022-10',
+        dateDisplay: 'October 2022',
+        image: 'assets/images/images/HomePage/Achivements/IIITN2022.JPG',
+        featured: false,
+        award: '1st Place',
+        category: 'Competition'
+    }
+];
+
+// ====== ACHIEVEMENTS (PREMIUM) INTERACTIONS ======
+function initializeAchievements() {
+    const hallSection = document.querySelector('.achievements-hall');
+    if (!hallSection) return;
+
+    // Render stats
+    renderAchievementStats();
+
+    // Render featured achievement (first with featured: true)
+    renderFeaturedAchievement();
+
+    // Render masonry grid with all achievements
+    renderAchievementsMasonry();
+
+    // Setup modal handlers
+    setupAchievementModalHandlers();
+}
+
+function renderAchievementStats() {
+    const statsContainer = document.querySelector('.hall-stats');
+    if (!statsContainer || !ACHIEVEMENTS_DATA.length) return;
+    // Use fixed stats provided in project brief
+    const totals = [
+        { count: 12, label: 'National Championships' },
+        { count: 18, label: 'Robots Built' },
+        { count: 4, label: 'International Awards' },
+        { count: 18, label: 'Team Members' }
     ];
 
-    const cellSize = size / cells.length;
-    const rects = [];
+    statsContainer.innerHTML = totals.map(s => `
+        <div class="stat-panel">
+            <div class="stat-number" data-count="${s.count}">0</div>
+            <div class="stat-text">${s.label}</div>
+            <div class="stat-glow"></div>
+        </div>
+    `).join('');
 
-    cells.forEach((row, y) => {
-        row.forEach((cell, x) => {
-            if (cell) {
-                rects.push(`<rect x="${x * cellSize}" y="${y * cellSize}" width="${cellSize}" height="${cellSize}" rx="2" />`);
-            }
+    // Animate when stats come into view
+    const statObserver = new IntersectionObserver((entries, obs) => {
+        entries.forEach(entry => {
+            if (!entry.isIntersecting) return;
+            entry.target.querySelectorAll('.stat-number').forEach(num => {
+                const target = parseInt(num.dataset.count, 10) || 0;
+                animateCounter(num, target);
+            });
+            obs.disconnect();
+        });
+    }, { threshold: 0.4 });
+
+    statObserver.observe(statsContainer);
+}
+
+function animateCounter(element, target) {
+    let current = 0;
+    const step = Math.ceil(target / 30);
+    const interval = setInterval(() => {
+        current += step;
+        if (current >= target) {
+            element.textContent = target;
+            clearInterval(interval);
+        } else {
+            element.textContent = current;
+        }
+    }, 20);
+}
+
+function renderFeaturedAchievement() {
+    const featuredContainer = document.querySelector('.featured-achievement');
+    if (!featuredContainer || !ACHIEVEMENTS_DATA.length) return;
+
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    // Show the featured story first, then the remaining achievements by recency.
+    const slides = ACHIEVEMENTS_DATA
+        .slice()
+        .sort((a, b) => Number(Boolean(b.featured)) - Number(Boolean(a.featured)) || String(b.date).localeCompare(String(a.date)));
+
+    featuredContainer.innerHTML = `
+        <div class="featured-carousel">
+            <div class="featured-shell-label">
+                <span>Achievement Spotlight</span>
+                <span class="featured-counter" aria-live="polite">01 / ${String(slides.length).padStart(2, '0')}</span>
+            </div>
+            <div class="featured-slides">
+                ${slides.map(s => `
+                    <div class="featured-slide" data-id="${s.id}">
+                        <div class="featured-image"><img src="${s.image}" alt="${s.title}" loading="lazy"></div>
+                        <div class="featured-content">
+                            <div class="featured-badge">${s.award || 'HIGHLIGHT'}</div>
+                            <h3>${s.title}</h3>
+                            <p class="event">${s.event}</p>
+                            <p class="description">${s.achievement}</p>
+                            <p class="meta">${s.dateDisplay}</p>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+            <div class="featured-controls">
+                <button class="feat-prev" aria-label="Previous">‹</button>
+                <div class="feat-indicators"></div>
+                <button class="feat-next" aria-label="Next">›</button>
+            </div>
+            <div class="featured-progress" aria-hidden="true"><span></span></div>
+        </div>
+    `;
+
+    // Carousel behavior
+    const carousel = featuredContainer.querySelector('.featured-carousel');
+    const slideEls = Array.from(featuredContainer.querySelectorAll('.featured-slide'));
+    const prevBtn = featuredContainer.querySelector('.feat-prev');
+    const nextBtn = featuredContainer.querySelector('.feat-next');
+    const indicatorsRoot = featuredContainer.querySelector('.feat-indicators');
+    const counter = featuredContainer.querySelector('.featured-counter');
+    const progress = featuredContainer.querySelector('.featured-progress span');
+    let current = 0, autoTimer = null, isHover = false;
+
+    function showSlide(i) {
+        slideEls.forEach((el, idx) => {
+            el.style.opacity = idx === i ? '1' : '0';
+            el.style.pointerEvents = idx === i ? 'auto' : 'none';
+            el.style.transform = idx === i ? 'translateX(0) scale(1)' : 'translateX(2.5%) scale(0.985)';
+        });
+        current = i;
+        updateIndicators();
+        if (counter) counter.textContent = `${String(i + 1).padStart(2, '0')} / ${String(slideEls.length).padStart(2, '0')}`;
+        if (progress) progress.style.transform = `scaleX(${slideEls.length > 1 ? (i + 1) / slideEls.length : 1})`;
+    }
+
+    function nextSlide() { showSlide((current + 1) % slideEls.length); }
+    function prevSlide() { showSlide((current - 1 + slideEls.length) % slideEls.length); }
+
+    function startAuto() {
+        stopAuto();
+        if (reducedMotion || slideEls.length < 2) return;
+        autoTimer = setInterval(() => { if (!isHover) nextSlide(); }, 4500);
+    }
+    function stopAuto() { if (autoTimer) clearInterval(autoTimer); autoTimer = null; }
+
+    // Build indicators
+    indicatorsRoot.setAttribute('role', 'tablist');
+    indicatorsRoot.innerHTML = slideEls.map((_, idx) => `<button data-index="${idx}" class="${idx===0?'active':''}" aria-label="Go to slide ${idx+1}" aria-pressed="${idx===0 ? 'true' : 'false'}"></button>`).join('');
+    indicatorsRoot.querySelectorAll('button').forEach(b => b.addEventListener('click', () => showSlide(parseInt(b.dataset.index,10))));
+
+    if (nextBtn) nextBtn.addEventListener('click', () => { nextSlide(); startAuto(); });
+    if (prevBtn) prevBtn.addEventListener('click', () => { prevSlide(); startAuto(); });
+
+    carousel.addEventListener('mouseenter', () => { isHover = true; });
+    carousel.addEventListener('mouseleave', () => { isHover = false; });
+    carousel.addEventListener('focusin', () => { isHover = true; });
+    carousel.addEventListener('focusout', () => { isHover = false; });
+
+    // Swipe support
+    let startX = 0; let isDown = false;
+    carousel.addEventListener('touchstart', (e) => { startX = e.touches[0].clientX; isDown = true; stopAuto(); });
+    carousel.addEventListener('touchend', (e) => { if (!isDown) return; isDown = false; const dx = startX - e.changedTouches[0].clientX; if (dx > 40) nextSlide(); else if (dx < -40) prevSlide(); startAuto(); });
+    carousel.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowLeft') { e.preventDefault(); prevSlide(); startAuto(); }
+        if (e.key === 'ArrowRight') { e.preventDefault(); nextSlide(); startAuto(); }
+    });
+
+    function updateIndicators() {
+        indicatorsRoot.querySelectorAll('button').forEach((b, idx) => {
+            const active = idx === current;
+            b.classList.toggle('active', active);
+            b.setAttribute('aria-pressed', active ? 'true' : 'false');
+        });
+    }
+
+    // Initialize styles for fade
+    slideEls.forEach((el, idx) => { el.style.position = 'absolute'; el.style.inset = 0; el.style.transition = 'opacity 900ms cubic-bezier(.2,.9,.2,1), transform 900ms cubic-bezier(.2,.9,.2,1)'; el.style.opacity = idx === 0 ? '1' : '0'; el.style.transform = idx === 0 ? 'translateX(0) scale(1)' : 'translateX(2.5%) scale(0.985)'; });
+    featuredContainer.querySelector('.featured-slides').style.position = 'relative';
+    featuredContainer.querySelector('.featured-slides').style.height = '420px';
+    carousel.setAttribute('tabindex', '0');
+
+    // Click to open modal
+    slideEls.forEach(el => el.addEventListener('click', () => openAchievementFullscreen(el.dataset.id)));
+
+    showSlide(0);
+    startAuto();
+}
+
+function renderAchievementsMasonry() {
+    const masonryContainer = document.querySelector('.achievements-masonry');
+    if (!masonryContainer) return;
+
+    masonryContainer.innerHTML = ACHIEVEMENTS_DATA
+        .map((ach, idx) => `
+            <div class="achievement-item" data-achievement-id="${ach.id}">
+                <div class="achievement-image">
+                    <img src="${ach.image}" alt="${ach.title}" loading="lazy">
+                </div>
+                <div class="achievement-body">
+                    <div class="achievement-award">${ach.category || 'ACHIEVEMENT'}</div>
+                    <h4>${ach.title}</h4>
+                    <p class="achievement-date">${ach.dateDisplay}</p>
+                    <p class="achievement-content">${ach.achievement}</p>
+                </div>
+            </div>
+        `)
+        .join('');
+
+    // Add click handlers and reveal animations
+    const cards = Array.from(document.querySelectorAll('.achievement-item'));
+    cards.forEach(card => {
+        card.addEventListener('click', () => {
+            const achId = card.dataset.achievementId;
+            openAchievementFullscreen(achId);
         });
     });
 
-    const svg = `
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${size} ${size}" width="${size}" height="${size}">
-            <rect width="100%" height="100%" rx="24" fill="#ffffff" />
-            <g fill="#0a0e27">${rects.join('')}</g>
-            <rect x="18" y="18" width="52" height="52" rx="10" fill="none" stroke="#0a0e27" stroke-width="12" />
-            <rect x="150" y="18" width="52" height="52" rx="10" fill="none" stroke="#0a0e27" stroke-width="12" />
-            <rect x="18" y="150" width="52" height="52" rx="10" fill="none" stroke="#0a0e27" stroke-width="12" />
-            <text x="50%" y="94%" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#0a0e27">${text}</text>
-        </svg>
-    `;
+    // Reveal items when they enter viewport (staggered)
+    const revealObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('revealed');
+                revealObserver.unobserve(entry.target);
+            }
+        });
+    }, { threshold: 0.18 });
 
-    return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
+    cards.forEach(c => revealObserver.observe(c));
+
+    // Make horizontal rail draggable on desktop (mouse drag + touch)
+    let isDown = false, startX = 0, scrollStart = 0;
+    masonryContainer.addEventListener('mousedown', (e) => {
+        isDown = true; masonryContainer.classList.add('dragging'); startX = e.pageX - masonryContainer.offsetLeft; scrollStart = masonryContainer.scrollLeft;
+    });
+    masonryContainer.addEventListener('mouseleave', () => { isDown = false; masonryContainer.classList.remove('dragging'); });
+    masonryContainer.addEventListener('mouseup', () => { isDown = false; masonryContainer.classList.remove('dragging'); });
+    masonryContainer.addEventListener('mousemove', (e) => {
+        if (!isDown) return; e.preventDefault(); const x = e.pageX - masonryContainer.offsetLeft; const walk = (x - startX) * 1.3; masonryContainer.scrollLeft = scrollStart - walk;
+    });
+    // touch support
+    masonryContainer.addEventListener('touchstart', (e) => { startX = e.touches[0].pageX - masonryContainer.offsetLeft; scrollStart = masonryContainer.scrollLeft; });
+    masonryContainer.addEventListener('touchmove', (e) => { const x = e.touches[0].pageX - masonryContainer.offsetLeft; const walk = (x - startX) * 1.2; masonryContainer.scrollLeft = scrollStart - walk; });
+}
+
+function openAchievementFullscreen(achievementId) {
+    const ach = ACHIEVEMENTS_DATA.find(a => a.id === achievementId);
+    if (!ach) return;
+
+    const modal = document.querySelector('.achievement-fullscreen');
+    if (!modal) return;
+
+    // Populate modal
+    const mediaImg = modal.querySelector('.fullscreen-media img');
+    const detailsTitle = modal.querySelector('.fullscreen-details h2');
+    const detailsEvent = modal.querySelector('.detail-event');
+    const detailsDesc = modal.querySelector('.detail-description');
+    const detailsMeta = modal.querySelector('.detail-meta');
+
+    if (mediaImg) mediaImg.src = ach.image;
+    if (detailsTitle) detailsTitle.textContent = ach.title;
+    if (detailsEvent) detailsEvent.textContent = ach.event;
+    if (detailsDesc) detailsDesc.textContent = ach.achievement;
+    if (detailsMeta) {
+        detailsMeta.innerHTML = `
+            <div class="meta-item">
+                <span class="meta-label">DATE</span>
+                <span>${ach.dateDisplay}</span>
+            </div>
+            <div class="meta-item">
+                <span class="meta-label">AWARD</span>
+                <span>${ach.award || ach.category || 'Achievement'}</span>
+            </div>
+        `;
+    }
+
+    // Show modal
+    modal.hidden = false;
+    modal.setAttribute('aria-hidden', 'false');
+    document.body.classList.add('achievement-fullscreen-open');
+}
+
+function closeAchievementFullscreen() {
+    const modal = document.querySelector('.achievement-fullscreen');
+    if (modal && !modal.hidden) {
+        modal.hidden = true;
+        modal.setAttribute('aria-hidden', 'true');
+        document.body.classList.remove('achievement-fullscreen-open');
+    }
+}
+
+function setupAchievementModalHandlers() {
+    const modal = document.querySelector('.achievement-fullscreen');
+    if (!modal) return;
+
+    const closeBtn = modal.querySelector('.fullscreen-close');
+    const backdrop = modal.querySelector('.fullscreen-backdrop');
+
+    // Close button
+    if (closeBtn) {
+        closeBtn.addEventListener('click', closeAchievementFullscreen);
+    }
+
+    // Backdrop click
+    if (backdrop) {
+        backdrop.addEventListener('click', closeAchievementFullscreen);
+    }
+
+    // ESC key
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && !modal.hidden) {
+            closeAchievementFullscreen();
+        }
+    });
+}
+
+// ====== TEAM SHOWCASE (PREMIUM) ======
+const TEAM_DATA = [
+    {
+        key: 'mentor',
+        title: 'Mentor',
+        subtitle: 'Strategic direction',
+        spotlight: true,
+        members: [
+            {
+                name: 'Ashutosh Maske',
+                role: 'Robotics Mentor',
+                image: 'assets/images/images/Team/Mentor/Ashutosh.jpg',
+                bio: 'Guides the team through technical direction and mentorship.',
+                focus: 'center 15%'
+            }
+        ]
+    },
+    {
+        key: 'designing',
+        title: 'Designing Team',
+        subtitle: 'Industrial design and CAD',
+        members: [
+            { name: 'Pranay Gourkar', role: 'Web Developer & Designer', image: 'assets/images/images/Team/Designing/Pranay_Gourkar.jpg', focus: 'center 16%' },
+            { name: 'Arnav Borikar', role: 'CAD Designer', image: 'assets/images/images/Team/Designing/Arnav.jpg', focus: 'center 20%' },
+            { name: 'Harshit Pahune', role: 'CAD Designer', image: 'assets/images/images/Team/Designing/Harshit.jpeg', focus: 'center 18%' },
+            { name: 'Mayur Dhomne', role: 'RC Boats Designer', image: 'assets/images/images/Team/Designing/Mayur_Dhomne.jpg', focus: 'center 18%' }
+        ]
+    },
+    {
+        key: 'technical',
+        title: 'Technical Team',
+        subtitle: 'Build, wiring, and systems',
+        members: [
+            { name: 'Viraj Gaherwar', role: 'Technical Crew', image: 'assets/images/images/Team/Technical/Viraj_Gaherwar.jpg', focus: 'center 16%' },
+            { name: 'Nishant Mujaria', role: 'Technical Crew', image: 'assets/images/images/Team/Technical/Nishant_Mujaria.jpg', focus: 'center 15%' },
+            { name: 'Palak Khonde', role: 'Technical Crew', image: 'assets/images/images/Team/Technical/Palak_Khonde.jpg', focus: 'center 16%' },
+            { name: 'Jay Moundekar', role: 'Technical Crew', image: 'assets/images/images/Team/Technical/Jay_Moundekar.jpg', focus: 'center 16%' }
+        ]
+    },
+    {
+        key: 'fabrication',
+        title: 'Fabrication Team',
+        subtitle: 'Structure and mechanical execution',
+        members: [
+            { name: 'Kaushal Bodakhe', role: 'Structural Fabricator', image: 'assets/images/images/Team/fabricator/Kaushal.jpg', focus: 'center 18%' },
+            { name: 'Utkarsh Dhore', role: 'Structural Fabricator', image: 'assets/images/images/Team/fabricator/Utkarsh_Dhore.jpg', focus: 'center 18%' },
+            { name: 'Joel Jacob Varghese', role: 'Structural Fabricator', image: 'assets/images/images/Team/fabricator/Joel.jpg', focus: 'center 18%' },
+            { name: 'Aryan Mahule', role: 'Structural Fabricator', image: 'assets/images/images/Team/fabricator/Aryan.jpg', focus: 'center 18%' }
+        ]
+    },
+    {
+        key: 'management',
+        title: 'Management Team',
+        subtitle: 'Operations and finance',
+        members: [
+            { name: 'Devanshu Ekhar', role: 'Finance Management', image: 'assets/images/images/Team/Management/Devanshu_Ekhar.jpg', focus: 'center 18%' },
+            { name: 'Hannah Elsa Abraham', role: 'Team Management', image: 'assets/images/images/Team/Management/Hannah.jpg', focus: 'center 18%' }
+        ]
+    },
+    {
+        key: 'media',
+        title: 'Media Team',
+        subtitle: 'Storytelling and content',
+        members: [
+            { name: 'Om Gawande', role: 'Media Crew', image: 'assets/images/images/Team/Media/Om.jpg', focus: 'center 18%' },
+            { name: 'Dhananjay Landge', role: 'Media Crew', image: 'assets/images/images/Team/Media/Dhananjay_Landge.jpg', focus: 'center 18%' },
+            { name: 'Krishna Khodke', role: 'Media Crew', image: 'assets/images/images/Team/Media/Krishna.jpg', focus: 'center 18%' }
+        ]
+    },
+    {
+        key: 'maintenance',
+        title: 'Maintenance Team',
+        subtitle: 'Continuity and upkeep',
+        members: [
+            { name: 'Lanngam Kabui', role: 'Maintenance Crew', image: 'assets/images/images/Team/Maintenance/Lanngam.jpg', focus: 'center 18%' },
+            { name: 'Anwesh Sonkusare', role: 'Maintenance Crew', image: 'assets/images/images/Team/Maintenance/Answesh_Sonkusare.jpg', focus: 'center 18%' },
+            { name: 'Manasvi Wagh', role: 'Maintenance Crew', image: 'assets/images/images/Team/Maintenance/Manaswi.jpg', focus: 'center 18%' },
+            { name: 'Jay Aaglave', role: 'Maintenance Crew', image: 'assets/images/images/Team/Maintenance/Jay_Aaglave.jpg', focus: 'center 18%' }
+        ]
+    }
+];
+
+function initializeTeamShowcase() {
+    const teamSection = document.querySelector('.team-showcase');
+    if (!teamSection) return;
+
+    renderTeamSpotlight();
+    renderTeamMetrics();
+    renderTeamFilters();
+    renderTeamSections();
+    setupTeamFilterInteractions();
+    setupTeamCursorGlow();
+}
+
+function renderTeamMetrics() {
+    const metricsContainer = document.getElementById('teamMetrics');
+    if (!metricsContainer) return;
+
+    const groups = TEAM_DATA.filter(group => !group.spotlight);
+    const totalMembers = groups.reduce((count, group) => count + group.members.length, 0);
+
+    metricsContainer.innerHTML = [
+        { value: groups.length, label: 'Disciplines', icon: 'fa-layer-group' },
+        { value: totalMembers, label: 'Team Members', icon: 'fa-users' },
+        { value: 1, label: 'Mentor', icon: 'fa-satellite-dish' }
+    ].map(metric => `
+        <div class="team-metric">
+            <span class="team-metric-icon" aria-hidden="true"><i class="fas ${metric.icon}"></i></span>
+            <strong>${metric.value}</strong>
+            <span>${metric.label}</span>
+        </div>
+    `).join('');
+}
+
+function renderTeamSpotlight() {
+    const spotlightContainer = document.getElementById('teamSpotlight');
+    if (!spotlightContainer) return;
+
+    const mentorGroup = TEAM_DATA.find(group => group.spotlight);
+    const mentor = mentorGroup && mentorGroup.members[0];
+    if (!mentor) return;
+
+    spotlightContainer.innerHTML = `
+        <article class="mentor-spotlight-card" data-reveal>
+            <div class="mentor-spotlight-visual">
+                <div class="mentor-portrait-frame">
+                    <img loading="lazy" src="${mentor.image}" alt="${mentor.name}" style="object-position:${mentor.focus || 'center 18%'};">
+                </div>
+            </div>
+            <div class="mentor-spotlight-content">
+                <p class="mentor-kicker">Technical Guidance</p>
+                <h3>${mentor.name}</h3>
+                <p class="mentor-role">${mentor.role}</p>
+                <p class="mentor-bio">${mentor.bio}</p>
+                <div class="team-spotlight-metrics" id="teamMetrics"></div>
+                <blockquote class="mentor-quote">
+                    Precision, mentorship, and disciplined execution are what turn a team into a robotics organization.
+                </blockquote>
+            </div>
+        </article>
+    `;
+}
+
+function renderTeamFilters() {
+    const filtersContainer = document.getElementById('teamFilters');
+    if (!filtersContainer) return;
+
+    const categories = [{ label: 'All', key: 'all' }, ...TEAM_DATA.filter(group => !group.spotlight).map(group => ({ label: group.title, key: group.key }))];
+    filtersContainer.innerHTML = categories.map((category, index) => `
+        <button type="button" class="team-filter-chip${index === 0 ? ' active' : ''}" data-team-filter="${category.key}">${category.label}</button>
+    `).join('');
+}
+
+function renderTeamSections() {
+    const sectionsContainer = document.getElementById('teamSections');
+    if (!sectionsContainer) return;
+
+    sectionsContainer.innerHTML = TEAM_DATA
+        .filter(group => !group.spotlight)
+        .map((group, index) => `
+            <section class="team-category-panel" id="team-${group.key}" data-team-group="${group.key}" data-team-title="${group.title}" data-reveal>
+                <div class="team-category-header">
+                    <div>
+                        <p class="team-category-kicker">${String(index + 1).padStart(2, '0')}</p>
+                        <h3>${group.title}</h3>
+                    </div>
+                    <div class="team-category-meta">
+                        <span>${group.subtitle}</span>
+                        <strong>${group.members.length} members</strong>
+                    </div>
+                </div>
+                <div class="team-category-divider" aria-hidden="true"></div>
+                <div class="team-person-grid">
+                    ${group.members.map(member => `
+                        <article class="team-person-card" data-reveal data-team-category="${group.title}">
+                            <div class="team-person-media">
+                                <img loading="lazy" src="${member.image}" alt="${member.name}" style="object-position:${member.focus || 'center 18%'};">
+                            </div>
+                            <div class="team-person-content">
+                                <span class="team-person-tag">${group.title}</span>
+                                <h4>${member.name}</h4>
+                                <p class="team-person-role">${member.role}</p>
+                            </div>
+                        </article>
+                    `).join('')}
+                </div>
+            </section>
+        `)
+        .join('');
+}
+
+function setupTeamFilterInteractions() {
+    const filtersContainer = document.getElementById('teamFilters');
+    const sections = Array.from(document.querySelectorAll('.team-category-panel'));
+    if (!filtersContainer || !sections.length) return;
+
+    filtersContainer.addEventListener('click', (event) => {
+        const button = event.target.closest('[data-team-filter]');
+        if (!button) return;
+
+        const filter = button.getAttribute('data-team-filter') || 'all';
+        filtersContainer.querySelectorAll('.team-filter-chip').forEach(chip => chip.classList.toggle('active', chip === button));
+
+        sections.forEach(section => {
+            const shouldShow = filter === 'all' || section.dataset.teamGroup === filter;
+            if (shouldShow) {
+                section.hidden = false;
+                section.style.display = '';
+                window.requestAnimationFrame(() => section.classList.add('is-visible'));
+            } else {
+                section.classList.remove('is-visible');
+                section.style.display = 'none';
+            }
+        });
+
+        if (filter !== 'all') {
+            const target = document.getElementById(`team-${filter}`);
+            if (target) {
+                target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        }
+    });
+}
+
+function setupTeamCursorGlow() {
+    const teamSection = document.querySelector('.team-showcase');
+    if (!teamSection || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+    teamSection.addEventListener('pointermove', (event) => {
+        const rect = teamSection.getBoundingClientRect();
+        const x = ((event.clientX - rect.left) / rect.width) * 100;
+        const y = ((event.clientY - rect.top) / rect.height) * 100;
+        teamSection.style.setProperty('--team-glow-x', `${x}%`);
+        teamSection.style.setProperty('--team-glow-y', `${y}%`);
+    });
+}
+
+// ====== COLLABORATION PORTAL ======
+function initializeCollaborationPortal() {
+    const collaborationSection = document.querySelector('.collaboration');
+    const form = document.getElementById('collaborationForm');
+    const status = document.getElementById('collaborationStatus');
+
+    if (!collaborationSection || !form || !status) return;
+
+    const focusableFields = Array.from(form.querySelectorAll('input, select, textarea'));
+    const requiredFields = focusableFields.filter((field) => field.hasAttribute('required'));
+
+    function setStatus(message, type = 'success') {
+        status.hidden = false;
+        status.className = `form-status ${type} is-visible`;
+        status.textContent = message;
+    }
+
+    function clearStatus() {
+        status.className = 'form-status';
+        status.hidden = true;
+        status.textContent = '';
+    }
+
+    function markFieldState(field, isValid) {
+        field.classList.toggle('is-invalid', !isValid);
+        field.classList.toggle('is-valid', isValid);
+    }
+
+    function validateField(field) {
+        const value = field.value.trim();
+        let valid = true;
+
+        if (field.required && !value) {
+            valid = false;
+        }
+
+        if (field.type === 'email' && value) {
+            valid = /^\S+@\S+\.\S+$/.test(value);
+        }
+
+        if (field.type === 'url' && value) {
+            try {
+                const parsed = new URL(value);
+                valid = ['http:', 'https:'].includes(parsed.protocol);
+            } catch (_) {
+                valid = false;
+            }
+        }
+
+        markFieldState(field, valid);
+        return valid;
+    }
+
+    function validateForm() {
+        const invalidFields = requiredFields.filter((field) => !validateField(field));
+        return invalidFields.length === 0;
+    }
+
+    focusableFields.forEach((field) => {
+        field.addEventListener('input', () => {
+            clearStatus();
+            validateField(field);
+        });
+
+        field.addEventListener('blur', () => validateField(field));
+    });
+
+    form.addEventListener('submit', (event) => {
+        event.preventDefault();
+
+        if (!validateForm()) {
+            setStatus('Please complete the required fields before starting collaboration.', 'error');
+            return;
+        }
+
+        setStatus('Welcome to the Texcelerators innovation ecosystem.', 'success');
+        collaborationSection.classList.add('is-submitted');
+        form.classList.add('is-submitted');
+        form.reset();
+
+        focusableFields.forEach((field) => {
+            field.classList.remove('is-valid', 'is-invalid');
+        });
+
+        window.clearTimeout(initializeCollaborationPortal._statusTimer);
+        initializeCollaborationPortal._statusTimer = window.setTimeout(() => {
+            collaborationSection.classList.remove('is-submitted');
+        }, 2400);
+    });
+}
+
+function setupPremiumRipples() {
+    const rippleTargets = '.hero-cta-primary, .hero-cta-secondary, .hero-slider-controls .btn, .collaboration-btn-primary, .collaboration-btn-secondary, .social-pill, .footer-mini-socials a';
+
+    document.addEventListener('click', (event) => {
+        const target = event.target.closest(rippleTargets);
+        if (!target) return;
+
+        const rect = target.getBoundingClientRect();
+        const ripple = document.createElement('span');
+        ripple.className = 'premium-ripple';
+
+        const size = Math.max(rect.width, rect.height) * 1.35;
+        const x = event.clientX - rect.left - size / 2;
+        const y = event.clientY - rect.top - size / 2;
+
+        ripple.style.width = `${size}px`;
+        ripple.style.height = `${size}px`;
+        ripple.style.left = `${x}px`;
+        ripple.style.top = `${y}px`;
+
+        target.appendChild(ripple);
+        window.setTimeout(() => ripple.remove(), 650);
+    });
+}
+
+// ====== ROBOTS CAROUSEL (AUTO-SLIDING) ======
+function initializeRobotsCarousel() {
+    const carouselWrapper = document.getElementById('robotsCarouselWrapper');
+    const carouselContainer = document.getElementById('robotsCarousel');
+    const prevBtn = document.getElementById('robotsCarouselPrev');
+    const nextBtn = document.getElementById('robotsCarouselNext');
+    const indicatorsContainer = document.getElementById('robotsCarouselIndicators');
+
+    if (!carouselContainer || !carouselWrapper) return;
+
+    let currentIndex = 0;
+    let autoPlayTimer = null;
+    let touchStartX = 0;
+    let isDragging = false;
+
+    const ROBOT_CAROUSEL_DATA = [
+        {
+            id: 'robosoccer',
+            name: 'RoboSoccer',
+            index: '01',
+            category: 'Competition Build',
+            description: 'High-performance soccer robot engineered with precision drive control and tactical maneuvering capabilities for competitive matches.',
+            technologies: ['Precision Drive Control', 'Tactical Maneuvering', 'Competition Matchplay'],
+            image: 'assets/images/images/HomePage/Robots/RoboSoccer.jpg'
+        },
+        {
+            id: 'robosumo',
+            name: 'RoboSumo',
+            index: '02',
+            category: 'Combat Platform',
+            description: 'Championship sumo robot combining robust mechanical design with intelligent combat strategies for competitive dominance.',
+            technologies: ['Robust Mechanical Design', 'Intelligent Combat Strategies', 'Competitive Dominance'],
+            image: 'assets/images/images/HomePage/Robots/RoboSumo.jpg'
+        },
+        {
+            id: 'roborace',
+            name: 'RoboRace',
+            index: '03',
+            category: 'Rescue Platform',
+            description: 'Compact search and rescue robot designed to navigate through debris with ease and speed.',
+            technologies: ['Search and Rescue', 'Debris Navigation', 'High Speed'],
+            image: 'assets/images/images/HomePage/Robots/Roborace.JPG'
+        },
+        {
+            id: 'rcboats',
+            name: 'RC Boats',
+            index: '04',
+            category: 'Inspection Concept',
+            description: 'Wall-climbing robot with biomimetic adhesion technology inspired by geckos for vertical infrastructure inspection.',
+            technologies: ['Biomimetic Adhesion', 'Vertical Inspection', 'Wall Climbing'],
+            image: 'assets/images/images/Robots/Story/Acrylic.png'
+        },
+        {
+            id: 'fpvdrone',
+            name: 'FPV Drone',
+            index: '05',
+            category: 'Aerial Platform',
+            description: 'Advanced aerial robotics platform built for precision navigation, real-time surveillance, and immersive first-person flight control.',
+            technologies: ['FPV', 'Precision Navigation', 'Real-time Surveillance', 'First-person Flight Control'],
+            image: 'assets/images/images/HomePage/Robots/Drone.jpg'
+        },
+        {
+            id: 'airavat',
+            name: 'Airavat',
+            index: '06',
+            category: 'Soccer Platform',
+            description: 'Premium competition soccer robot with AI-powered ball tracking and precision kicking mechanisms.',
+            technologies: ['AI Ball Tracking', 'Precision Kicking', 'Competition Soccer'],
+            image: 'assets/images/images/HomePage/Main SlideShow/BITSGATE2025.JPG'
+        }
+    ];
+
+    function buildCarousel() {
+        try {
+            carouselContainer.innerHTML = ROBOT_CAROUSEL_DATA.map((robot, idx) => `
+                <div class="robots-carousel-slide" data-index="${idx}" data-robot-id="${robot.id}">
+                    <article class="project-card robot-card" data-project="${robot.id}">
+                        <div class="robot-media">
+                            <div class="media-container robot-media-frame">
+                                <img loading="lazy" src="${robot.image}" alt="${robot.name}">
+                            </div>
+                            <div class="robot-image-glow" aria-hidden="true"></div>
+                        </div>
+                        <div class="robot-copy">
+                            <div class="robot-topline">
+                                <span class="robot-index">${robot.index}</span>
+                                <span class="robot-status">${robot.category}</span>
+                            </div>
+                            <h3>${robot.name}</h3>
+                            <p>${robot.description}</p>
+                            <div class="robot-tags" aria-label="${robot.name} technologies">
+                                ${robot.technologies.map((tag) => `<span class="tech-tag">${tag}</span>`).join('')}
+                            </div>
+                            <div class="robot-actions">
+                                <button class="btn robot-btn project-details" type="button">View Details</button>
+                            </div>
+                        </div>
+                    </article>
+                </div>
+            `).join('');
+
+            if (indicatorsContainer) {
+                indicatorsContainer.innerHTML = ROBOT_CAROUSEL_DATA.map((_, idx) => `
+                    <button type="button" class="robots-carousel-indicator${idx === 0 ? ' active' : ''}" data-index="${idx}" aria-label="Go to robot ${idx + 1}"></button>
+                `).join('');
+            }
+
+            attachEventListeners();
+        } catch (err) {
+            console.error('Error building robots carousel:', err);
+        }
+    }
+
+    function attachEventListeners() {
+        document.querySelectorAll('.robots-carousel-slide .project-details').forEach((btn) => {
+            btn.addEventListener('click', function() {
+                const card = this.closest('.robot-card');
+                if (card && window.openRobotDetail) {
+                    window.openRobotDetail(card);
+                }
+            });
+        });
+
+        document.querySelectorAll('.robots-carousel-indicator').forEach((btn) => {
+            btn.addEventListener('click', function() {
+                const idx = parseInt(this.dataset.index, 10);
+                goToSlide(idx);
+            });
+        });
+    }
+
+    function updateIndicators() {
+        document.querySelectorAll('.robots-carousel-indicator').forEach((btn, idx) => {
+            btn.classList.toggle('active', idx === currentIndex);
+        });
+    }
+
+    function goToSlide(index) {
+        currentIndex = (index + ROBOT_CAROUSEL_DATA.length) % ROBOT_CAROUSEL_DATA.length;
+        updateCarouselPosition();
+        updateIndicators();
+        resetAutoPlay();
+    }
+
+    function updateCarouselPosition() {
+        const slides = carouselContainer.querySelectorAll('.robots-carousel-slide');
+        if (!slides || slides.length === 0) return;
+        const gap = parseFloat(getComputedStyle(carouselContainer).gap) || 16;
+        const slideWidth = Math.round(slides[0].getBoundingClientRect().width + gap);
+        const left = Math.round(currentIndex * slideWidth);
+        try {
+            carouselContainer.scrollTo({ left, behavior: 'smooth' });
+        } catch (err) {
+            carouselContainer.scrollLeft = left;
+        }
+    }
+
+    function nextSlide() {
+        goToSlide(currentIndex + 1);
+    }
+
+    function prevSlide() {
+        goToSlide(currentIndex - 1);
+    }
+
+    function startAutoPlay() {
+        autoPlayTimer = setInterval(() => {
+            nextSlide();
+        }, 4800);
+    }
+
+    function stopAutoPlay() {
+        if (autoPlayTimer) {
+            clearInterval(autoPlayTimer);
+            autoPlayTimer = null;
+        }
+    }
+
+    function resetAutoPlay() {
+        stopAutoPlay();
+        startAutoPlay();
+    }
+
+    if (prevBtn) prevBtn.addEventListener('click', prevSlide);
+    if (nextBtn) nextBtn.addEventListener('click', nextSlide);
+
+    carouselWrapper.addEventListener('mouseenter', stopAutoPlay);
+    carouselWrapper.addEventListener('mouseleave', startAutoPlay);
+
+    carouselContainer.addEventListener('touchstart', (e) => {
+        touchStartX = e.touches[0].clientX;
+        isDragging = true;
+        stopAutoPlay();
+    });
+
+    carouselContainer.addEventListener('touchend', (e) => {
+        if (!isDragging) return;
+        isDragging = false;
+        const touchEndX = e.changedTouches[0].clientX;
+        const diff = touchStartX - touchEndX;
+
+        if (Math.abs(diff) > 50) {
+            if (diff > 0) {
+                nextSlide();
+            } else {
+                prevSlide();
+            }
+        }
+        startAutoPlay();
+    });
+
+    buildCarousel();
+    updateCarouselPosition();
+    startAutoPlay();
 }
 
 function renderDashboardApp() {
@@ -235,7 +1770,7 @@ function renderDashboardApp() {
             dashboardToast.className = 'toast dashboard-toast';
         }, 2400);
     }
-
+            const prevBtn = document.getElementById('robotsCarouselPrev'); 
     function skeletonRow(width = '100%') {
         return `<div class="skeleton-row"><span class="skeleton-line" style="width:${width}"></span></div>`;
     }

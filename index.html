@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Texcelerators — Robotics & AI Innovation Ecosystem</title>
+    <link rel="icon" href="assets/images/logo.png">
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
@@ -25,101 +26,135 @@
                 <span></span>
             </button>
             <ul class="nav-menu" id="navMenu">
-                <li><a href="#home" class="nav-link" data-section="home">Intelligence</a></li>
-                <li><a href="#about" class="nav-link" data-section="about">Ecosystem</a></li>
-                <li><a href="#projects" class="nav-link" data-section="projects">Innovation</a></li>
-                <li><a href="#achievements" class="nav-link" data-section="achievements">Milestones</a></li>
-                <li><a href="#gallery" class="nav-link" data-section="gallery">Showcase</a></li>
-                <li><a href="#team" class="nav-link" data-section="team">Architects</a></li>
-                <li><a href="#contact" class="nav-link" data-section="contact">Connect</a></li>
-                <li><a href="login.html" class="nav-link login-btn">Access Portal</a></li>
+                <li><a href="#home" class="nav-link" data-section="home">Home</a></li>
+                <li><a href="#achievements" class="nav-link" data-section="achievements">Achievements</a></li>
+                <li><a href="#team" class="nav-link" data-section="team">Team</a></li>
+                <li><a href="#projects" class="nav-link" data-section="projects">Robots</a></li>
+                <li><a href="#about" class="nav-link" data-section="about">About Us</a></li>
+                <li><a href="#contact" class="nav-link" data-section="contact">Contact</a></li>
+                <li><a href="login.html" class="nav-link login-btn">Join Us</a></li>
             </ul>
         </div>
         <div class="nav-glow"></div>
     </nav>
 
     <!-- HERO SECTION -->
-    <section class="hero" id="home">
-        <!-- Animated background elements -->
-        <div class="hero-bg-elements">
+    <section class="hero hero-cinematic" id="home">
+        <div class="hero-bg-elements" aria-hidden="true">
             <div class="glow-orb orb-1"></div>
             <div class="glow-orb orb-2"></div>
             <div class="glow-orb orb-3"></div>
-            <div class="grid-overlay"></div>
+            <div class="grid-overlay grid-overlay-a"></div>
+            <div class="grid-overlay grid-overlay-b"></div>
+            <div class="hero-wave hero-wave-a"></div>
+            <div class="hero-wave hero-wave-b"></div>
         </div>
 
-        <div class="hero-container">
-            <div class="hero-content" data-reveal>
-                <div class="hero-eyebrow">
-                    <span class="eyebrow-icon">⚡</span>
-                    <span>Next Generation Innovation Platform</span>
+        <div class="hero-watermark" aria-hidden="true"></div>
+
+        <div class="hero-container hero-shell">
+            <div class="hero-copy" data-reveal>
+                <div class="hero-kicker-row">
+                    <span class="hero-kicker">Texcelerators Alpha</span>
+                    <span class="hero-live-pill"><span class="hero-live-dot"></span>Innovation Ecosystem</span>
                 </div>
 
-                <h1 class="hero-title">
-                    <span class="title-line">Engineer the Future</span>
-                    <span class="title-line">of Robotics & AI</span>
-                </h1>
+                <h1 class="hero-title">Building the Future of Robotics</h1>
+                <p class="hero-subtitle">Where innovation meets engineering excellence, competition-grade builds, and a culture of precision that turns ideas into machines.</p>
 
-                <p class="hero-subtitle">
-                    Where elite innovators design cutting-edge robotics systems, push AI boundaries, and build 
-                    next-generation technologies. From autonomous systems to intelligent agents—we create the future.
-                </p>
+                <div class="hero-labels" aria-label="Hero highlights">
+                    <span>Competition Ready</span>
+                    <span>Research Driven</span>
+                    <span>Elite Build Culture</span>
+                </div>
 
                 <div class="hero-actions">
-                    <a href="login.html" class="btn btn-primary">
-                        <span>Enter Innovation Hub</span>
-                        <i class="fas fa-arrow-right"></i>
-                    </a>
-                    <a href="#projects" class="btn btn-secondary">
-                        <span>Explore Projects</span>
-                        <i class="fas fa-github"></i>
-                    </a>
+                    <a href="login.html" class="btn btn-primary hero-cta-primary"><span>Enter Innovation Hub</span><i class="fas fa-arrow-right"></i></a>
+                    <a href="#projects" class="btn btn-secondary hero-cta-secondary"><span>Explore Robots</span><i class="fas fa-robot"></i></a>
                 </div>
 
-                <div class="hero-metrics">
-                    <div class="metric-card">
-                        <div class="metric-number" data-count-to="250">250</div>
-                        <div class="metric-label">Innovators</div>
-                    </div>
-                    <div class="metric-card">
-                        <div class="metric-number" data-count-to="45">45</div>
-                        <div class="metric-label">Active Projects</div>
-                    </div>
-                    <div class="metric-card">
-                        <div class="metric-number" data-count-to="18">18</div>
-                        <div class="metric-label">Awards & Recognition</div>
-                    </div>
-                    <div class="metric-card">
-                        <div class="metric-number" data-count-to="95">95%</div>
-                        <div class="metric-label">Success Rate</div>
-                    </div>
-                </div>
-
-                <div class="hero-tech-stack">
-                    <span class="tech-badge">Robotics</span>
-                    <span class="tech-badge">AI/ML</span>
-                    <span class="tech-badge">IoT</span>
-                    <span class="tech-badge">Computer Vision</span>
-                    <span class="tech-badge">Autonomous Systems</span>
-                    <span class="tech-badge">cloud-first</span>
+                <div class="hero-metrics" data-hero-metrics>
+                    <article class="hero-metric">
+                        <span class="hero-metric-number" data-count-to="12">0</span>
+                        <span class="hero-metric-label">Championships Won</span>
+                    </article>
+                    <article class="hero-metric">
+                        <span class="hero-metric-number" data-count-to="18">0</span>
+                        <span class="hero-metric-label">Robots Built</span>
+                    </article>
+                    <article class="hero-metric">
+                        <span class="hero-metric-number" data-count-to="18">0</span>
+                        <span class="hero-metric-label">Team Members</span>
+                    </article>
+                    <article class="hero-metric">
+                        <span class="hero-metric-number" data-count-to="8">0</span>
+                        <span class="hero-metric-label">Competitions</span>
+                    </article>
                 </div>
             </div>
 
-            <div class="hero-visual" data-reveal>
-                <div class="hero-showcase">
-                    <div class="showcase-card">
-                        <div class="showcase-header">
-                            <span class="status-dot"></span>
-                            <span>System Dashboard</span>
+            <div class="hero-visual hero-visual-premium" data-reveal>
+                <div class="hero-logo-stage">
+                    <div class="hero-logo-rings" aria-hidden="true">
+                        <div class="logo-ring ring-outer"></div>
+                        <div class="logo-ring ring-inner"></div>
+                        <div class="logo-holo-sweep"></div>
+                        <div class="logo-container">
+                            <img src="assets/images/logo.png" alt="Texcelerators logo">
                         </div>
-                        <div class="showcase-grid">
-                            <div class="grid-item"></div>
-                            <div class="grid-item"></div>
-                            <div class="grid-item"></div>
-                            <div class="grid-item"></div>
+                        <canvas class="logo-particles" id="logoParticles" aria-hidden="true"></canvas>
+                    </div>
+                    <div class="hero-logo-caption">Cinematic robotics interface</div>
+                </div>
+
+                <div class="hero-media-stage">
+                    <div class="hero-stage-header">
+                        <span>Media Showcase</span>
+                        <span>Auto-sliding circuit</span>
+                    </div>
+
+                    <div class="hero-slides" data-reveal role="region" aria-label="Hero slides" tabindex="0">
+                        <div class="hero-slide" data-index="0">
+                            <div class="hero-card-tag">Competition Build</div>
+                            <div class="hero-card-copy">
+                                <p class="hero-card-kicker">Soldering | Build Lab</p>
+                                <h2>Robo engineering in motion</h2>
+                                <p>Precision fabrication, systems tuning, and robotics craftsmanship.</p>
+                            </div>
+                            <div class="hero-media media-container">
+                                <img loading="lazy" data-src="assets/images/images/HomePage/Main SlideShow/Soldering.jpg" src="assets/images/images/Nav-Side-Footer/placeholder.png" onerror="this.onerror=null;this.src='assets/images/images/Nav-Side-Footer/placeholder.png'" alt="Robo engineering in motion">
+                            </div>
                         </div>
-                        <div class="showcase-footer">
-                            Real-time platform analytics & innovation tracking
+
+                        <div class="hero-slide" data-index="1" aria-hidden="true">
+                            <div class="hero-card-tag">Teamwork</div>
+                            <div class="hero-card-copy">
+                                <p class="hero-card-kicker">BITSGATE 2025</p>
+                                <h2>Collaborative innovation</h2>
+                                <p>Shared strategy, technical depth, and the team that powers club execution.</p>
+                            </div>
+                            <div class="hero-media media-container">
+                                <img loading="lazy" data-src="assets/images/images/HomePage/Main SlideShow/BITSGATE2025.JPG" src="assets/images/images/Nav-Side-Footer/placeholder.png" onerror="this.onerror=null;this.src='assets/images/images/Nav-Side-Footer/placeholder.png'" alt="Collaborative innovation">
+                            </div>
+                        </div>
+
+                        <div class="hero-slide" data-index="2" aria-hidden="true">
+                            <div class="hero-card-tag">Championships</div>
+                            <div class="hero-card-copy">
+                                <p class="hero-card-kicker">IIT Bombay 2024</p>
+                                <h2>Winning on the national stage</h2>
+                                <p>Competition energy, bold engineering, and award-winning performance.</p>
+                            </div>
+                            <div class="hero-media media-container">
+                                <img loading="lazy" data-src="assets/images/images/HomePage/Main SlideShow/IITB2024.JPG" src="assets/images/images/Nav-Side-Footer/placeholder.png" onerror="this.onerror=null;this.src='assets/images/images/Nav-Side-Footer/placeholder.png'" alt="Winning on the national stage">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="hero-controls-container" aria-hidden="false">
+                        <div class="hero-slider-controls">
+                            <button class="hero-prev btn neon" aria-label="Previous Slide" aria-controls="hero-slides"><i class="fas fa-chevron-left"></i></button>
+                            <button class="hero-next btn neon" aria-label="Next Slide" aria-controls="hero-slides"><i class="fas fa-chevron-right"></i></button>
                         </div>
                     </div>
                 </div>
@@ -134,180 +169,447 @@
 
     <!-- ABOUT SECTION -->
     <section class="about" id="about">
-        <div class="container">
-            <h2>About Texcelerators</h2>
-            <div class="about-content">
-                <p>
-                    Texcelerators is a vibrant tech club dedicated to fostering innovation, collaboration, and 
-                    technical excellence. We bring together passionate individuals interested in robotics, 
-                    machine learning, and emerging technologies.
-                </p>
-                <p>
-                    Our mission is to provide a platform for students to learn, build, and innovate together. 
-                    Through hackathons, workshops, and collaborative projects, we aim to accelerate technology 
-                    adoption and create lasting impact in the tech community.
-                </p>
+        <div class="about-bg-grid"></div>
+        <div class="about-particle particle-1"></div>
+        <div class="about-particle particle-2"></div>
+        <div class="about-particle particle-3"></div>
+
+        <div class="about-shell container">
+            <div class="about-copy" data-reveal>
+                <div class="about-badge"><span class="badge-dot"></span><span>About Texcelerators</span></div>
+                <h2 class="about-title">Built for robotics, engineering, and competitive innovation.</h2>
+                <p class="about-subtitle">A student-led club shaping future-ready builders through hands-on design, fabrication, testing, and high-pressure competition.</p>
+                <p class="about-description">Texcelerators combines theory with practice to create advanced robotic systems, meaningful collaborations, and a culture of precision that pushes every project toward the next breakthrough.</p>
+                <a href="#projects" class="btn btn-primary about-cta"><span>Explore Club</span><i class="fas fa-arrow-right"></i></a>
+            </div>
+
+            <div class="about-features" data-reveal>
+                <article class="about-card feature-card card-1">
+                    <div class="feature-icon"><i class="fas fa-bolt"></i></div>
+                    <div>
+                        <h3>Innovation</h3>
+                        <p>Designing bold robotics solutions with fast experimentation, smarter engineering, and technical curiosity.</p>
+                    </div>
+                    <span class="feature-glow"></span>
+                </article>
+
+                <article class="about-card feature-card card-2">
+                    <div class="feature-icon"><i class="fas fa-network-wired"></i></div>
+                    <div>
+                        <h3>Collaboration</h3>
+                        <p>Working across design, fabrication, media, and technical teams to deliver precise outcomes together.</p>
+                    </div>
+                    <span class="feature-glow"></span>
+                </article>
+
+                <article class="about-card feature-card card-3">
+                    <div class="feature-icon"><i class="fas fa-trophy"></i></div>
+                    <div>
+                        <h3>Excellence</h3>
+                        <p>Maintaining a high standard across competition strategy, builds, documentation, and execution.</p>
+                    </div>
+                    <span class="feature-glow"></span>
+                </article>
             </div>
         </div>
     </section>
 
     <!-- PROJECTS SECTION -->
     <section class="projects" id="projects">
-        <div class="container">
-            <h2>Our Projects</h2>
-            <div class="projects-grid">
-                <div class="project-card">
-                    <div class="project-image" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);"></div>
-                    <h3>AI Chatbot System</h3>
-                    <p>A conversational AI built with modern NLP techniques for automated customer support.</p>
+        <div class="container robots-section-shell">
+            <div class="section-header robots-section-header" data-reveal>
+                <p class="section-badge robots-badge">Featured Robots</p>
+                <h2 class="robots-header-title">Our Robots</h2>
+                <p class="section-subtitle">A premium robotics showcase built from the club's most distinctive machines, competition builds, and engineering experiments.</p>
+            </div>
+
+            <div class="robots-carousel-wrapper" id="robotsCarouselWrapper">
+                <div class="robots-carousel-container" id="robotsCarousel">
+                    <!-- Carousel slides will be injected here by JavaScript -->
                 </div>
-                <div class="project-card">
-                    <div class="project-image" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);"></div>
-                    <h3>Mobile App Development</h3>
-                    <p>Cross-platform mobile applications designed with user-centric approach and agile methodology.</p>
-                </div>
-                <div class="project-card">
-                    <div class="project-image" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);"></div>
-                    <h3>IoT Smart Home</h3>
-                    <p>Connected devices for smart home automation using IoT protocols and cloud infrastructure.</p>
-                </div>
-                <div class="project-card">
-                    <div class="project-image" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);"></div>
-                    <h3>Web Platform</h3>
-                    <p>Full-stack web application with real-time collaboration features and modern UI/UX design.</p>
-                </div>
-                <div class="project-card">
-                    <div class="project-image" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);"></div>
-                    <h3>Data Analytics Pipeline</h3>
-                    <p>Scalable data processing pipeline for real-time analytics and visualization.</p>
-                </div>
-                <div class="project-card">
-                    <div class="project-image" style="background: linear-gradient(135deg, #30cfd0 0%, #330867 100%);"></div>
-                    <h3>Machine Learning Models</h3>
-                    <p>Deep learning models for image recognition, classification, and predictive analytics.</p>
-                </div>
+
+                <!-- Navigation Controls -->
+                <button class="robots-carousel-nav robots-carousel-nav-prev" id="robotsCarouselPrev" aria-label="Previous robot">
+                    <i class="fas fa-chevron-left"></i>
+                </button>
+                <button class="robots-carousel-nav robots-carousel-nav-next" id="robotsCarouselNext" aria-label="Next robot">
+                    <i class="fas fa-chevron-right"></i>
+                </button>
+
+                <!-- Carousel Indicators -->
+                <div class="robots-carousel-indicators" id="robotsCarouselIndicators" aria-label="Carousel indicators"></div>
+            </div>
+
+            <div class="robots-footer" data-reveal>
+                <a href="#robots-showcase" class="btn btn-primary robots-cta" id="robotsExploreAll">Explore All Robots</a>
             </div>
         </div>
     </section>
 
-    <!-- ACHIEVEMENTS SECTION -->
-    <section class="achievements" id="achievements">
-        <div class="container">
-            <h2>Our Achievements</h2>
-            <div class="stats-grid">
-                <div class="stat-card" data-reveal>
-                    <h3>50+</h3>
-                    <p>Hackathons Participated</p>
-                </div>
-                <div class="stat-card" data-reveal>
-                    <h3>250+</h3>
-                    <p>Active Members</p>
-                </div>
-                <div class="stat-card" data-reveal>
-                    <h3>30+</h3>
-                    <p>Projects Completed</p>
-                </div>
-                <div class="stat-card" data-reveal>
-                    <h3>15+</h3>
-                    <p>Awards Won</p>
-                </div>
+    <!-- ROBOTS SHOWCASE SECTION -->
+    <section class="robots-showcase" id="robots-showcase" hidden>
+        <div class="robots-showcase-bg" aria-hidden="true"></div>
+        <div class="container robots-showcase-shell">
+            <div class="section-header robots-showcase-header" data-reveal>
+                <p class="section-badge robots-badge">Full Robotics Exhibition</p>
+                <h2>Robotics Project Showcase</h2>
+                <p class="section-subtitle">Browse every robot from the current portfolio with category filters, search, and cinematic cards built only from the existing project data.</p>
             </div>
+
+            <div class="robots-showcase-toolbar" data-reveal>
+                <label class="robots-search" for="robotSearchInput">
+                    <span class="robots-search-icon"><i class="fas fa-search"></i></span>
+                    <input type="search" id="robotSearchInput" placeholder="Search robots, descriptions, or technologies" aria-label="Search robots">
+                </label>
+                <div class="robots-filter-set" id="robotsCategoryFilters" aria-label="Robot categories"></div>
+            </div>
+
+            <div class="robots-showcase-meta" data-reveal>
+                <span class="robots-result-count" id="robotsResultCount">0 robots</span>
+                <a href="#projects" class="robots-back-link">Back to overview</a>
+            </div>
+
+            <div class="robots-showcase-grid" id="robotsShowcaseGrid" role="list" aria-live="polite"></div>
         </div>
     </section>
 
-    <!-- GALLERY SECTION -->
-    <section class="gallery" id="gallery">
+    <!-- ACHIEVEMENTS SECTION (Cinematic Premium Showcase) -->
+    <section class="achievements-hall" id="achievements">
+        <div class="hall-watermark" aria-hidden="true"></div>
         <div class="container">
-            <h2>Gallery</h2>
-            <div class="gallery-grid">
-                <div class="gallery-item" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);"></div>
-                <div class="gallery-item" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);"></div>
-                <div class="gallery-item" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);"></div>
-                <div class="gallery-item" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);"></div>
-                <div class="gallery-item" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);"></div>
-                <div class="gallery-item" style="background: linear-gradient(135deg, #30cfd0 0%, #330867 100%);"></div>
-                <div class="gallery-item" style="background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);"></div>
-                <div class="gallery-item" style="background: linear-gradient(135deg, #ff9a56 0%, #ff6a88 100%);"></div>
+            <header class="hall-header" data-reveal>
+                <h2 class="hall-title">Our Achievements</h2>
+                <div class="title-underline" aria-hidden="true"></div>
+                <p class="hall-subtitle">A journey of innovation, robotics excellence, and competitive victories.</p>
+            </header>
+
+            <!-- PREMIUM STAT PANELS -->
+            <div class="hall-stats" data-reveal>
+                <div class="stat-panel">
+                    <div class="stat-number" data-count-to="12">12</div>
+                    <div class="stat-text">National Championships</div>
+                    <div class="stat-glow" aria-hidden="true"></div>
+                </div>
+                <div class="stat-panel">
+                    <div class="stat-number" data-count-to="18">18</div>
+                    <div class="stat-text">Robots Built</div>
+                    <div class="stat-glow" aria-hidden="true"></div>
+                </div>
+                <div class="stat-panel">
+                    <div class="stat-number" data-count-to="4">4</div>
+                    <div class="stat-text">International Awards</div>
+                    <div class="stat-glow" aria-hidden="true"></div>
+                </div>
+                <div class="stat-panel">
+                    <div class="stat-number" data-count-to="18">18</div>
+                    <div class="stat-text">Team Members</div>
+                    <div class="stat-glow" aria-hidden="true"></div>
+                </div>
             </div>
+
+            <!-- FEATURED HERO SHOWCASE -->
+            <div class="featured-achievement" id="featuredAch" data-reveal data-achievement-spotlight></div>
+
+            <!-- ACHIEVEMENT RAIL -->
+            <div class="hall-intro" data-reveal>
+                <h3>Journey Through Victory</h3>
+                <p>Our competitive timeline from 2022 to present</p>
+            </div>
+
+            <div class="achievements-masonry" id="achievementsMasonry" role="list"></div>
         </div>
     </section>
 
-    <!-- TEAM SECTION -->
-    <section class="team" id="team">
-        <div class="container">
-            <h2>Our Team</h2>
-            <div class="team-grid">
-                <div class="team-member">
-                    <div class="member-image" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);"></div>
-                    <h3>Alex Chen</h3>
-                    <p>Club President</p>
-                </div>
-                <div class="team-member">
-                    <div class="member-image" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);"></div>
-                    <h3>Sarah Johnson</h3>
-                    <p>Vice President</p>
-                </div>
-                <div class="team-member">
-                    <div class="member-image" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);"></div>
-                    <h3>Michael Patel</h3>
-                    <p>Technical Lead</p>
-                </div>
-                <div class="team-member">
-                    <div class="member-image" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);"></div>
-                    <h3>Emma Davis</h3>
-                    <p>Events Manager</p>
-                </div>
-                <div class="team-member">
-                    <div class="member-image" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);"></div>
-                    <h3>James Wilson</h3>
-                    <p>Sponsorship Lead</p>
-                </div>
-                <div class="team-member">
-                    <div class="member-image" style="background: linear-gradient(135deg, #30cfd0 0%, #330867 100%);"></div>
-                    <h3>Lisa Anderson</h3>
-                    <p>Communications</p>
-                </div>
+    <!-- ACHIEVEMENT DETAIL MODAL (Fullscreen) -->
+    <div class="achievement-fullscreen" id="achievementFullscreen" hidden aria-hidden="true" role="dialog" aria-modal="true">
+        <button class="fullscreen-close" type="button" data-close-fullscreen aria-label="Close details">
+            <i class="fas fa-times"></i>
+        </button>
+        <div class="fullscreen-backdrop" data-close-fullscreen></div>
+        <div class="fullscreen-content">
+            <div class="fullscreen-media">
+                <img id="fullscreenImage" src="" alt="Achievement details">
+                <div class="fullscreen-glow" aria-hidden="true"></div>
             </div>
-        </div>
-    </section>
-
-    <!-- CONTACT SECTION -->
-    <section class="contact" id="contact">
-        <div class="container">
-            <h2>Get In Touch</h2>
-            <div class="contact-content">
-                <div class="contact-info">
-                    <h3>Contact Information</h3>
-                    <p><strong>Email:</strong> <a href="mailto:hello@texcelerators.com">hello@texcelerators.com</a></p>
-                    <p><strong>Location:</strong> Your University, City</p>
-                </div>
-                <div class="social-links">
-                    <h3>Follow Us</h3>
-                    <div class="socials">
-                        <a href="#" class="social-icon" title="LinkedIn">
-                            <i class="fab fa-linkedin"></i>
-                        </a>
-                        <a href="#" class="social-icon" title="GitHub">
-                            <i class="fab fa-github"></i>
-                        </a>
-                        <a href="#" class="social-icon" title="Twitter">
-                            <i class="fab fa-twitter"></i>
-                        </a>
-                        <a href="#" class="social-icon" title="Instagram">
-                            <i class="fab fa-instagram"></i>
-                        </a>
+            <div class="fullscreen-details">
+                <div class="detail-award" id="detailAward"></div>
+                <h2 id="detailTitle"></h2>
+                <p class="detail-event" id="detailEvent"></p>
+                <p class="detail-description" id="detailDescription"></p>
+                <div class="detail-meta">
+                    <div class="meta-item">
+                        <span class="meta-label">Date</span>
+                        <time id="detailDate"></time>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">Category</span>
+                        <span id="detailCategory"></span>
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
+
+
+
+    <!-- TEAM SECTION -->
+    <section class="team team-showcase" id="team">
+        <div class="team-watermark" aria-hidden="true"></div>
+        <div class="team-orbit team-orbit-a" aria-hidden="true"></div>
+        <div class="team-orbit team-orbit-b" aria-hidden="true"></div>
+        <div class="container">
+            <header class="team-header" data-reveal>
+                <p class="team-kicker">People, precision, and performance</p>
+                <h2>Meet Our Team</h2>
+                <p class="team-lead">A futuristic robotics showcase for the mentor, designers, engineers, fabricators, managers, media creators, and maintenance crew that power the club.</p>
+            </header>
+
+            <div class="team-spotlight-shell" data-reveal>
+                <div class="team-spotlight-visual" id="teamSpotlight"></div>
+            </div>
+
+            <div class="team-toolbar" data-reveal>
+                <div class="team-toolbar-copy">
+                    <span class="team-chip team-chip-soft">Team Categories</span>
+                    <p>Filter by discipline or scroll through the sections below.</p>
+                </div>
+                <div class="team-filters" id="teamFilters" aria-label="Team category filters"></div>
+            </div>
+
+            <div class="team-sections" id="teamSections"></div>
+        </div>
+    </section>
+
+    <!-- COLLABORATION SECTION -->
+    <section class="collaboration" id="contact">
+        <div class="collaboration-watermark" aria-hidden="true"></div>
+        <div class="collaboration-grid container">
+            <div class="collaboration-copy" data-reveal>
+                <p class="collaboration-kicker">Innovation Partnerships</p>
+                <h2>Collaborate with Texcelerators on robotics, research, and innovation.</h2>
+                <p class="collaboration-lead">Collaborate with Texcelerators on robotics competitions, technical projects, workshops, sponsorships, research initiatives, and innovation-driven engineering experiences.</p>
+
+                <div class="benefit-grid">
+                    <article class="benefit-card" data-reveal>
+                        <i class="fas fa-trophy"></i>
+                        <h3>Robotics Competitions</h3>
+                        <p>Join a team that builds for high-pressure events and engineering challenges.</p>
+                    </article>
+                    <article class="benefit-card" data-reveal>
+                        <i class="fas fa-gears"></i>
+                        <h3>Real Engineering Projects</h3>
+                        <p>Contribute to practical builds, testing, fabrication, and systems development.</p>
+                    </article>
+                    <article class="benefit-card" data-reveal>
+                        <i class="fas fa-layer-group"></i>
+                        <h3>Team Collaboration</h3>
+                        <p>Work across design, technical, media, management, and mentorship tracks.</p>
+                    </article>
+                    <article class="benefit-card" data-reveal>
+                        <i class="fas fa-microscope"></i>
+                        <h3>Innovation & Research</h3>
+                        <p>Explore experiments, prototypes, and forward-thinking engineering ideas.</p>
+                    </article>
+                    <article class="benefit-card" data-reveal>
+                        <i class="fas fa-satellite-dish"></i>
+                        <h3>Technical Networking</h3>
+                        <p>Connect with students, builders, and creators shaping robotics culture.</p>
+                    </article>
+                    <article class="benefit-card" data-reveal>
+                        <i class="fas fa-flag-checkered"></i>
+                        <h3>National Level Exposure</h3>
+                        <p>Participate in showcases and competitions with strong engineering visibility.</p>
+                    </article>
+                </div>
+            </div>
+
+            <div class="collaboration-panel" data-reveal>
+                <div class="collaboration-panel-top">
+                    <div class="collaboration-panel-logo-shell" aria-hidden="true">
+                        <div class="collaboration-panel-orb orb-a"></div>
+                        <div class="collaboration-panel-orb orb-b"></div>
+                        <div class="collaboration-panel-grid"></div>
+                        <img src="assets/images/logo.png" alt="" class="collaboration-panel-logo">
+                    </div>
+                    <div class="collaboration-panel-copy">
+                        <p class="collaboration-panel-kicker">Recruitment & Partnerships</p>
+                        <h3>Join the innovation ecosystem.</h3>
+                        <p>Tell us how you want to contribute and we’ll take the conversation forward.</p>
+                    </div>
+                </div>
+
+                <form class="collaboration-form" id="collaborationForm" novalidate>
+                    <div class="field-grid">
+                        <label class="field">
+                            <span>Full Name</span>
+                            <input type="text" name="fullName" autocomplete="name" placeholder="Enter your full name" required>
+                        </label>
+                        <label class="field">
+                            <span>Email Address</span>
+                            <input type="email" name="email" autocomplete="email" placeholder="name@example.com" required>
+                        </label>
+                        <label class="field">
+                            <span>Phone Number</span>
+                            <input type="tel" name="phone" autocomplete="tel" placeholder="+91 98765 43210" required>
+                        </label>
+                        <label class="field">
+                            <span>College / Organization</span>
+                            <input type="text" name="organization" placeholder="University, startup, lab, or company" required>
+                        </label>
+                        <label class="field field-full">
+                            <span>Role Interested In</span>
+                            <select name="role" required>
+                                <option value="">Select a role</option>
+                                <option>Technical Team</option>
+                                <option>Designing Team</option>
+                                <option>Fabrication Team</option>
+                                <option>Media Team</option>
+                                <option>Management Team</option>
+                                <option>Sponsorship / Partnership</option>
+                                <option>Volunteer</option>
+                                <option>Event Collaboration</option>
+                                <option>Other</option>
+                            </select>
+                        </label>
+                        <label class="field field-full">
+                            <span>Skills / Contribution Area</span>
+                            <textarea name="skills" rows="3" placeholder="Robotics, CAD, Programming, Fabrication, Media, Electronics, AI/ML, Event Management" required></textarea>
+                        </label>
+                        <label class="field field-full">
+                            <span>Why do you want to collaborate with Texcelerators?</span>
+                            <textarea name="why" rows="4" placeholder="Tell us about your goals, interests, and what you want to build with the team." required></textarea>
+                        </label>
+                        <label class="field field-full">
+                            <span>Upload Portfolio / Resume <em>(optional)</em></span>
+                            <input type="file" name="portfolio" accept=".pdf,.doc,.docx,.png,.jpg,.jpeg">
+                        </label>
+                        <label class="field field-full">
+                            <span>Social Media / LinkedIn Link <em>(optional)</em></span>
+                            <input type="url" name="socialLink" placeholder="https://www.linkedin.com/in/your-profile">
+                        </label>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn collaboration-btn-primary">
+                            <span>Start Collaboration</span>
+                            <i class="fas fa-arrow-right"></i>
+                        </button>
+                        <a href="login.html" class="btn collaboration-btn-secondary">
+                            <span>Join Texcelerators</span>
+                            <i class="fas fa-users"></i>
+                        </a>
+                    </div>
+
+                    <div class="form-status" id="collaborationStatus" aria-live="polite" hidden></div>
+                </form>
             </div>
         </div>
     </section>
 
     <!-- FOOTER -->
     <footer class="footer">
-        <div class="container">
-            <p>&copy; 2024 Texcelerators. All rights reserved.</p>
+        <div class="footer-bg"></div>
+        <div class="footer-watermark" aria-hidden="true"></div>
+        <div class="container footer-shell">
+            <div class="footer-brand">
+                <div class="footer-brand-lockup">
+                    <img src="assets/images/logo.png" alt="Texcelerators logo">
+                    <div>
+                        <h4>Texcelerators Alpha</h4>
+                        <p>Elite robotics club building future-facing systems with precision and discipline.</p>
+                    </div>
+                </div>
+                <p class="footer-brand-note">Follow the journey across social channels and competition updates.</p>
+            </div>
+
+            <div class="footer-links-grid">
+                <div class="footer-section">
+                    <h5>Quick Links</h5>
+                    <ul>
+                        <li><a href="#home">Home</a></li>
+                        <li><a href="#achievements">Achievements</a></li>
+                        <li><a href="#team">Team</a></li>
+                        <li><a href="#projects">Robots</a></li>
+                        <li><a href="#contact">Contact</a></li>
+                    </ul>
+                </div>
+
+                <div class="footer-section">
+                    <h5>Social Links</h5>
+                    <ul>
+                        <li><a href="https://www.instagram.com/texcelrators2.0_mh31?igsh=MTZ5M2N1eGlrY2lzcQ==" target="_blank" rel="noopener noreferrer">Instagram</a></li>
+                        <li><a href="https://youtube.com/@texcelrators?si=GQjBwIu2nMV5dgf8" target="_blank" rel="noopener noreferrer">YouTube</a></li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="footer-separator" aria-hidden="true"></div>
+
+            <div class="footer-bottom">
+                <p>&copy; 2024 Texcelerators Alpha. Engineered for innovation.</p>
+                <div class="footer-mini-socials">
+                    <a href="https://www.instagram.com/texcelrators2.0_mh31?igsh=MTZ5M2N1eGlrY2lzcQ==" target="_blank" rel="noopener noreferrer" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
+                    <a href="https://youtube.com/@texcelrators?si=GQjBwIu2nMV5dgf8" target="_blank" rel="noopener noreferrer" aria-label="YouTube"><i class="fab fa-youtube"></i></a>
+                </div>
+            </div>
         </div>
     </footer>
+
+    <!-- ROBOT DETAIL MODAL -->
+    <div class="robot-modal" id="robotDetailModal" hidden aria-hidden="true">
+        <div class="robot-modal-backdrop" data-close-robot-modal></div>
+        <div class="robot-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="robotModalTitle">
+            <button class="robot-modal-close" type="button" data-close-robot-modal aria-label="Close details">
+                <i class="fas fa-times"></i>
+            </button>
+
+            <div class="robot-modal-grid">
+                <div class="robot-modal-media">
+                    <div class="robot-modal-hero">
+                        <img id="robotModalHeroImage" alt="">
+                    </div>
+                    <div class="robot-modal-gallery" id="robotModalGallery" aria-label="Robot gallery"></div>
+                </div>
+
+                <div class="robot-modal-copy">
+                    <div class="robot-modal-kicker" id="robotModalKicker"></div>
+                    <h3 id="robotModalTitle"></h3>
+                    <p class="robot-modal-description" id="robotModalDescription"></p>
+
+                    <div class="robot-modal-detail-grid">
+                        <article class="robot-modal-panel">
+                            <h4>Competition / Event Info</h4>
+                            <p id="robotModalCompetition"></p>
+                        </article>
+
+                        <article class="robot-modal-panel">
+                            <h4>Features</h4>
+                            <div class="robot-modal-tags" id="robotModalFeatures"></div>
+                        </article>
+
+                        <article class="robot-modal-panel">
+                            <h4>Technologies Used</h4>
+                            <div class="robot-modal-tags" id="robotModalTechnologies"></div>
+                        </article>
+
+                        <article class="robot-modal-panel">
+                            <h4>Team Contribution</h4>
+                            <p id="robotModalContribution"></p>
+                        </article>
+
+                        <article class="robot-modal-panel robot-modal-panel-wide">
+                            <h4>Achievements</h4>
+                            <ul class="robot-modal-achievements" id="robotModalAchievements"></ul>
+                        </article>
+                    </div>
+
+                    <div class="robot-modal-back-actions">
+                        <button class="btn btn-primary robot-modal-back" type="button" data-close-robot-modal>Back to Showcase</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <script src="script.js"></script>
 </body>

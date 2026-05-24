@@ -76,7 +76,7 @@ app.use((err, req, res, next) => {
 });
 
 async function start() {
-  const configuredPort = Number(process.env.PORT || 3000);
+  const configuredPort = Number(process.env.PORT || 5001);
   const isProduction = String(process.env.NODE_ENV || '').toLowerCase() === 'production';
   const retryDelayMs = Number(process.env.DB_RETRY_DELAY_MS || 5000);
   const autoPortFallback = !isProduction && String(process.env.AUTO_PORT_FALLBACK || 'false').toLowerCase() === 'true';
@@ -84,7 +84,7 @@ async function start() {
 
   // Primary DB is always the real MongoDB URI (MongoDB Atlas in production).
   const mongoUri = process.env.MONGODB_URI;
-  const allowInMemoryFallback = !isProduction && process.env.USE_IN_MEMORY_DB === 'true';
+  const allowInMemoryFallback = !isProduction && String(process.env.USE_IN_MEMORY_DB || 'true').toLowerCase() === 'true';
 
   // eslint-disable-next-line no-console
   console.log(`[startup] NODE_ENV=${process.env.NODE_ENV || 'development'} PORT=${configuredPort}`);
