@@ -316,6 +316,10 @@
                 <p>Our competitive timeline from 2022 to present</p>
             </div>
 
+            <div class="achievements-controls" data-reveal>
+                <div class="achievement-filter-tabs" id="achievementsFilters" role="tablist" aria-label="Achievement categories"></div>
+            </div>
+
             <div class="achievements-masonry" id="achievementsMasonry" role="list"></div>
         </div>
     </section>
@@ -480,10 +484,6 @@
                             <textarea name="why" rows="4" placeholder="Tell us about your goals, interests, and what you want to build with the team." required></textarea>
                         </label>
                         <label class="field field-full">
-                            <span>Upload Portfolio / Resume <em>(optional)</em></span>
-                            <input type="file" name="portfolio" accept=".pdf,.doc,.docx,.png,.jpg,.jpeg">
-                        </label>
-                        <label class="field field-full">
                             <span>Social Media / LinkedIn Link <em>(optional)</em></span>
                             <input type="url" name="socialLink" placeholder="https://www.linkedin.com/in/your-profile">
                         </label>
@@ -511,46 +511,59 @@
         <div class="footer-bg"></div>
         <div class="footer-watermark" aria-hidden="true"></div>
         <div class="container footer-shell">
-            <div class="footer-brand">
-                <div class="footer-brand-lockup">
-                    <img src="assets/images/logo.png" alt="Texcelerators logo">
-                    <div>
-                        <h4>Texcelerators Alpha</h4>
-                        <p>Elite robotics club building future-facing systems with precision and discipline.</p>
+            <div class="footer-grid">
+                <div class="footer-left">
+                    <div class="footer-brand-lockup">
+                        <img src="assets/images/logo.png" alt="Texcelerators logo">
+                        <div>
+                            <h4>Texcelerators 2.0</h4>
+                            <p class="muted">Elite robotics club building future-facing systems with precision and discipline.</p>
+                        </div>
+                    </div>
+                    <p class="footer-desc">Follow our journey — projects, competitions, and community.</p>
+                </div>
+
+                <div class="footer-center">
+                    <nav class="footer-nav" aria-label="Footer quick links">
+                            <h5>Quick Links</h5>
+                            <div class="footer-links-list" role="list">
+                                <a role="listitem" href="#home">Home</a>
+                                <a role="listitem" href="#achievements">Achievements</a>
+                                <a role="listitem" href="#team">Team</a>
+                                <a role="listitem" href="#projects">Robots</a>
+                                <a role="listitem" href="#contact">Contact</a>
+                            </div>
+                    </nav>
+                </div>
+
+                <div class="footer-right">
+                    <div class="contact-card">
+                        <h5>Contact Info</h5>
+                        <ul class="contact-list">
+                            <li>
+                                <i class="fas fa-map-marker-alt contact-icon" aria-hidden="true"></i>
+                                <a href="https://www.google.com/maps/search/?api=1&query=St.+Vincent+Pallotti+College+of+Engineering+and+Technology,+Nagpur+441108" target="_blank" rel="noopener noreferrer">St. Vincent Pallotti College of Engineering and Technology, Nagpur 441108</a>
+                            </li>
+                            <li>
+                                <i class="fas fa-envelope contact-icon" aria-hidden="true"></i>
+                                <a href="mailto:texcelerators@gmail.com">texcelerators@gmail.com</a>
+                            </li>
+                            <li>
+                                <i class="fas fa-phone contact-icon" aria-hidden="true"></i>
+                                <a href="tel:+918855921249">+91 8855921249</a>
+                            </li>
+                        </ul>
+
+                        <div class="footer-socials">
+                            <a class="social" href="https://www.instagram.com/texcelrators2.0_mh31?igsh=MTZ5M2N1eGlrY2lzcQ==" target="_blank" rel="noopener noreferrer" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
+                            <a class="social" href="https://youtube.com/@texcelrators?si=GQjBwIu2nMV5dgf8" target="_blank" rel="noopener noreferrer" aria-label="YouTube"><i class="fab fa-youtube"></i></a>
+                        </div>
                     </div>
                 </div>
-                <p class="footer-brand-note">Follow the journey across social channels and competition updates.</p>
             </div>
 
-            <div class="footer-links-grid">
-                <div class="footer-section">
-                    <h5>Quick Links</h5>
-                    <ul>
-                        <li><a href="#home">Home</a></li>
-                        <li><a href="#achievements">Achievements</a></li>
-                        <li><a href="#team">Team</a></li>
-                        <li><a href="#projects">Robots</a></li>
-                        <li><a href="#contact">Contact</a></li>
-                    </ul>
-                </div>
-
-                <div class="footer-section">
-                    <h5>Social Links</h5>
-                    <ul>
-                        <li><a href="https://www.instagram.com/texcelrators2.0_mh31?igsh=MTZ5M2N1eGlrY2lzcQ==" target="_blank" rel="noopener noreferrer">Instagram</a></li>
-                        <li><a href="https://youtube.com/@texcelrators?si=GQjBwIu2nMV5dgf8" target="_blank" rel="noopener noreferrer">YouTube</a></li>
-                    </ul>
-                </div>
-            </div>
-
-            <div class="footer-separator" aria-hidden="true"></div>
-
-            <div class="footer-bottom">
-                <p>&copy; 2024 Texcelerators Alpha. Engineered for innovation.</p>
-                <div class="footer-mini-socials">
-                    <a href="https://www.instagram.com/texcelrators2.0_mh31?igsh=MTZ5M2N1eGlrY2lzcQ==" target="_blank" rel="noopener noreferrer" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
-                    <a href="https://youtube.com/@texcelrators?si=GQjBwIu2nMV5dgf8" target="_blank" rel="noopener noreferrer" aria-label="YouTube"><i class="fab fa-youtube"></i></a>
-                </div>
+            <div class="footer-bottom-bar">
+                <p>&copy; 2026 Texcelerators 2.0. <span class="engineered">Engineered for Innovation</span></p>
             </div>
         </div>
     </footer>

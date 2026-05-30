@@ -5,207 +5,842 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Texcelerators Dashboard</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="project-management-styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body class="dashboard-page">
     <div class="dashboard-layout" data-dashboard-root>
-        <aside class="dashboard-sidebar">
-            <a class="dashboard-brand dashboard-brand-link" href="index.html" title="Back to home">
-                <img src="assets/images/images/Nav-Side-Footer/logo.png" onerror="this.onerror=null;this.src='assets/images/images/Nav-Side-Footer/placeholder.png'" alt="Texcelerators Logo">
-                <div>
-                    <h1>Texcelerators</h1>
-                    <p>Payment Dashboard</p>
-                </div>
-            </a>
+        <!-- LEFT SIDEBAR -->
+        <aside class="dashboard-sidebar compact">
+            <div class="sidebar-top">
+                <a class="dashboard-brand" href="index.html" title="Back to home">
+                    <img src="assets/images/logo.png" alt="Texcelerators Logo">
+                    <div class="brand-text">
+                        <strong>Texcelerators</strong>
+                        <small>Command Center</small>
+                    </div>
+                </a>
+            </div>
 
             <nav class="sidebar-nav">
-                <a href="#overview" class="is-active" data-sidebar-link data-target="overview" data-for-roles="admin,member"><i class="fas fa-chart-line"></i>Overview</a>
-                <a href="#payments" data-sidebar-link data-target="payments" data-for-roles="member"><i class="fas fa-wallet"></i>My Payments</a>
-                <a href="#transactions" data-sidebar-link data-target="transactions" data-for-roles="member"><i class="fas fa-clock-rotate-left"></i>My Transactions</a>
-                <a href="#admin" data-sidebar-link data-target="admin" data-for-roles="admin"><i class="fas fa-user-shield"></i>Admin Panel</a>
-                <a href="#logout" id="logoutButton"><i class="fas fa-right-from-bracket"></i>Logout</a>
+                <a href="#analytics" class="is-active" data-sidebar-link data-target="analytics" data-for-roles="admin,member"><i class="fas fa-chart-pie"></i><span>Overview</span></a>
+                <a href="#payments" data-sidebar-link data-target="payments" data-for-roles="member"><i class="fas fa-wallet"></i><span>Payments</span></a>
+                <a href="#announcements-section" data-sidebar-link data-target="announcements-section" data-for-roles="member"><i class="fas fa-bullhorn"></i><span>Announcements</span></a>
+                <a href="#transactions" data-sidebar-link data-target="transactions" data-for-roles="member,admin"><i class="fas fa-list-check"></i><span>Activity</span></a>
+                <a href="#projects-section" data-sidebar-link data-target="projects-section" data-for-roles="admin,member"><i class="fas fa-robot"></i><span>Projects</span></a>
+                <a href="#events-section" data-sidebar-link data-target="events-section" data-for-roles="admin,member"><i class="fas fa-calendar"></i><span>Events</span></a>
+                <a href="#reimbursement-section" data-sidebar-link data-target="reimbursement-section" data-for-roles="admin,member"><i class="fas fa-receipt"></i><span data-for-roles="admin">Reimbursements</span><span data-for-roles="member">Expense Claims</span></a>
+                <a href="#rules-section" data-sidebar-link data-target="rules-section" data-for-roles="member"><i class="fas fa-scale-balanced"></i><span>Rules & Regulations</span></a>
+                <a href="#profile-section" data-sidebar-link data-target="profile-section" data-for-roles="member"><i class="fas fa-id-card"></i><span>Profile</span></a>
+                <a href="#member-transactions-section" data-sidebar-link data-target="member-transactions-section" data-for-roles="admin"><i class="fas fa-arrows-left-right"></i><span>Transfers</span></a>
+                <a href="#contribution-analytics-section" data-sidebar-link data-target="contribution-analytics-section" data-for-roles="admin"><i class="fas fa-star"></i><span>Contributors</span></a>
+                <a href="#members-section" data-sidebar-link data-target="members-section" data-for-roles="admin"><i class="fas fa-users"></i><span>Members</span></a>
+                <a href="#expenses-section" data-sidebar-link data-target="expenses-section" data-for-roles="admin"><i class="fas fa-file-invoice-dollar"></i><span>Expenses</span></a>
+                <a href="#admin" data-sidebar-link data-target="admin" data-for-roles="admin"><i class="fas fa-user-shield"></i><span>Admin</span></a>
             </nav>
-        </aside>
 
-        <main class="dashboard-main">
-            <header class="dashboard-topbar glass-panel">
-                <div class="topbar-user">
-                    <div class="topbar-avatar"></div>
-                    <div>
-                        <strong id="topbarName">Aarav Sharma</strong><br>
-                        <span id="topbarRole">Member</span>
+            <div class="sidebar-footer">
+                <div class="sidebar-profile">
+                    <div class="sidebar-profile-avatar" id="sidebarProfileAvatar">AD</div>
+                    <div class="sidebar-profile-copy">
+                        <div class="sidebar-profile-name" id="sidebarProfileName">Admin User</div>
+                        <div class="sidebar-profile-meta"><span class="sidebar-status-chip"><span class="status-dot online"></span>Online</span></div>
                     </div>
                 </div>
-                <div class="dashboard-subtle">Transparent member payments and club finances</div>
+                <div class="sidebar-system-label"><span>System</span><span id="topbarRole"></span></div>
+                <button id="logoutButton" class="icon-btn logout-btn" title="Logout"><i class="fas fa-right-from-bracket"></i><span>Logout</span></button>
+            </div>
+        </aside>
+
+        <!-- CENTER MAIN WORKSPACE -->
+        <main class="dashboard-main workspace-primary">
+            <header class="dashboard-hero glass-panel premium-hero">
+                <div class="hero-left">
+                    <div class="hero-user">
+                        <div class="topbar-avatar avatar-lg" id="avatarDisplay"></div>
+                        <div class="hero-user-meta">
+                            <div class="hero-name"><span id="topbarName"></span></div>
+                            <div class="hero-role"><span id="welcomeRole"></span></div>
+                        </div>
+                    </div>
+                    <div class="system-status">
+                        <div class="status-dot online"></div>
+                        <div class="status-text">System operational</div>
+                    </div>
+                </div>
+                <div class="hero-right">
+                    <div class="metrics-grid premium-metrics" id="heroMetrics">
+                        <div class="metric-card premium-metric-card">
+                            <div class="metric-top">
+                                <i class="fas fa-wallet metric-icon" aria-hidden="true"></i>
+                                <div class="metric-label">Total Funds</div>
+                            </div>
+                            <div class="metric-value" id="totalFundsCard">0</div>
+                            <div class="metric-trend">
+                                <span class="trend-up"><i class="fas fa-arrow-up" aria-hidden="true"></i></span>
+                            </div>
+                        </div>
+                        <div class="metric-card premium-metric-card">
+                            <div class="metric-top">
+                                <i class="fas fa-chart-line metric-icon" aria-hidden="true"></i>
+                                <div class="metric-label">Expenses</div>
+                            </div>
+                            <div class="metric-value" id="totalExpensesCard">0</div>
+                            <div class="metric-trend">
+                                <span class="trend-down"><i class="fas fa-arrow-down" aria-hidden="true"></i></span>
+                            </div>
+                        </div>
+                        <div class="metric-card premium-metric-card">
+                            <div class="metric-top">
+                                <i class="fas fa-users metric-icon" aria-hidden="true"></i>
+                                <div class="metric-label">Active Members</div>
+                            </div>
+                            <div class="metric-value" id="activeMembersCard">—</div>
+                            <div class="metric-trend">
+                                <span class="trend-stable"><i class="fas fa-minus" aria-hidden="true"></i></span>
+                            </div>
+                        </div>
+                        <div class="metric-card premium-metric-card">
+                            <div class="metric-top">
+                                <i class="fas fa-hourglass-half metric-icon" aria-hidden="true"></i>
+                                <div class="metric-label">Pending Verifications</div>
+                            </div>
+                            <div class="metric-value" id="pendingVerificationsCard">—</div>
+                            <div class="metric-trend">
+                                <span class="trend-stable"><i class="fas fa-minus" aria-hidden="true"></i></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </header>
 
-            <div class="dashboard-grid">
-                <section class="dashboard-section glass-panel" id="overview" data-dashboard-section>
-                    <div class="welcome-banner">
+            <!-- ANALYTICS MODULE (Large chart + supporting visuals) -->
+            <section class="panel glass-panel analytics-panel premium-analytics" id="analytics" data-dashboard-section>
+                <div class="panel-header premium-header">
+                    <div class="header-left">
+                        <h3><i class="fas fa-chart-line"></i> Analytics Dashboard</h3>
+                    </div>
+                    <div class="panel-actions">
+                        <select id="analyticsRange" class="search-input premium-select">
+                            <option value="30">Last 30 days</option>
+                            <option value="90">Last 90 days</option>
+                            <option value="365">Last 12 months</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="charts-grid premium-charts">
+                    <div class="chart-card premium-chart-card">
+                        <div class="chart-label">Revenue & Expenses</div>
+                        <canvas id="incomeExpenseChart" aria-label="Income vs Expense chart"></canvas>
+                    </div>
+                    <div class="chart-small premium-chart-small">
+                        <div class="chart-card premium-chart-card">
+                            <div class="chart-label">Member Growth</div>
+                            <canvas id="memberGrowthChart"></canvas>
+                        </div>
+                        <div class="chart-card premium-chart-card">
+                            <div class="chart-label">Verification Status</div>
+                            <canvas id="verificationDonutChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- WORKSPACE CONTENT GRID (Intelligent grouping to avoid isolated cards) -->
+            <div class="workspace-content-grid">
+                <!-- GROUP 1: Members + Activity (Paired) -->
+                <section class="panel glass-panel premium-panel" id="members-section" data-dashboard-section data-for-roles="admin">
+                    <div class="panel-header premium-header">
+                        <h3><i class="fas fa-users-gear"></i> Members Management</h3>
+                        <div class="panel-actions">
+                            <input id="memberSearch" placeholder="Search members" class="search-input" />
+                        </div>
+                    </div>
+                    <form id="addMemberForm" class="card-form compact members-form-inline">
+                        <input type="text" id="addMemberName" placeholder="Name" required>
+                        <input type="email" id="addMemberEmail" placeholder="Email" required>
+                        <input type="text" id="addMemberTempPassword" placeholder="Temp password (optional)">
+                        <button type="submit" class="dashboard-button primary">Add</button>
+                    </form>
+                    <div id="members-container" class="table-card compact"></div>
+                </section>
+
+                <section class="panel glass-panel premium-panel" id="transactions" data-dashboard-section>
+                    <div class="panel-header premium-header">
+                        <h3><i class="fas fa-list-check"></i> Activity Feed</h3>
+                        <div class="panel-actions">
+                            <input id="activitySearch" placeholder="Search" class="search-input" />
+                        </div>
+                    </div>
+                    <div id="transactions-container" class="activity-list"></div>
+                </section>
+
+                <section class="panel glass-panel premium-panel" id="announcements-section" data-dashboard-section data-for-roles="member">
+                    <div class="panel-header premium-header">
+                        <h3><i class="fas fa-bullhorn"></i> Announcements</h3>
+                    </div>
+                    <div id="announcements-container" class="activity-list"></div>
+                </section>
+
+                <section class="panel glass-panel premium-panel full-width-section member-payment-center" id="payments" data-dashboard-section data-for-roles="member">
+                    <div class="panel-header premium-header">
+                        <h3><i class="fas fa-wallet"></i> Membership Payment Center</h3>
+                    </div>
+
+                    <div class="member-payment-module">
+                        <section class="member-payment-block payment-summary-block">
+                            <h4>Membership Fee Summary</h4>
+                            <div id="payments-container" class="compact-metrics"></div>
+                            <div class="payment-progress" aria-label="Membership payment progress">
+                                <span id="paymentProgress"></span>
+                            </div>
+                            <div class="member-payment-meta">
+                                <span id="totalFeeLabel">Total fee: ₹0</span>
+                                <span class="status-chip status-pending" id="paymentStatusChip">Pending</span>
+                            </div>
+                        </section>
+
+                        <section class="member-payment-block payment-qr-block" id="payment-qr">
+                            <h4>QR Payment</h4>
+                            <div class="qr-compact">
+                                <div id="qrCode" class="qr-code"></div>
+                                <div class="qr-details">
+                                    <div class="qr-amount" id="amountToPay">₹0</div>
+                                    <div class="upi-id-row">
+                                        <span class="upi-id-label">UPI ID</span>
+                                        <strong id="clubUpiId">devanshuekhar11@okaxis</strong>
+                                        <button class="dashboard-button" id="copyUpiButton" type="button">Copy UPI</button>
+                                    </div>
+                                    <div class="qr-actions">
+                                        <button class="dashboard-button" id="scanDoneButton" type="button">Scanned QR</button>
+                                        <button class="dashboard-button primary" id="payNowButton" type="button">Pay Now</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+
+                        <section class="member-payment-block payment-receipt-block">
+                            <h4>Receipt Upload</h4>
+                            <input type="file" id="receiptInput" accept="image/*,.pdf" hidden>
+                            <div class="receipt-preview" id="memberReceiptPreview">No receipt selected</div>
+                            <div class="receipt-actions">
+                                <button class="dashboard-button" id="paidButton" type="button">Upload Receipt</button>
+                                <button class="dashboard-button primary" id="submitReceiptButton" type="button">Submit For Verification</button>
+                            </div>
+                            <div class="payment-flow-message" id="paymentFlowMessage">Step 1: Scan QR, then click "Scanned QR".</div>
+                        </section>
+
+                        <section class="member-payment-block payment-history-block">
+                            <div class="panel-header premium-header member-payment-history-head">
+                                <h4><i class="fas fa-clock-rotate-left"></i> Payment History</h4>
+                                <button class="dashboard-button" id="viewDetailsButton" type="button">Open Activity</button>
+                            </div>
+                            <div class="table-card compact member-payment-history-wrap">
+                                <table class="transaction-table member-payment-history-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Date</th>
+                                            <th>Amount</th>
+                                            <th>Status</th>
+                                            <th>Receipt</th>
+                                            <th>Download</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="memberPaymentHistoryBody"></tbody>
+                                </table>
+                                <div class="receipt-empty" id="memberPaymentHistoryEmpty">No payments found yet.</div>
+                            </div>
+                        </section>
+
+                        <div id="installments-container" class="installment-list compact"></div>
+                    </div>
+                </section>
+
+                <!-- GROUP 2: Financial Management (Expenses + Verification) -->
+                <!-- EXPENSE MANAGEMENT SECTION (Redesigned) -->
+                <section class="panel glass-panel premium-panel expense-section" id="expenses-section" data-dashboard-section data-for-roles="admin">
+                    <div class="panel-header premium-header">
+                        <h3><i class="fas fa-receipt"></i> Expense Management</h3>
+                    </div>
+
+                    <div class="expense-layout-grid">
+                        <div class="expense-left-column">
+                            <div class="expense-kpi-grid">
+                                <div class="kpi-card premium-kpi-card">
+                                    <div class="kpi-icon"><i class="fas fa-wallet"></i></div>
+                                    <div class="kpi-content">
+                                        <div class="kpi-label">Total Expenses</div>
+                                        <div class="kpi-value" id="totalExpensesKpi">₹0</div>
+                                    </div>
+                                </div>
+                                <div class="kpi-card premium-kpi-card">
+                                    <div class="kpi-icon"><i class="fas fa-calendar-month"></i></div>
+                                    <div class="kpi-content">
+                                        <div class="kpi-label">This Month</div>
+                                        <div class="kpi-value" id="monthExpensesKpi">₹0</div>
+                                    </div>
+                                </div>
+                                <div class="kpi-card premium-kpi-card">
+                                    <div class="kpi-icon"><i class="fas fa-hourglass-end"></i></div>
+                                    <div class="kpi-content">
+                                        <div class="kpi-label">Pending Reimbursements</div>
+                                        <div class="kpi-value" id="pendingReimbursementsKpi">0</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <form id="expenseForm" class="card-form compact expense-form">
+                                <input type="text" id="expenseTitle" placeholder="Expense title" required>
+                                <input type="number" id="expenseAmount" placeholder="Amount" min="1" required>
+                                <input type="date" id="expenseDate" required>
+                                <select id="expenseCategory">
+                                    <option value="">Category</option>
+                                    <option value="parts">Parts</option>
+                                    <option value="materials">Materials</option>
+                                    <option value="tools">Tools</option>
+                                    <option value="transport">Transport</option>
+                                    <option value="venue">Venue</option>
+                                    <option value="other">Other</option>
+                                </select>
+                                <button type="submit" class="dashboard-button primary expense-submit-btn"><i class="fas fa-plus"></i> Add</button>
+                            </form>
+                        </div>
+
+                        <div class="expense-right-column">
+                            <div id="member-expenses-container" class="table-card compact expense-table-shell">
+                                <table class="transaction-table members-table expense-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Expense Name</th>
+                                            <th>Category</th>
+                                            <th>Amount</th>
+                                            <th>Date</th>
+                                            <th>Status</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="expense-table-body" class="expense-tbody"></tbody>
+                                </table>
+                                <div id="expense-empty-state" class="table-empty-state">No expenses recorded yet.</div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="panel glass-panel premium-panel" id="admin" data-dashboard-section data-for-roles="admin">
+                    <div class="panel-header premium-header">
+                        <div class="header-left">
+                            <h3><i class="fas fa-user-shield"></i> Admin Payments</h3>
+                        </div>
+                    </div>
+                    <form id="adminPaymentForm" class="card-form compact enterprise-form-inline">
+                        <select id="adminPaymentMember" required>
+                            <option value="">Select Member</option>
+                        </select>
+                        <input type="number" id="adminPaymentAmount" placeholder="Amount" min="1" required>
+                        <input type="date" id="adminPaymentDate" required>
+                        <input type="file" id="adminReceiptInput" accept="image/*,.pdf">
+                        <button type="submit" class="dashboard-button primary">Add Payment</button>
+                    </form>
+                    <div id="adminReceiptPreview" class="receipt-preview-inline"></div>
+                </section>
+
+                <section class="panel glass-panel premium-panel" id="receipt-verification-section" data-dashboard-section data-for-roles="admin">
+                    <div class="panel-header premium-header">
+                        <h3><i class="fas fa-clipboard-check"></i> Verification Queue</h3>
+                    </div>
+                    <div id="receipt-verification-container" class="verification-list"></div>
+                </section>
+
+                <!-- GROUP 3: Enterprise Financials (Transfers + Reimbursements) -->
+                <section class="panel glass-panel premium-panel" id="member-transactions-section" data-dashboard-section data-for-roles="admin">
+                    <div class="panel-header premium-header">
+                        <div class="header-left">
+                            <h3><i class="fas fa-arrows-left-right"></i> Internal Transfers</h3>
+                        </div>
+                        <div class="panel-actions" data-for-roles="admin">
+                            <button class="dashboard-button primary" id="openMemberTransferModal">
+                                <i class="fas fa-plus"></i> New
+                            </button>
+                        </div>
+                    </div>
+                    <form id="memberTransactionForm" class="card-form compact enterprise-form-inline" data-for-roles="admin">
+                        <select id="memberTransactionReceiver" required>
+                            <option value="">Select receiver</option>
+                        </select>
+                        <select id="memberTransactionReason" required>
+                            <option value="">Reason</option>
+                            <option value="project_contribution">Project contribution</option>
+                            <option value="material_purchase">Material purchase</option>
+                            <option value="workshop_expense">Workshop expense</option>
+                            <option value="component_reimbursement">Component reimbursement</option>
+                            <option value="event_participation">Event participation</option>
+                            <option value="tool_purchase">Tool purchase</option>
+                            <option value="other">Other</option>
+                        </select>
+                        <input type="number" id="memberTransactionAmount" placeholder="Amount" min="1" required>
+                        <input type="text" id="memberTransactionDescription" placeholder="Description">
+                        <input type="file" id="memberTransactionReceipt" accept="image/*,.pdf">
+                        <button type="submit" class="dashboard-button primary">Create Transfer</button>
+                    </form>
+                    <div id="member-transactions-container" class="transaction-list compact"></div>
+                </section>
+
+                <section class="panel glass-panel premium-panel" id="reimbursement-section" data-dashboard-section data-for-roles="admin,member">
+                    <div class="panel-header premium-header">
+                        <div class="header-left">
+                            <h3 data-for-roles="admin"><i class="fas fa-receipt"></i> Reimbursements</h3>
+                            <h3 data-for-roles="member"><i class="fas fa-receipt"></i> Expense Claims</h3>
+                        </div>
+                        <div class="panel-actions" data-for-roles="member">
+                            <button class="dashboard-button primary" id="openReimbursementModal" data-for-roles="member">
+                                <i class="fas fa-plus"></i> Claim
+                            </button>
+                        </div>
+                    </div>
+                    <form id="reimbursementForm" class="card-form compact enterprise-form-inline" data-for-roles="member">
+                        <input type="text" id="reimbursementItemName" placeholder="Item name" required>
+                        <select id="reimbursementCategory" required>
+                            <option value="">Category</option>
+                            <option value="component">Component</option>
+                            <option value="material">Material</option>
+                            <option value="tool">Tool</option>
+                            <option value="sensor">Sensor</option>
+                            <option value="motor">Motor</option>
+                            <option value="structural">Structural</option>
+                            <option value="electronics">Electronics</option>
+                            <option value="other">Other</option>
+                        </select>
+                        <input type="number" id="reimbursementQuantity" placeholder="Qty" min="1" value="1" required>
+                        <input type="number" id="reimbursementUnitPrice" placeholder="Unit price" min="1" required>
+                        <input type="date" id="reimbursementPurchaseDate" required>
+                        <input type="text" id="reimbursementVendorName" placeholder="Vendor name">
+                        <input type="text" id="reimbursementVendorContact" placeholder="Vendor contact">
+                        <input type="text" id="reimbursementLinkedProjectId" placeholder="Project ID (optional)">
+                        <input type="file" id="reimbursementReceipt" accept="image/*,.pdf" required>
+                        <button type="submit" class="dashboard-button primary">Submit Claim</button>
+                    </form>
+                    <div id="reimbursement-container" class="reimbursement-list compact"></div>
+                </section>
+
+                <!-- GROUP 4: Operations (Projects + Events) -->
+                <section class="panel glass-panel premium-panel" id="projects-section" data-dashboard-section data-for-roles="admin,member">
+                    <div class="panel-header premium-header">
+                        <div class="header-left">
+                            <h3 data-for-roles="admin"><i class="fas fa-robot"></i> Project Financials</h3>
+                            <h3 data-for-roles="member"><i class="fas fa-robot"></i> Assigned Projects</h3>
+                        </div>
+                        <div class="panel-actions">
+                            <button class="dashboard-button primary" id="openProjectModal" data-for-roles="admin">
+                                <i class="fas fa-plus"></i> New
+                            </button>
+                        </div>
+                    </div>
+                    <form id="projectForm" class="card-form compact enterprise-form-inline" data-for-roles="admin">
+                        <input type="text" id="projectName" placeholder="Project name" required>
+                        <select id="projectCategory" required>
+                            <option value="">Category</option>
+                            <option value="robot">Robot</option>
+                            <option value="competition">Competition</option>
+                            <option value="research">Research</option>
+                            <option value="drone">Drone</option>
+                            <option value="humanoid">Humanoid</option>
+                            <option value="racer">Racer</option>
+                            <option value="ai_project">AI Project</option>
+                            <option value="workshop_research">Workshop Research</option>
+                            <option value="other">Other</option>
+                        </select>
+                        <input type="number" id="projectBudgetAllocated" placeholder="Budget" min="1" required>
+                        <input type="date" id="projectStartDate" required>
+                        <input type="date" id="projectEndDate">
+                        <select id="projectVisibility">
+                            <option value="team_only">Team only</option>
+                            <option value="public">Public</option>
+                            <option value="admin_only">Admin only</option>
+                        </select>
+                        <textarea id="projectDescription" rows="2" placeholder="Description"></textarea>
+                        <button type="submit" class="dashboard-button primary">Create Project</button>
+                    </form>
+                    <div id="projects-container" class="projects-grid premium-grid"></div>
+                </section>
+
+                <section class="panel glass-panel premium-panel" id="events-section" data-dashboard-section data-for-roles="admin,member">
+                    <div class="panel-header premium-header">
+                        <div class="header-left">
+                            <h3><i class="fas fa-calendar-check"></i> Events & Workshops</h3>
+                        </div>
+                        <div class="panel-actions">
+                            <button class="dashboard-button primary" id="openEventModal" data-for-roles="admin">
+                                <i class="fas fa-plus"></i> New
+                            </button>
+                        </div>
+                    </div>
+                    <form id="eventForm" class="card-form compact enterprise-form-inline" data-for-roles="admin">
+                        <input type="text" id="eventName" placeholder="Event name" required>
+                        <select id="eventType" required>
+                            <option value="">Type</option>
+                            <option value="competition">Competition</option>
+                            <option value="workshop">Workshop</option>
+                            <option value="hackathon">Hackathon</option>
+                            <option value="seminar">Seminar</option>
+                            <option value="meetup">Meetup</option>
+                            <option value="demo_day">Demo day</option>
+                            <option value="training">Training</option>
+                            <option value="external_event">External event</option>
+                            <option value="internal_event">Internal event</option>
+                            <option value="other">Other</option>
+                        </select>
+                        <input type="date" id="eventStartDate" required>
+                        <input type="date" id="eventEndDate" required>
+                        <input type="text" id="eventLocation" placeholder="Location">
+                        <input type="number" id="eventRegistrationFee" placeholder="Registration fee" min="0" value="0">
+                        <select id="eventVisibility">
+                            <option value="public">Public</option>
+                            <option value="members_only">Members only</option>
+                            <option value="admin_only">Admin only</option>
+                        </select>
+                        <textarea id="eventDescription" rows="2" placeholder="Description"></textarea>
+                        <button type="submit" class="dashboard-button primary">Create Event</button>
+                    </form>
+                    <div id="events-container" class="events-grid premium-grid"></div>
+                </section>
+
+                <!-- CONTRIBUTION ANALYTICS -->
+                <section class="panel glass-panel premium-panel full-width-section" id="contribution-analytics-section" data-dashboard-section data-for-roles="admin,member">
+                    <div class="panel-header premium-header">
+                        <h3><i class="fas fa-star"></i> Contribution Analytics</h3>
+                    </div>
+                    <div id="contribution-analytics-container" class="analytics-container premium-analytics"></div>
+                </section>
+
+                <section class="panel glass-panel premium-panel" id="rules-section" data-dashboard-section data-for-roles="member">
+                    <div class="panel-header premium-header rules-header">
                         <div>
-                            <p class="dashboard-subtle">Welcome back</p>
-                            <h2 class="welcome-title">Welcome, <span id="welcomeName">Aarav Sharma</span></h2>
-                            <div class="role-pill"><i class="fas fa-id-badge"></i> <span id="welcomeRole">Member</span></div>
+                            <h3><i class="fas fa-scale-balanced"></i> Rules & Regulations</h3>
+                            <p class="rules-subtitle">Official Texcelrators SOP. Read-only. Searchable. Printable. Members can only acknowledge acceptance.</p>
                         </div>
-                        <div class="dashboard-cta">
-                            <button class="dashboard-button primary" id="payNowButton">Pay Now</button>
-                            <button class="dashboard-button" id="viewDetailsButton">View Details</button>
+                        <div class="rules-header-actions">
+                            <button class="dashboard-button" id="downloadRulesPdfButton" type="button">Download Official PDF</button>
+                            <button class="dashboard-button" id="printRulesButton" type="button">Print SOP</button>
+                        </div>
+                    </div>
+                    <div class="rules-portal-shell">
+                        <aside class="rules-sidebar">
+                            <div class="rules-toc-card">
+                                <div class="rules-toc-top">
+                                    <strong>Table of Contents</strong>
+                                    <span id="rulesProgressText">0% read</span>
+                                </div>
+                                <input id="rulesSearchInput" class="search-input rules-search" type="search" placeholder="Search SOP">
+                                <div class="rules-toc-actions">
+                                    <button type="button" class="dashboard-button rules-outline-btn" id="expandAllRulesButton">Expand All</button>
+                                    <button type="button" class="dashboard-button rules-outline-btn" id="collapseAllRulesButton">Collapse All</button>
+                                </div>
+                                <nav id="rulesToc" class="rules-toc" aria-label="SOP sections"></nav>
+                            </div>
+                        </aside>
+                        <div class="rules-content-wrap">
+                            <div class="rules-progress-bar"><div id="rulesProgressBar"></div></div>
+                            <div id="rulesContent" class="rules-content"></div>
+                            <div class="rules-acceptance-card">
+                                <label class="rules-acceptance-label">
+                                    <input type="checkbox" id="sopAcceptanceCheckbox">
+                                    <span>I have read and understood the Texcelrators SOP</span>
+                                </label>
+                                <p class="rules-acceptance-note">Your acknowledgement is stored against your member profile.</p>
+                                <button type="button" class="dashboard-button primary" id="saveSopAcceptanceButton">Save Acknowledgement</button>
+                            </div>
                         </div>
                     </div>
                 </section>
 
-                <section class="dashboard-section glass-panel insight-strip" data-dashboard-section data-for-roles="admin,member">
-                    <div class="insight-card">
-                        <span class="card-caption">Realtime access</span>
-                        <strong>Secure JWT flow with MongoDB-backed club data.</strong>
+                <section class="panel glass-panel premium-panel" id="profile-section" data-dashboard-section data-for-roles="member">
+                    <div class="panel-header premium-header">
+                        <h3><i class="fas fa-id-card"></i> Profile</h3>
                     </div>
-                    <div class="insight-card">
-                        <span class="card-caption">Member workflow</span>
-                        <strong>Payments, receipts, and balances stay in sync.</strong>
-                    </div>
-                    <div class="insight-card">
-                        <span class="card-caption">Admin controls</span>
-                        <strong>Verify, remove, reactivate, and reset without leaving the dashboard.</strong>
-                    </div>
-                </section>
-
-                <section class="dashboard-hero">
-                    <section class="dashboard-section glass-panel" id="payments" data-dashboard-section data-for-roles="member">
-                        <div class="section-heading-row">
-                            <h2>My Payments</h2>
-                            <span class="dashboard-subtle" id="totalFeeLabel">Total fee: —</span>
-                        </div>
-                        <div id="payments-container" class="metrics-grid"></div>
-                        <div class="payment-progress" aria-label="Installment progress">
-                            <span id="paymentProgress"></span>
-                        </div>
-                        <div id="installments-container" class="installment-list"></div>
-                    </section>
-
-                    <section class="dashboard-section glass-panel payment-card" id="payment-qr" data-dashboard-section data-for-roles="member">
-                        <h2>Payment Section</h2>
-                        <div class="qr-card">
-                            <div id="qrCode" class="qr-code" aria-label="Payment QR code"></div>
-                            <div class="qr-details">
-                                <p class="dashboard-subtle">Amount to pay</p>
-                                <strong id="amountToPay" class="qr-amount">₹0</strong>
-                                <p class="card-meta">Scan the QR code to transfer the outstanding installment.</p>
-                                <input type="file" id="receiptInput" accept="image/*,.pdf" hidden>
-                                <button class="dashboard-button full-width" id="scanDoneButton">I Have Scanned QR</button>
-                                <button class="dashboard-button primary full-width" id="paidButton">Upload Receipt & Confirm</button>
-                                <p id="paymentFlowMessage" class="card-meta payment-flow-message">Step 1: Scan QR, then click "I Have Scanned QR".</p>
-                                <p class="card-meta receipt-note">Upload payment receipt for admin verification. Amount is added only after approval.</p>
-                                <div id="member-receipt-status" class="list-stack"></div>
-                            </div>
-                        </div>
-                    </section>
-                </section>
-
-                <section class="section-grid">
-                    <section class="dashboard-section glass-panel" id="transactions" data-dashboard-section data-for-roles="member,admin">
-                        <h2 data-for-roles-text="member,admin">Transaction History</h2>
-                        <div id="transactions-container" class="table-card"></div>
-                    </section>
-
-                    <section class="dashboard-section glass-panel" id="member-expenses" data-dashboard-section data-for-roles="member">
-                        <div class="section-heading-row">
-                            <h2>Club Expenses</h2>
-                            <span class="dashboard-subtle">Read-only for members</span>
-                        </div>
-                        <div id="member-expenses-container" class="list-stack"></div>
-                    </section>
-
-                    <section class="dashboard-section glass-panel" id="admin" data-dashboard-section data-for-roles="admin">
-                        <div class="section-heading-row">
-                            <h2>Admin Panel</h2>
-                            <span class="dashboard-subtle">Manage club data</span>
-                        </div>
-
-                        <div class="finance-grid admin-finance">
-                            <div class="finance-card glass-panel">
-                                <span class="card-caption">Total Income</span>
-                                <strong id="totalIncomeCard" class="dashboard-stat-value">₹0</strong>
-                            </div>
-                            <div class="finance-card glass-panel">
-                                <span class="card-caption">Total Expenses</span>
-                                <strong id="totalExpensesCard" class="dashboard-stat-value">₹0</strong>
-                            </div>
-                            <div class="finance-card glass-panel">
-                                <span class="card-caption">Total Club Funds</span>
-                                <strong id="totalFundsCard" class="dashboard-stat-value">₹0</strong>
-                            </div>
-                        </div>
-
-                        <div class="chart-stack" style="margin-top: 1rem;">
-                            <div class="chart-line">
-                                <span class="card-caption">Income strength</span>
-                                <div class="chart-track"><span id="incomeBar"></span></div>
-                            </div>
-                            <div class="chart-line">
-                                <span class="card-caption">Expense ratio</span>
-                                <div class="chart-track"><span id="expenseBar"></span></div>
-                            </div>
-                            <div class="chart-line">
-                                <span class="card-caption">Net balance</span>
-                                <div class="chart-track"><span id="netBar"></span></div>
-                            </div>
-                        </div>
-
-                        <div class="section-heading-row" style="margin-top: 1rem;">
-                            <h2>Add Payment</h2>
-                            <span class="dashboard-subtle">Admin entries are auto-approved</span>
-                        </div>
-                        <form id="adminPaymentForm" class="expense-form">
-                            <select id="adminPaymentMember" required>
-                                <option value="">Select Member</option>
-                            </select>
-                            <input type="number" id="adminPaymentAmount" placeholder="Amount" min="1" required>
-                            <input type="date" id="adminPaymentDate">
-                            <input type="file" id="adminReceiptInput" accept="image/*,.pdf">
-                            <button type="submit" class="dashboard-button primary full-width">Add Payment</button>
-                        </form>
-                        <div id="adminReceiptPreview" class="receipt-preview"></div>
-
-                        <div class="section-heading-row" style="margin-top: 1rem;">
-                            <h2>Payment Verification Queue</h2>
-                            <span class="dashboard-subtle">Approve receipts before updating balances</span>
-                        </div>
-                        <div id="receipt-verification-container" class="list-stack"></div>
-                    </section>
-                </section>
-
-                <section class="section-grid admin-grid">
-                    <section class="dashboard-section glass-panel" id="members-section" data-dashboard-section data-for-roles="admin">
-                        <h2>All Members</h2>
-                        <form id="addMemberForm" class="expense-form" style="margin: 1rem 0;">
-                            <input type="text" id="addMemberName" placeholder="Member name" required>
-                            <input type="email" id="addMemberEmail" placeholder="Member email" required>
-                            <input type="text" id="addMemberTempPassword" placeholder="Temp password (optional)">
-                            <button type="submit" class="dashboard-button primary full-width">Add Member</button>
-                        </form>
-                        <div id="members-container" class="table-card"></div>
-                    </section>
-
-                    <section class="dashboard-section glass-panel" id="expenses-section" data-dashboard-section data-for-roles="admin">
-                        <div class="section-heading-row">
-                            <h2>Expenses</h2>
-                            <span class="dashboard-subtle">Add and review club spending</span>
-                        </div>
-                        <form id="expenseForm" class="expense-form">
-                            <input type="text" id="expenseTitle" placeholder="Title" required>
-                            <input type="number" id="expenseAmount" placeholder="Amount" min="1" required>
-                            <input type="date" id="expenseDate" required>
-                            <button type="submit" class="dashboard-button primary full-width">Add Expense</button>
-                        </form>
-                        <div id="expenses-container" class="list-stack"></div>
-                    </section>
+                    <div id="member-profile-container" class="analytics-container premium-analytics"></div>
                 </section>
             </div>
 
-            <footer class="dashboard-footer">Texcelerators payment dashboard prototype. Built for future Node.js and MongoDB integration.</footer>
+            <footer class="dashboard-footer">© Texcelerators — Robotics Command Center</footer>
         </main>
+
+        <!-- RIGHT PANEL (Sticky) -->
+        <aside class="dashboard-panel-right">
+            <!-- Quick Actions Panel -->
+            <section class="panel glass-panel quick-actions premium-quick-actions" data-for-roles="admin">
+                <div class="panel-header premium-header">
+                    <h3><i class="fas fa-lightning-bolt"></i> Actions</h3>
+                </div>
+                <div class="action-grid premium-action-grid">
+                    <button class="action-pill premium-action-btn" id="openAddMember">
+                        <div class="btn-icon"><i class="fas fa-user-plus"></i></div>
+                        <div class="btn-content">
+                            <div class="btn-label">Add Member</div>
+                        </div>
+                    </button>
+                    <button class="action-pill premium-action-btn" id="openAddPayment">
+                        <div class="btn-icon"><i class="fas fa-credit-card"></i></div>
+                        <div class="btn-content">
+                            <div class="btn-label">Record Payment</div>
+                        </div>
+                    </button>
+                    <button class="action-pill premium-action-btn" id="openAddExpense">
+                        <div class="btn-icon"><i class="fas fa-receipt"></i></div>
+                        <div class="btn-content">
+                            <div class="btn-label">Record Expense</div>
+                        </div>
+                    </button>
+                </div>
+                <div class="small-metrics premium-small-metrics">
+                    <div class="small-metric premium-small-metric">
+                        <div class="metric-heading"><i class="fas fa-clock"></i> Pending</div>
+                        <strong id="pendingVerificationsSmall">—</strong>
+                    </div>
+                    <div class="small-metric premium-small-metric">
+                        <div class="metric-heading"><i class="fas fa-file-pdf"></i> Receipts</div>
+                        <strong id="recentReceiptsCount">—</strong>
+                    </div>
+                </div>
+            </section>
+
+        </aside>
     </div>
 
+    <!-- PROJECT DETAIL MODAL -->
+    <div id="projectDetailModal" class="modal-overlay modal-hidden">
+        <div class="modal-container project-management-modal">
+            <div class="modal-header">
+                <div class="modal-title-section">
+                    <h2 id="projectModalTitle">Project Details</h2>
+                    <p id="projectModalSubtitle" class="modal-subtitle"></p>
+                </div>
+                <button class="modal-close-btn" id="closeProjectModal">&times;</button>
+            </div>
+
+            <div class="modal-content">
+                <!-- Project Info Section -->
+                <section class="modal-section project-info-section">
+                    <div class="section-header">
+                        <h3><i class="fas fa-info-circle"></i> Project Information</h3>
+                        <button class="icon-btn edit-btn" id="editProjectBtn" title="Edit project" data-for-roles="admin">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                    </div>
+                    <div class="info-grid-2" id="projectInfoDisplay">
+                        <div class="info-item">
+                            <span class="info-label">Name</span>
+                            <strong id="projectDisplayName">—</strong>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Status</span>
+                            <span id="projectDisplayStatus" class="status-pill"></span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Category</span>
+                            <strong id="projectDisplayCategory">—</strong>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Progress</span>
+                            <strong id="projectDisplayProgress">0%</strong>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Start Date</span>
+                            <strong id="projectDisplayStartDate">—</strong>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">End Date</span>
+                            <strong id="projectDisplayEndDate">—</strong>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Team Lead</span>
+                            <strong id="projectDisplayTeamLead">—</strong>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Visibility</span>
+                            <strong id="projectDisplayVisibility">—</strong>
+                        </div>
+                    </div>
+                    <textarea id="projectDisplayDescription" placeholder="Description" class="modal-textarea" readonly></textarea>
+                </section>
+
+                <!-- Budget Section -->
+                <section class="modal-section budget-section">
+                    <div class="section-header">
+                        <h3><i class="fas fa-wallet"></i> Budget Tracking</h3>
+                    </div>
+                    <div class="budget-cards-grid">
+                        <div class="budget-card">
+                            <div class="budget-label">Allocated</div>
+                            <div class="budget-value" id="projectBudgetAllocated">₹0</div>
+                        </div>
+                        <div class="budget-card">
+                            <div class="budget-label">Spent</div>
+                            <div class="budget-value expense-color" id="projectBudgetSpent">₹0</div>
+                        </div>
+                        <div class="budget-card">
+                            <div class="budget-label">Remaining</div>
+                            <div class="budget-value success-color" id="projectBudgetRemaining">₹0</div>
+                        </div>
+                        <div class="budget-card">
+                            <div class="budget-label">Used %</div>
+                            <div class="budget-value" id="projectBudgetUsedPercent">0%</div>
+                        </div>
+                    </div>
+                    <div class="budget-progress-bar">
+                        <div id="projectBudgetBar" class="progress-fill" style="width: 0%"></div>
+                    </div>
+                </section>
+
+                <!-- Expenses Section -->
+                <section class="modal-section expenses-section">
+                    <div class="section-header">
+                        <h3><i class="fas fa-receipt"></i> Expenses</h3>
+                        <button class="dashboard-button small" id="addExpenseToProjectBtn" data-for-roles="admin">
+                            <i class="fas fa-plus"></i> Add Expense
+                        </button>
+                    </div>
+                    
+                    <!-- Add Expense Form (Hidden by default) -->
+                    <form id="projectExpenseForm" class="expense-form modal-form" style="display: none;">
+                        <div class="form-row-2">
+                            <input type="text" id="expenseTitle" placeholder="Expense title" required>
+                            <input type="number" id="expenseAmount" placeholder="Amount" min="0.01" step="0.01" required>
+                        </div>
+                        <div class="form-row-2">
+                            <select id="expenseCategory">
+                                <option value="">Category</option>
+                                <option value="parts">Parts & Components</option>
+                                <option value="materials">Materials</option>
+                                <option value="tools">Tools</option>
+                                <option value="transport">Transport</option>
+                                <option value="venue">Venue</option>
+                                <option value="other">Other</option>
+                            </select>
+                            <input type="date" id="expenseDate" required>
+                        </div>
+                        <textarea id="expenseNotes" placeholder="Notes / Receipt reference"></textarea>
+                        <div style="margin-top:8px;">
+                            <label class="form-label">Upload receipt (optional)</label>
+                            <input type="file" id="expenseReceiptInput" accept="image/*,.pdf">
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="dashboard-button primary">Save Expense</button>
+                            <button type="button" class="dashboard-button" id="cancelExpenseFormBtn">Cancel</button>
+                        </div>
+                    </form>
+
+                    <!-- Expenses List -->
+                    <div id="projectExpensesList" class="expenses-table-container">
+                        <table class="expenses-table" id="expensesTableContent">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Title</th>
+                                    <th>Category</th>
+                                    <th>Amount</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="expensesTableBody">
+                            </tbody>
+                        </table>
+                        <div id="expensesEmptyState" class="empty-state-text">No expenses recorded yet.</div>
+                    </div>
+                </section>
+
+                <!-- Reimbursement Section -->
+                <section class="modal-section reimbursement-section">
+                    <div class="section-header">
+                        <h3><i class="fas fa-hand-holding-dollar"></i> Reimbursements</h3>
+                    </div>
+                    <div id="projectReimbursementsList" class="reimbursements-table-container">
+                        <table class="reimbursements-table" id="reimbursementsTableContent">
+                            <thead>
+                                <tr>
+                                    <th>Member</th>
+                                    <th>Item</th>
+                                    <th>Amount</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="reimbursementsTableBody">
+                            </tbody>
+                        </table>
+                        <div id="reimbursementsEmptyState" class="empty-state-text">No reimbursements pending.</div>
+                    </div>
+                </section>
+
+                <!-- Team Section -->
+                <section class="modal-section team-section">
+                    <div class="section-header">
+                        <h3><i class="fas fa-users"></i> Team Members</h3>
+                    </div>
+                    <div class="section-actions">
+                        <button class="dashboard-button small" id="addMemberToProjectBtn" data-for-roles="admin">
+                            <i class="fas fa-user-plus"></i> Add Member
+                        </button>
+                    </div>
+
+                    <!-- Add Member Form (hidden) -->
+                    <form id="projectAddMemberForm" class="modal-form" style="display:none; margin-top:12px;">
+                        <div class="form-row-2">
+                            <select id="projectAddMemberSelect">
+                                <option value="">Select member</option>
+                            </select>
+                            <select id="projectAddMemberRole">
+                                <option value="member">Member</option>
+                                <option value="engineer">Engineer</option>
+                                <option value="designer">Designer</option>
+                                <option value="fabricator">Fabricator</option>
+                                <option value="mentor">Mentor</option>
+                                <option value="lead">Lead</option>
+                            </select>
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="dashboard-button primary">Add to Team</button>
+                            <button type="button" class="dashboard-button" id="cancelAddMemberBtn">Cancel</button>
+                        </div>
+                    </form>
+
+                    <div id="projectTeamList" class="team-members-grid"></div>
+                </section>
+
+                <!-- Milestones Section -->
+                <section class="modal-section milestones-section">
+                    <div class="section-header">
+                        <h3><i class="fas fa-flag-checkered"></i> Milestones</h3>
+                        <div class="section-actions">
+                            <button class="dashboard-button small" id="toggleMilestoneEditBtn" data-for-roles="admin"><i class="fas fa-edit"></i> Edit</button>
+                        </div>
+                    </div>
+                    <div id="projectMilestonesList" class="milestones-list">
+                        <label><input type="checkbox" data-milestone="Design" class="milestone-checkbox"> Design</label>
+                        <label><input type="checkbox" data-milestone="Fabrication" class="milestone-checkbox"> Fabrication</label>
+                        <label><input type="checkbox" data-milestone="Programming" class="milestone-checkbox"> Programming</label>
+                        <label><input type="checkbox" data-milestone="Testing" class="milestone-checkbox"> Testing</label>
+                        <label><input type="checkbox" data-milestone="Competition" class="milestone-checkbox"> Competition</label>
+                    </div>
+                </section>
+            </div>
+
+            <div class="modal-footer">
+                <div class="footer-actions">
+                    <button class="dashboard-button" id="archiveProjectBtn" data-for-roles="admin">
+                        <i class="fas fa-archive"></i> Archive
+                    </button>
+                    <button class="dashboard-button danger" id="deleteProjectBtn" data-for-roles="admin">
+                        <i class="fas fa-trash"></i> Delete
+                    </button>
+                </div>
+                <button class="dashboard-button secondary" id="closeProjectModalBtn">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="script.js"></script>
+    <script src="project-management-extensions.js"></script>
 </body>
 </html>

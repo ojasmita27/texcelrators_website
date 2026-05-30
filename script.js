@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', () => {
+﻿document.addEventListener('DOMContentLoaded', () => {
     const hamburger = document.getElementById('hamburger');
     const navMenu = document.getElementById('navMenu');
     const navLinks = document.querySelectorAll('.nav-link');
@@ -153,10 +153,409 @@ document.addEventListener('DOMContentLoaded', () => {
     `;
     document.head.appendChild(utilityStyle);
 
-    console.log('%cWelcome to Texcelerators! 🚀', 'font-size: 16px; color: #00d4ff; font-weight: bold;');
-    console.log('%cThis is a demo website built with HTML, CSS, and JavaScript', 'font-size: 12px; color: #b0b5c1;');
-    console.log('%cBackend integration coming soon!', 'font-size: 12px; color: #0099ff;');
 });
+
+        /* =====================
+           Dashboard UI helpers: currency formatting, counters, charts, activity
+           These helpers are additive and preserve existing IDs and form behavior.
+           They initialize lightweight charts (Chart.js must be loaded on the page).
+        ===================== */
+
+        const INR_NUMBER_FORMATTER = new Intl.NumberFormat('en-IN', {
+            style: 'currency',
+            currency: 'INR',
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0
+        });
+
+        const EMPTY_VALUE = '\u2014';
+
+        function formatINR(value) {
+            const n = Number(value);
+            if (!Number.isFinite(n)) return INR_NUMBER_FORMATTER.format(0);
+            return INR_NUMBER_FORMATTER.format(n);
+        }
+
+        function getUserInitials(name) {
+            const parts = String(name || '').trim().split(/\s+/).filter(Boolean);
+            if (parts.length === 0) return 'TX';
+            if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+            return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
+        }
+
+        function animateINRCounter(el, target, duration = 900) {
+            if (!el) return;
+            const start = Number(el.dataset.start) || 0;
+            const startTime = performance.now();
+            const step = (now) => {
+                const t = Math.min((now - startTime) / duration, 1);
+                const current = Math.round(start + (target - start) * t);
+                el.textContent = formatINR(current);
+                if (t < 1) requestAnimationFrame(step);
+            };
+            requestAnimationFrame(step);
+        }
+
+        // Initialize charts with empty datasets and expose update functions
+        const dashboardCharts = {
+            incomeExpense: null,
+            memberGrowth: null,
+            verificationDonut: null,
+        };
+
+        function initDashboardCharts() {
+            try {
+                const incomeCtx = document.getElementById('incomeExpenseChart');
+                const growthCtx = document.getElementById('memberGrowthChart');
+                const donutCtx = document.getElementById('verificationDonutChart');
+
+                if (incomeCtx) {
+                    dashboardCharts.incomeExpense = new Chart(incomeCtx.getContext('2d'), {
+                        type: 'line',
+                        data: { labels: [], datasets: [
+                            { label: 'Income', data: [], borderColor: '#00d4ff', backgroundColor: 'rgba(0,212,255,0.06)', tension: 0.3, pointRadius: 2 },
+                            { label: 'Expenses', data: [], borderColor: '#ff6b6b', backgroundColor: 'rgba(255,107,107,0.04)', tension: 0.3, pointRadius: 2 }
+                        ] },
+                                options: {
+                                    responsive: true,
+                                    maintainAspectRatio: false,
+                                    layout: { padding: { top: 10, right: 16, bottom: 4, left: 6 } },
+                                    interaction: { mode: 'index', intersect: false },
+                                    plugins: {
+                                        legend: {
+                                            position: 'top',
+                                            align: 'end',
+                                            labels: { color: 'rgba(255,255,255,0.9)', boxWidth: 10, boxHeight: 10, usePointStyle: true, pointStyle: 'circle', padding: 18, font: { size: 12, weight: '600' } }
+                                        },
+                                        tooltip: {
+                                            backgroundColor: 'rgba(7, 13, 30, 0.96)',
+                                            borderColor: 'rgba(0,212,255,0.2)',
+                                            borderWidth: 1,
+                                            titleColor: '#fff',
+                                            bodyColor: '#d7e8f1',
+                                            padding: 12,
+                                            displayColors: true,
+                                            callbacks: {
+                                                label: (context) => `${context.dataset.label}: ${formatINR(context.parsed.y)}`
+                                            }
+                                        }
+                                    },
+                                    scales: {
+                                        x: {
+                                            grid: { color: 'rgba(255,255,255,0.05)' },
+                                            ticks: {
+                                                color: 'rgba(255,255,255,0.78)',
+                                                maxRotation: 0,
+                                                autoSkip: true,
+                                                maxTicksLimit: 6,
+                                                font: { size: 11, weight: '500' }
+                                            }
+                                        },
+                                        y: {
+                                            beginAtZero: true,
+                                            grid: { color: 'rgba(255,255,255,0.06)' },
+                                            ticks: {
+                                                color: 'rgba(255,255,255,0.82)',
+                                                padding: 8,
+                                                font: { size: 11, weight: '500' },
+                                                callback: v => Number(v).toLocaleString('en-IN')
+                                            }
+                                        }
+                                    }
+                                }
+                    });
+                }
+
+                if (growthCtx) {
+                    dashboardCharts.memberGrowth = new Chart(growthCtx.getContext('2d'), {
+                        type: 'bar',
+                        data: { labels: [], datasets: [{ label: 'Members', data: [], backgroundColor: '#00d4ff' }] },
+                                options: {
+                                    responsive: true,
+                                    maintainAspectRatio: false,
+                                    layout: { padding: { top: 6, right: 10, bottom: 2, left: 4 } },
+                                    plugins: {
+                                        legend: { display: false },
+                                        tooltip: {
+                                            backgroundColor: 'rgba(7, 13, 30, 0.96)',
+                                            borderColor: 'rgba(0,212,255,0.2)',
+                                            borderWidth: 1,
+                                            titleColor: '#fff',
+                                            bodyColor: '#d7e8f1',
+                                            padding: 12,
+                                            callbacks: {
+                                                label: (context) => `Members: ${context.parsed.y}`
+                                            }
+                                        }
+                                    },
+                                    scales: {
+                                        x: {
+                                            grid: { display: false },
+                                            ticks: {
+                                                color: 'rgba(255,255,255,0.78)',
+                                                maxRotation: 0,
+                                                autoSkip: true,
+                                                maxTicksLimit: 6,
+                                                font: { size: 11, weight: '500' }
+                                            }
+                                        },
+                                        y: {
+                                            beginAtZero: true,
+                                            grid: { color: 'rgba(255,255,255,0.06)' },
+                                            ticks: { color: 'rgba(255,255,255,0.82)', font: { size: 11, weight: '500' }, precision: 0 }
+                                        }
+                                    }
+                                }
+                    });
+                }
+
+                if (donutCtx) {
+                    dashboardCharts.verificationDonut = new Chart(donutCtx.getContext('2d'), {
+                        type: 'doughnut',
+                        data: { labels: ['Verified', 'Pending', 'Rejected'], datasets: [{ data: [0,0,0], backgroundColor: ['#43e97b','#ffc43d','#ff6b6b'] }] },
+                                options: {
+                                    responsive: true,
+                                    maintainAspectRatio: false,
+                                    cutout: '68%',
+                                    layout: { padding: { top: 8, right: 10, bottom: 0, left: 10 } },
+                                    plugins: {
+                                        legend: {
+                                            position: 'bottom',
+                                            labels: { color: 'rgba(255,255,255,0.82)', boxWidth: 10, boxHeight: 10, usePointStyle: true, pointStyle: 'circle', padding: 14, font: { size: 11, weight: '600' } }
+                                        },
+                                        tooltip: {
+                                            backgroundColor: 'rgba(7, 13, 30, 0.96)',
+                                            borderColor: 'rgba(0,212,255,0.2)',
+                                            borderWidth: 1,
+                                            titleColor: '#fff',
+                                            bodyColor: '#d7e8f1',
+                                            padding: 12
+                                        }
+                                    }
+                                }
+                    });
+                }
+            } catch (e) { console.warn('Chart init failed', e); }
+        }
+
+        function updateIncomeExpenseChart(labels, incomeData, expenseData) {
+            const c = dashboardCharts.incomeExpense;
+            if (!c) return;
+            c.data.labels = labels;
+            c.data.datasets[0].data = incomeData;
+            c.data.datasets[1].data = expenseData;
+            c.update();
+        }
+
+        function updateMemberGrowthChart(labels, data) {
+            const c = dashboardCharts.memberGrowth;
+            if (!c) return;
+            c.data.labels = labels;
+            c.data.datasets[0].data = data;
+            c.update();
+        }
+
+        function updateVerificationDonut(verified, pending, rejected) {
+            const c = dashboardCharts.verificationDonut;
+            if (!c) return;
+            c.data.datasets[0].data = [verified, pending, rejected];
+            c.update();
+        }
+
+        // Build analytics datasets from current `state` and update charts
+        function buildAnalyticsFromState(rangeDays = 30) {
+            const dashboardState = window.__dashboardState;
+            if (!dashboardState) return;
+            const now = new Date();
+
+            // Helper: start date for range
+            const startDate = new Date(now);
+            startDate.setDate(now.getDate() - (rangeDays - 1));
+
+            // Determine daily or monthly aggregation
+            const useMonthly = rangeDays > 90;
+
+            const dateKey = (d) => {
+                const dt = new Date(d);
+                if (useMonthly) return dt.toLocaleString('en-IN', { month: 'short', year: 'numeric' });
+                return dt.toLocaleString('en-IN', { day: '2-digit', month: 'short' });
+            };
+
+            // Build label slots
+            const labels = [];
+            const slotMap = new Map();
+
+            if (useMonthly) {
+                // months between startDate and now
+                const s = new Date(startDate.getFullYear(), startDate.getMonth(), 1);
+                const e = new Date(now.getFullYear(), now.getMonth(), 1);
+                for (let d = new Date(s); d <= e; d.setMonth(d.getMonth() + 1)) {
+                    const key = d.toLocaleString('en-IN', { month: 'short', year: 'numeric' });
+                    labels.push(key);
+                    slotMap.set(key, { income: 0, expense: 0, members: 0 });
+                }
+            } else {
+                for (let d = new Date(startDate); d <= now; d.setDate(d.getDate() + 1)) {
+                    const key = dateKey(d);
+                    labels.push(key);
+                    slotMap.set(key, { income: 0, expense: 0, members: 0 });
+                }
+            }
+
+            // Aggregate payments (only verified â†’ income)
+            (dashboardState.payments || []).forEach(p => {
+                const dt = new Date(p.date);
+                const key = dateKey(dt);
+                if (!slotMap.has(key)) return;
+                if (p.status === 'verified') slotMap.get(key).income += Number(p.amount) || 0;
+            });
+
+            // Aggregate expenses
+            (dashboardState.expenses || []).forEach(e => {
+                const dt = new Date(e.date);
+                const key = dateKey(dt);
+                if (!slotMap.has(key)) return;
+                slotMap.get(key).expense += Number(e.amount) || 0;
+            });
+
+            // Member growth (new member creation date not present in members map reliably)
+            // Use summary from state.users length change or fallback to zero
+            // For admin, if data.members existed with createdAt, they would be used; fallback: place total members at last label
+            const membersCount = (dashboardState.members || []).length;
+            if (labels.length) {
+                const last = labels[labels.length - 1];
+                if (slotMap.has(last)) slotMap.get(last).members = membersCount;
+            }
+
+            // Build arrays
+            const incomeData = labels.map(l => Math.round((slotMap.get(l) || {}).income || 0));
+            const expenseData = labels.map(l => Math.round((slotMap.get(l) || {}).expense || 0));
+            const memberData = labels.map(l => Math.round((slotMap.get(l) || {}).members || 0));
+
+            // Verification donut: counts across payments
+            const verified = (dashboardState.payments || []).filter(p => p.status === 'verified').length;
+            const pending = (dashboardState.payments || []).filter(p => p.status === 'pending').length;
+            const rejected = (dashboardState.payments || []).filter(p => p.status === 'rejected').length;
+
+            // Update charts
+            updateIncomeExpenseChart(labels, incomeData, expenseData);
+            updateMemberGrowthChart(labels, memberData);
+            updateVerificationDonut(verified, pending, rejected);
+
+            // Update small stat cards where applicable
+            const totalFundsEl = document.getElementById('totalFundsCard');
+            if (totalFundsEl) totalFundsEl.textContent = formatINR(dashboardState.finance.totalFunds || 0);
+            const totalExpensesEl = document.getElementById('totalExpensesCard');
+            if (totalExpensesEl) totalExpensesEl.textContent = formatINR(dashboardState.finance.totalExpenses || 0);
+            const activeMembersEl = document.getElementById('activeMembersCard');
+            if (activeMembersEl) activeMembersEl.textContent = String((dashboardState.members || []).length || EMPTY_VALUE);
+            const pendingEl = document.getElementById('pendingVerificationsCard');
+            if (pendingEl) pendingEl.textContent = String(pending || EMPTY_VALUE);
+        }
+
+        // small helper to add items to the activity feed with micro-interaction
+        function addActivityEntry({ icon='fa-info-circle', title='', meta='', ts='' }) {
+            const container = document.getElementById('transactions-container');
+            if (!container) return;
+            const item = document.createElement('div');
+            item.className = 'activity-item enter';
+            item.innerHTML = `<div style="display:flex;gap:12px;align-items:center;"><i class="fas ${icon}" style="color:var(--secondary-color)"></i><div><div style="font-weight:700">${title}</div><div class="dashboard-subtle" style="font-size:0.85rem">${meta}</div></div></div><div class="dashboard-subtle">${ts}</div>`;
+            container.prepend(item);
+            // trim long lists
+            while (container.children.length > 120) container.removeChild(container.lastChild);
+        }
+
+        // Wire quick-action buttons to focus forms without changing backend IDs
+        document.addEventListener('DOMContentLoaded', () => {
+            // ensure displayed currency uses INR formatting
+            ['totalFundsCard','totalExpensesCard','amountToPay'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el && el.textContent) {
+                    // try parse numeric
+                    const raw = el.textContent.replace(/[\u20B9,\s]/g, '');
+                    const n = Number(raw);
+                    if (!isNaN(n)) el.textContent = formatINR(n);
+                }
+            });
+
+            // convert any dollar formatted text nodes to INR across dashboard (non-destructive)
+            (function convertDollarNodes() {
+                const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null, false);
+                const dollarRegex = /\$\s?([0-9,]+(?:\.[0-9]+)?)/g;
+                let node;
+                const toUpdate = [];
+                while (node = walker.nextNode()) {
+                    if (!node.nodeValue) continue;
+                    if (dollarRegex.test(node.nodeValue)) {
+                        toUpdate.push(node);
+                    }
+                    dollarRegex.lastIndex = 0;
+                }
+                toUpdate.forEach(textNode => {
+                    const newText = textNode.nodeValue.replace(dollarRegex, (_, num) => {
+                        const n = Number(num.replace(/,/g, '')) || 0;
+                        return formatINR(n);
+                    });
+                    textNode.nodeValue = newText;
+                });
+            })();
+
+            // Observe DOM changes and convert any newly inserted dollar-formatted text to INR
+            (function observeDollarRewrites() {
+                const dollarRegex = /\$\s?([0-9,]+(?:\.[0-9]+)?)/g;
+                const convertInNode = (node) => {
+                    if (!node) return;
+                    if (node.nodeType === Node.TEXT_NODE) {
+                        if (dollarRegex.test(node.nodeValue)) {
+                            node.nodeValue = node.nodeValue.replace(dollarRegex, (_, num) => {
+                                const n = Number(num.replace(/,/g, '')) || 0;
+                                return formatINR(n);
+                            });
+                        }
+                    } else if (node.nodeType === Node.ELEMENT_NODE) {
+                        node.childNodes.forEach(convertInNode);
+                    }
+                };
+
+                const mo = new MutationObserver((mutations) => {
+                    for (const m of mutations) {
+                        if (m.type === 'childList') {
+                            m.addedNodes.forEach(convertInNode);
+                        } else if (m.type === 'characterData') {
+                            convertInNode(m.target);
+                        }
+                    }
+                });
+
+                mo.observe(document.body, { childList: true, subtree: true, characterData: true });
+            })();
+
+            // animated counters for metric cards
+            document.querySelectorAll('.metric-value').forEach(el => {
+                const v = el.textContent.replace(/[\u20B9,\s]/g,'');
+                const n = Number(v) || 0;
+                el.dataset.start = 0;
+                if (['activeMembersCard', 'pendingVerificationsCard'].includes(el.id)) {
+                    el.textContent = String(n || EMPTY_VALUE);
+                } else {
+                    animateINRCounter(el, n, 900);
+                }
+            });
+
+            // quick actions
+            const openAddMember = document.getElementById('openAddMember');
+            if (openAddMember) openAddMember.addEventListener('click', () => focusDashboardForm('members-section', '#addMemberName'));
+            const openAddPayment = document.getElementById('openAddPayment');
+            if (openAddPayment) openAddPayment.addEventListener('click', () => focusDashboardForm('admin', '#adminPaymentAmount'));
+            const openAddExpense = document.getElementById('openAddExpense');
+            if (openAddExpense) openAddExpense.addEventListener('click', () => focusDashboardForm('expenses-section', '#expenseTitle'));
+
+            // demo: add a recent activity if empty (non-functional placeholder for visual polish only)
+            const txContainer = document.getElementById('transactions-container');
+            if (txContainer && txContainer.children.length === 0) {
+                addActivityEntry({ icon: 'fa-plus-circle', title: 'Dashboard ready', meta: 'UI upgraded to premium command center', ts: new Date().toLocaleString() });
+            }
+        });
 
 // ====== HERO CAROUSEL CODE ======
 function initializeHeroCarousel() {
@@ -753,8 +1152,60 @@ function initializeRobotShowcase() {
 }
 function formatCurrency(value) {
     const num = Number(value);
-    if (Number.isNaN(num)) return value === 0 ? '$0.00' : '';
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(num);
+    if (!Number.isFinite(num)) return INR_NUMBER_FORMATTER.format(0);
+    return INR_NUMBER_FORMATTER.format(num);
+}
+
+function formatDate(value) {
+    if (!value) return EMPTY_VALUE;
+
+    const date = value instanceof Date ? value : new Date(value);
+    if (Number.isNaN(date.getTime())) return String(value);
+
+    return new Intl.DateTimeFormat('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+    }).format(date);
+}
+
+function createMetricCard(label, value, accent = '') {
+    const card = document.createElement('div');
+    card.className = `dashboard-stat-card glass-panel ${accent}`.trim();
+    card.innerHTML = `
+        <span class="card-caption">${label}</span>
+        <strong class="dashboard-stat-value">${value}</strong>
+    `;
+    return card;
+}
+
+function createInstallmentItem(title, amount, status, isPaid) {
+    const item = document.createElement('div');
+    item.className = `installment-item ${isPaid ? 'is-paid' : 'is-due'}`;
+    item.innerHTML = `
+        <div>
+            <strong>${title}</strong>
+            <span>${formatCurrency(amount)}</span>
+        </div>
+        <span class="status-pill">${status}</span>
+    `;
+    return item;
+}
+
+function createQrSvgData(text) {
+    const safeText = String(text || '').replace(/[<>&"]/g, '');
+    const svg = `
+        <svg xmlns="http://www.w3.org/2000/svg" width="220" height="220" viewBox="0 0 220 220" role="img" aria-label="Payment QR code">
+            <rect width="220" height="220" rx="24" fill="#ffffff"/>
+            <rect x="22" y="22" width="176" height="176" rx="18" fill="#0b1026"/>
+            <rect x="36" y="36" width="36" height="36" rx="6" fill="#00d4ff"/>
+            <rect x="148" y="36" width="36" height="36" rx="6" fill="#00d4ff"/>
+            <rect x="36" y="148" width="36" height="36" rx="6" fill="#00d4ff"/>
+            <text x="110" y="116" text-anchor="middle" fill="#ffffff" font-family="Arial, sans-serif" font-size="18" font-weight="700">${safeText}</text>
+            <text x="110" y="142" text-anchor="middle" fill="#b0b5c1" font-family="Arial, sans-serif" font-size="11">Scan to pay</text>
+        </svg>
+    `;
+    return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
 }
 
 // ====== CENTRALIZED ACHIEVEMENT DATA (MODULAR & SCALABLE) ======
@@ -857,6 +1308,9 @@ const ACHIEVEMENTS_DATA = [
     }
 ];
 
+const ACHIEVEMENT_FILTERS = ['All', 'Robotics', 'AI', 'Workshops', 'National', 'International'];
+let activeAchievementFilter = 'All';
+
 // ====== ACHIEVEMENTS (PREMIUM) INTERACTIONS ======
 function initializeAchievements() {
     const hallSection = document.querySelector('.achievements-hall');
@@ -868,7 +1322,7 @@ function initializeAchievements() {
     // Render featured achievement (first with featured: true)
     renderFeaturedAchievement();
 
-    // Render masonry grid with all achievements
+    // Render premium vertical showcase
     renderAchievementsMasonry();
 
     // Setup modal handlers
@@ -878,12 +1332,17 @@ function initializeAchievements() {
 function renderAchievementStats() {
     const statsContainer = document.querySelector('.hall-stats');
     if (!statsContainer || !ACHIEVEMENTS_DATA.length) return;
-    // Use fixed stats provided in project brief
+
+    const competitionsAttended = new Set(ACHIEVEMENTS_DATA.map(item => item.event).filter(Boolean)).size;
+    const awardsWon = ACHIEVEMENTS_DATA.filter(item => item.award || item.achievement).length;
+    const nationalFinals = ACHIEVEMENTS_DATA.filter(item => achievementMatchesFilter(item, 'National')).length;
+    const workshopsConducted = ACHIEVEMENTS_DATA.filter(item => achievementMatchesFilter(item, 'Workshops')).length;
+
     const totals = [
-        { count: 12, label: 'National Championships' },
-        { count: 18, label: 'Robots Built' },
-        { count: 4, label: 'International Awards' },
-        { count: 18, label: 'Team Members' }
+        { count: competitionsAttended, label: 'Competitions Attended' },
+        { count: awardsWon, label: 'Awards Won' },
+        { count: nationalFinals, label: 'National Finals' },
+        { count: workshopsConducted, label: 'Workshops Conducted' }
     ];
 
     statsContainer.innerHTML = totals.map(s => `
@@ -954,9 +1413,9 @@ function renderFeaturedAchievement() {
                 `).join('')}
             </div>
             <div class="featured-controls">
-                <button class="feat-prev" aria-label="Previous">‹</button>
+                <button class="feat-prev" aria-label="Previous">\u2039</button>
                 <div class="feat-indicators"></div>
-                <button class="feat-next" aria-label="Next">›</button>
+                <button class="feat-next" aria-label="Next">\u203A</button>
             </div>
             <div class="featured-progress" aria-hidden="true"><span></span></div>
         </div>
@@ -1041,30 +1500,60 @@ function renderAchievementsMasonry() {
     const masonryContainer = document.querySelector('.achievements-masonry');
     if (!masonryContainer) return;
 
-    masonryContainer.innerHTML = ACHIEVEMENTS_DATA
-        .map((ach, idx) => `
-            <div class="achievement-item" data-achievement-id="${ach.id}">
-                <div class="achievement-image">
-                    <img src="${ach.image}" alt="${ach.title}" loading="lazy">
-                </div>
-                <div class="achievement-body">
-                    <div class="achievement-award">${ach.category || 'ACHIEVEMENT'}</div>
-                    <h4>${ach.title}</h4>
-                    <p class="achievement-date">${ach.dateDisplay}</p>
-                    <p class="achievement-content">${ach.achievement}</p>
-                </div>
+    renderAchievementFilterTabs();
+
+    const filteredAchievements = ACHIEVEMENTS_DATA.filter(item => achievementMatchesFilter(item, activeAchievementFilter));
+    const groupedByYear = groupAchievementsByYear(filteredAchievements);
+
+    if (!groupedByYear.length) {
+        masonryContainer.innerHTML = `
+            <div class="achievements-empty-state" role="status" aria-live="polite">
+                <h4>No achievements found</h4>
+                <p>Try another filter to explore all achievements.</p>
             </div>
+        `;
+        return;
+    }
+
+    masonryContainer.innerHTML = groupedByYear
+        .map(group => `
+            <section class="achievements-year-group" aria-label="Achievements in ${group.year}">
+                <header class="achievements-year-header">
+                    <h4>${group.year}</h4>
+                    <span>${group.items.length} highlight${group.items.length === 1 ? '' : 's'}</span>
+                </header>
+                <div class="achievements-grid" role="list">
+                    ${group.items.map(ach => `
+                        <article class="achievement-item" data-achievement-id="${ach.id}" role="listitem">
+                            <div class="achievement-image">
+                                <img src="${ach.image}" alt="${ach.title}" loading="lazy">
+                                <div class="achievement-category">${ach.category || 'Competition'}</div>
+                            </div>
+                            <div class="achievement-body">
+                                <div class="achievement-meta-row">
+                                    <div class="achievement-award">${ach.award || 'Achievement'}</div>
+                                    <p class="achievement-date">${ach.dateDisplay}</p>
+                                </div>
+                                <h5>${ach.title}</h5>
+                                <p class="achievement-event">${ach.event}</p>
+                                <p class="achievement-content">${ach.achievement}</p>
+                                <button class="achievement-view-btn" type="button" data-achievement-id="${ach.id}">View Details</button>
+                            </div>
+                        </article>
+                    `).join('')}
+                </div>
+            </section>
         `)
         .join('');
 
-    // Add click handlers and reveal animations
-    const cards = Array.from(document.querySelectorAll('.achievement-item'));
-    cards.forEach(card => {
-        card.addEventListener('click', () => {
-            const achId = card.dataset.achievementId;
-            openAchievementFullscreen(achId);
-        });
-    });
+    masonryContainer.onclick = (event) => {
+        const trigger = event.target.closest('[data-achievement-id]');
+        if (!trigger) return;
+        const achId = trigger.dataset.achievementId;
+        if (achId) openAchievementFullscreen(achId);
+    };
+
+    const cards = Array.from(masonryContainer.querySelectorAll('.achievement-item'));
 
     // Reveal items when they enter viewport (staggered)
     const revealObserver = new IntersectionObserver((entries) => {
@@ -1077,20 +1566,86 @@ function renderAchievementsMasonry() {
     }, { threshold: 0.18 });
 
     cards.forEach(c => revealObserver.observe(c));
+}
 
-    // Make horizontal rail draggable on desktop (mouse drag + touch)
-    let isDown = false, startX = 0, scrollStart = 0;
-    masonryContainer.addEventListener('mousedown', (e) => {
-        isDown = true; masonryContainer.classList.add('dragging'); startX = e.pageX - masonryContainer.offsetLeft; scrollStart = masonryContainer.scrollLeft;
+function renderAchievementFilterTabs() {
+    const filtersContainer = document.getElementById('achievementsFilters');
+    if (!filtersContainer) return;
+
+    const counts = ACHIEVEMENT_FILTERS.reduce((acc, filter) => {
+        acc[filter] = filter === 'All'
+            ? ACHIEVEMENTS_DATA.length
+            : ACHIEVEMENTS_DATA.filter(item => achievementMatchesFilter(item, filter)).length;
+        return acc;
+    }, {});
+
+    filtersContainer.innerHTML = ACHIEVEMENT_FILTERS
+        .map(filter => `
+            <button
+                class="achievement-filter-tab ${activeAchievementFilter === filter ? 'active' : ''}"
+                type="button"
+                role="tab"
+                aria-selected="${activeAchievementFilter === filter ? 'true' : 'false'}"
+                data-filter="${filter}">
+                <span>${filter}</span>
+                <small>${counts[filter]}</small>
+            </button>
+        `)
+        .join('');
+
+    filtersContainer.querySelectorAll('.achievement-filter-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+            const nextFilter = tab.dataset.filter;
+            if (!nextFilter || nextFilter === activeAchievementFilter) return;
+            activeAchievementFilter = nextFilter;
+            renderAchievementsMasonry();
+        });
     });
-    masonryContainer.addEventListener('mouseleave', () => { isDown = false; masonryContainer.classList.remove('dragging'); });
-    masonryContainer.addEventListener('mouseup', () => { isDown = false; masonryContainer.classList.remove('dragging'); });
-    masonryContainer.addEventListener('mousemove', (e) => {
-        if (!isDown) return; e.preventDefault(); const x = e.pageX - masonryContainer.offsetLeft; const walk = (x - startX) * 1.3; masonryContainer.scrollLeft = scrollStart - walk;
-    });
-    // touch support
-    masonryContainer.addEventListener('touchstart', (e) => { startX = e.touches[0].pageX - masonryContainer.offsetLeft; scrollStart = masonryContainer.scrollLeft; });
-    masonryContainer.addEventListener('touchmove', (e) => { const x = e.touches[0].pageX - masonryContainer.offsetLeft; const walk = (x - startX) * 1.2; masonryContainer.scrollLeft = scrollStart - walk; });
+}
+
+function groupAchievementsByYear(achievements) {
+    const yearMap = achievements.reduce((acc, item) => {
+        const year = String(item.date || '').slice(0, 4) || 'Other';
+        if (!acc[year]) acc[year] = [];
+        acc[year].push(item);
+        return acc;
+    }, {});
+
+    return Object.keys(yearMap)
+        .sort((a, b) => b.localeCompare(a))
+        .map(year => ({
+            year,
+            items: yearMap[year].slice().sort((a, b) => String(b.date).localeCompare(String(a.date)))
+        }));
+}
+
+function achievementMatchesFilter(achievement, filter) {
+    if (!achievement) return false;
+    if (filter === 'All') return true;
+
+    const title = String(achievement.title || '').toLowerCase();
+    const event = String(achievement.event || '').toLowerCase();
+    const description = String(achievement.achievement || '').toLowerCase();
+    const category = String(achievement.category || '').toLowerCase();
+    const combined = `${title} ${event} ${description} ${category}`;
+
+    if (filter === 'Robotics') {
+        return /(robot|robo|rc|tech|tantrafiesta|competition|racing)/.test(combined);
+    }
+    if (filter === 'AI') {
+        return /(\bai\b|artificial intelligence|ml|machine learning)/.test(combined);
+    }
+    if (filter === 'Workshops') {
+        return /(workshop|bootcamp|training|seminar)/.test(combined);
+    }
+    if (filter === 'National') {
+        return /(iit|iiit|bits|technex|national|india)/.test(combined);
+    }
+    if (filter === 'International') {
+        return /(international|global|world)/.test(combined);
+    }
+
+    return true;
 }
 
 function openAchievementFullscreen(achievementId) {
@@ -1406,11 +1961,87 @@ function initializeCollaborationPortal() {
     const collaborationSection = document.querySelector('.collaboration');
     const form = document.getElementById('collaborationForm');
     const status = document.getElementById('collaborationStatus');
+    const submitButton = form ? form.querySelector('.collaboration-btn-primary[type="submit"]') : null;
 
     if (!collaborationSection || !form || !status) return;
 
     const focusableFields = Array.from(form.querySelectorAll('input, select, textarea'));
     const requiredFields = focusableFields.filter((field) => field.hasAttribute('required'));
+    const originalSubmitContent = submitButton ? submitButton.innerHTML : '';
+
+    function ensureToastHost() {
+        let host = document.getElementById('collaborationToastHost');
+        if (host) return host;
+
+        host = document.createElement('div');
+        host.id = 'collaborationToastHost';
+        host.className = 'collaboration-toast-host';
+        host.setAttribute('aria-live', 'polite');
+        host.setAttribute('aria-atomic', 'true');
+        document.body.appendChild(host);
+        return host;
+    }
+
+    function showToast(message, type = 'success') {
+        const host = ensureToastHost();
+        const toast = document.createElement('div');
+        toast.className = `collaboration-toast collaboration-toast-${type}`;
+        toast.setAttribute('role', 'status');
+        const iconWrap = document.createElement('span');
+        iconWrap.className = 'collaboration-toast-icon';
+        iconWrap.setAttribute('aria-hidden', 'true');
+
+        const icon = document.createElement('i');
+        icon.className = `fas ${type === 'success' ? 'fa-circle-check' : 'fa-triangle-exclamation'}`;
+        iconWrap.appendChild(icon);
+
+        const copy = document.createElement('div');
+        copy.className = 'collaboration-toast-copy';
+
+        const title = document.createElement('strong');
+        title.textContent = type === 'success' ? 'Texcelerators' : 'Action needed';
+
+        const text = document.createElement('p');
+        text.textContent = message;
+
+        copy.appendChild(title);
+        copy.appendChild(text);
+
+        const closeButton = document.createElement('button');
+        closeButton.type = 'button';
+        closeButton.className = 'collaboration-toast-close';
+        closeButton.setAttribute('aria-label', 'Dismiss notification');
+        closeButton.textContent = 'Ã—';
+
+        toast.appendChild(iconWrap);
+        toast.appendChild(copy);
+        toast.appendChild(closeButton);
+
+        const closeToast = () => {
+            toast.classList.remove('is-visible');
+            window.setTimeout(() => toast.remove(), 280);
+        };
+
+        closeButton.addEventListener('click', closeToast);
+        host.appendChild(toast);
+
+        requestAnimationFrame(() => {
+            toast.classList.add('is-visible');
+        });
+
+        window.setTimeout(closeToast, 3200);
+    }
+
+    function setLoadingState(isLoading) {
+        if (!submitButton) return;
+
+        submitButton.disabled = isLoading;
+        submitButton.classList.toggle('is-loading', isLoading);
+        submitButton.setAttribute('aria-busy', String(isLoading));
+        submitButton.innerHTML = isLoading
+            ? '<span>Submitting...</span><span class="btn-spinner" aria-hidden="true"></span>'
+            : originalSubmitContent;
+    }
 
     function setStatus(message, type = 'success') {
         status.hidden = false;
@@ -1468,27 +2099,78 @@ function initializeCollaborationPortal() {
         field.addEventListener('blur', () => validateField(field));
     });
 
-    form.addEventListener('submit', (event) => {
+    form.addEventListener('submit', async (event) => {
         event.preventDefault();
 
         if (!validateForm()) {
             setStatus('Please complete the required fields before starting collaboration.', 'error');
+            showToast('Please complete the required fields before starting collaboration.', 'error');
             return;
         }
 
-        setStatus('Welcome to the Texcelerators innovation ecosystem.', 'success');
-        collaborationSection.classList.add('is-submitted');
-        form.classList.add('is-submitted');
-        form.reset();
+        // Prevent duplicate submission
+        if (form.classList.contains('is-submitting')) {
+            return;
+        }
 
-        focusableFields.forEach((field) => {
-            field.classList.remove('is-valid', 'is-invalid');
-        });
+        form.classList.add('is-submitting');
+        setLoadingState(true);
+        setStatus('Submitting your inquiry...', 'info');
 
-        window.clearTimeout(initializeCollaborationPortal._statusTimer);
-        initializeCollaborationPortal._statusTimer = window.setTimeout(() => {
-            collaborationSection.classList.remove('is-submitted');
-        }, 2400);
+        try {
+            // Collect form data
+            const formData = new FormData(form);
+            const payload = Object.fromEntries(formData);
+
+            // Map form field names to API expected names
+            const data = {
+                fullName: payload.fullName || '',
+                email: payload.email || '',
+                phone: payload.phone || '',
+                college: payload.organization || '',
+                roleInterested: payload.role || '',
+                skills: payload.skills || '',
+                collaborationReason: payload.why || '',
+                portfolioLink: payload.socialLink || ''
+            };
+
+            const response = await fetch('/api/collaboration', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+
+            const result = await response.json();
+
+            if (!response.ok) {
+                throw new Error(result.message || 'Failed to submit collaboration form');
+            }
+
+            if (result.success) {
+                const successMessage = 'Collaboration request received successfully.\n\nYour profile has been forwarded for evaluation by the Texcelerators team. If shortlisted, our team will reach out through the provided contact details.';
+                setStatus(successMessage, 'success');
+                showToast(successMessage, 'success');
+                collaborationSection.classList.add('is-submitted');
+                form.classList.add('is-submitted');
+                form.reset();
+
+                focusableFields.forEach((field) => {
+                    field.classList.remove('is-valid', 'is-invalid');
+                });
+
+                window.clearTimeout(initializeCollaborationPortal._statusTimer);
+                initializeCollaborationPortal._statusTimer = window.setTimeout(() => {
+                    collaborationSection.classList.remove('is-submitted');
+                }, 2400);
+            }
+        } catch (error) {
+            console.error('Collaboration form submission error:', error);
+            setStatus(error.message || 'An error occurred. Please try again.', 'error');
+            showToast(error.message || 'An error occurred. Please try again.', 'error');
+        } finally {
+            form.classList.remove('is-submitting');
+            setLoadingState(false);
+        }
     });
 }
 
@@ -1741,13 +2423,15 @@ function renderDashboardApp() {
 
     // Backend API base
     const storedApiBase = localStorage.getItem('API_BASE');
-    const API_BASE = storedApiBase === 'http://localhost:3000'
-        ? 'http://localhost:5000'
-        : (storedApiBase || 'http://localhost:5000');
+    const currentOrigin = window.location.origin;
+    const legacyBases = new Set(['http://localhost:3000', 'http://localhost:5000']);
+    const API_BASE = storedApiBase && !legacyBases.has(storedApiBase)
+        ? storedApiBase
+        : currentOrigin;
 
-    // Auto-migrate old stored value
-    if (storedApiBase === 'http://localhost:3000') {
-        localStorage.setItem('API_BASE', 'http://localhost:5000');
+    // Auto-migrate old stored values to the active origin.
+    if (!storedApiBase || legacyBases.has(storedApiBase)) {
+        localStorage.setItem('API_BASE', currentOrigin);
     }
 
     if (!document.getElementById('dashboardToast')) {
@@ -1770,7 +2454,7 @@ function renderDashboardApp() {
             dashboardToast.className = 'toast dashboard-toast';
         }, 2400);
     }
-            const prevBtn = document.getElementById('robotsCarouselPrev'); 
+
     function skeletonRow(width = '100%') {
         return `<div class="skeleton-row"><span class="skeleton-line" style="width:${width}"></span></div>`;
     }
@@ -1852,18 +2536,22 @@ function renderDashboardApp() {
             currentUser = JSON.parse(storedUser);
         }
     } catch (e) {
-        console.error('Error parsing user data:', e);
+        localStorage.removeItem('currentUser');
+        currentUser = null;
     }
 
     // If not authenticated, redirect to login
     if (!token) {
-        console.warn('No user found. Redirecting to login...');
+        localStorage.removeItem('currentUser');
         window.location.href = 'login.html';
         return;
     }
 
     let userRole = (currentUser && currentUser.role) ? currentUser.role : 'member';
-    console.log('Dashboard loaded (token present). Role:', userRole);
+    const dashboardRootEl = document.querySelector('[data-dashboard-root]');
+    if (dashboardRootEl) {
+        dashboardRootEl.setAttribute('aria-busy', 'true');
+    }
 
     // ===========================
     // ROLE-BASED UI SETUP
@@ -1909,6 +2597,13 @@ function renderDashboardApp() {
         payments: [],
         members: [],
         expenses: [],
+        enterprise: {
+            memberTransactions: [],
+            reimbursements: [],
+            projects: [],
+            events: [],
+            contributionStats: {}
+        },
         finance: {
             totalIncome: 0,
             totalExpenses: 0,
@@ -1916,6 +2611,11 @@ function renderDashboardApp() {
         },
         paymentFlow: {
             qrScanned: false
+        },
+        profileEditor: {
+            isEditing: false,
+            draft: null,
+            saving: false
         }
     };
 
@@ -1967,13 +2667,25 @@ function renderDashboardApp() {
                 id: data.user.id,
                 name: data.user.name,
                 email: data.user.email,
-                role: data.user.role
+                role: data.user.role,
+                phone: data.user.phone || '',
+                skills: Array.isArray(data.user.skills) ? data.user.skills : [],
+                certificates: Array.isArray(data.user.certificates) ? data.user.certificates : [],
+                createdAt: data.user.createdAt || null,
+                updatedAt: data.user.updatedAt || null
             };
             userRole = state.user.role;
             localStorage.setItem('currentUser', JSON.stringify(data.user));
         }
 
         state.expenses = Array.isArray(data.expenses) ? data.expenses.map(mapApiExpense) : [];
+        state.enterprise = data && data.enterprise ? data.enterprise : {
+            memberTransactions: [],
+            reimbursements: [],
+            projects: [],
+            events: [],
+            contributionStats: {}
+        };
 
         if (userRole === 'admin') {
             const members = Array.isArray(data.members) ? data.members : [];
@@ -2045,7 +2757,11 @@ function renderDashboardApp() {
                 status: 'active',
                 active: true,
                 paid: state.memberFee.paidAmount,
-                remaining: state.memberFee.remainingAmount
+                remaining: state.memberFee.remainingAmount,
+                phone: state.user.phone || '',
+                skills: Array.isArray(state.user.skills) ? state.user.skills : [],
+                certificates: Array.isArray(state.user.certificates) ? state.user.certificates : [],
+                joinedAt: state.user.createdAt || null
             }];
         }
     }
@@ -2073,6 +2789,8 @@ function renderDashboardApp() {
     const elements = {
         topbarName: document.getElementById('topbarName'),
         topbarRole: document.getElementById('topbarRole'),
+        sidebarProfileName: document.getElementById('sidebarProfileName'),
+        sidebarProfileAvatar: document.getElementById('sidebarProfileAvatar'),
         welcomeName: document.getElementById('welcomeName'),
         welcomeRole: document.getElementById('welcomeRole'),
         paymentsContainer: document.getElementById('payments-container'),
@@ -2080,9 +2798,11 @@ function renderDashboardApp() {
         amountToPay: document.getElementById('amountToPay'),
         qrCode: document.getElementById('qrCode'),
         receiptInput: document.getElementById('receiptInput'),
-        memberReceiptStatus: document.getElementById('member-receipt-status'),
+        memberReceiptStatus: document.getElementById('reimbursement-container'),
         transactionsContainer: document.getElementById('transactions-container'),
         memberExpensesContainer: document.getElementById('member-expenses-container'),
+        expenseTableBody: document.getElementById('expense-table-body'),
+        expenseEmptyState: document.getElementById('expense-empty-state'),
         membersContainer: document.getElementById('members-container'),
         expensesContainer: document.getElementById('expenses-container'),
         receiptVerificationContainer: document.getElementById('receipt-verification-container'),
@@ -2092,23 +2812,68 @@ function renderDashboardApp() {
         totalIncomeCard: document.getElementById('totalIncomeCard'),
         totalExpensesCard: document.getElementById('totalExpensesCard'),
         totalFundsCard: document.getElementById('totalFundsCard'),
+        activeMembersCard: document.getElementById('activeMembersCard'),
+        pendingVerificationsCard: document.getElementById('pendingVerificationsCard'),
+        pendingVerificationsSmall: document.getElementById('pendingVerificationsSmall'),
+        recentReceiptsCount: document.getElementById('recentReceiptsCount'),
         sidebarLinks: document.querySelectorAll('[data-sidebar-link]'),
         logoutButton: document.getElementById('logoutButton'),
         payNowButton: document.getElementById('payNowButton'),
         viewDetailsButton: document.getElementById('viewDetailsButton'),
         scanDoneButton: document.getElementById('scanDoneButton'),
         paidButton: document.getElementById('paidButton'),
+        submitReceiptButton: document.getElementById('submitReceiptButton'),
         paymentFlowMessage: document.getElementById('paymentFlowMessage'),
+        memberReceiptPreview: document.getElementById('memberReceiptPreview'),
+        memberPaymentHistoryBody: document.getElementById('memberPaymentHistoryBody'),
+        memberPaymentHistoryEmpty: document.getElementById('memberPaymentHistoryEmpty'),
+        paymentStatusChip: document.getElementById('paymentStatusChip'),
+        copyUpiButton: document.getElementById('copyUpiButton'),
+        clubUpiId: document.getElementById('clubUpiId'),
         adminPaymentForm: document.getElementById('adminPaymentForm'),
         adminPaymentMember: document.getElementById('adminPaymentMember'),
         adminPaymentAmount: document.getElementById('adminPaymentAmount'),
         adminPaymentDate: document.getElementById('adminPaymentDate'),
         adminReceiptInput: document.getElementById('adminReceiptInput'),
         adminReceiptPreview: document.getElementById('adminReceiptPreview'),
+        memberTransactionForm: document.getElementById('memberTransactionForm'),
+        memberTransactionReceiver: document.getElementById('memberTransactionReceiver'),
+        memberTransactionReason: document.getElementById('memberTransactionReason'),
+        memberTransactionAmount: document.getElementById('memberTransactionAmount'),
+        memberTransactionDescription: document.getElementById('memberTransactionDescription'),
+        memberTransactionReceipt: document.getElementById('memberTransactionReceipt'),
+        reimbursementForm: document.getElementById('reimbursementForm'),
+        reimbursementItemName: document.getElementById('reimbursementItemName'),
+        reimbursementCategory: document.getElementById('reimbursementCategory'),
+        reimbursementQuantity: document.getElementById('reimbursementQuantity'),
+        reimbursementUnitPrice: document.getElementById('reimbursementUnitPrice'),
+        reimbursementPurchaseDate: document.getElementById('reimbursementPurchaseDate'),
+        reimbursementVendorName: document.getElementById('reimbursementVendorName'),
+        reimbursementVendorContact: document.getElementById('reimbursementVendorContact'),
+        reimbursementLinkedProjectId: document.getElementById('reimbursementLinkedProjectId'),
+        reimbursementReceipt: document.getElementById('reimbursementReceipt'),
+        projectForm: document.getElementById('projectForm'),
+        projectName: document.getElementById('projectName'),
+        projectCategory: document.getElementById('projectCategory'),
+        projectBudgetAllocated: document.getElementById('projectBudgetAllocated'),
+        projectStartDate: document.getElementById('projectStartDate'),
+        projectEndDate: document.getElementById('projectEndDate'),
+        projectVisibility: document.getElementById('projectVisibility'),
+        projectDescription: document.getElementById('projectDescription'),
+        eventForm: document.getElementById('eventForm'),
+        eventName: document.getElementById('eventName'),
+        eventType: document.getElementById('eventType'),
+        eventStartDate: document.getElementById('eventStartDate'),
+        eventEndDate: document.getElementById('eventEndDate'),
+        eventLocation: document.getElementById('eventLocation'),
+        eventRegistrationFee: document.getElementById('eventRegistrationFee'),
+        eventVisibility: document.getElementById('eventVisibility'),
+        eventDescription: document.getElementById('eventDescription'),
         expenseForm: document.getElementById('expenseForm'),
         expenseTitle: document.getElementById('expenseTitle'),
         expenseAmount: document.getElementById('expenseAmount'),
         expenseDate: document.getElementById('expenseDate'),
+        expenseCategory: document.getElementById('expenseCategory'),
 
         totalFeeLabel: document.getElementById('totalFeeLabel'),
 
@@ -2150,17 +2915,158 @@ function renderDashboardApp() {
     function syncHeader() {
         if (elements.topbarName) elements.topbarName.textContent = state.user.name;
         if (elements.topbarRole) elements.topbarRole.textContent = state.user.role;
+        if (elements.sidebarProfileName) elements.sidebarProfileName.textContent = state.user.name;
+        if (elements.sidebarProfileAvatar) elements.sidebarProfileAvatar.textContent = getUserInitials(state.user.name);
         if (elements.welcomeName) elements.welcomeName.textContent = state.user.name;
         if (elements.welcomeRole) elements.welcomeRole.textContent = state.user.role;
     }
 
     function getCurrentMemberRecord() {
-        return state.members.find((member) => member.name === state.user.name) || null;
+        return state.members.find((member) => String(member.id) === String(state.user.id)) || state.members[0] || null;
     }
 
     function getCurrentMemberId() {
         const currentUserRecord = state.users.find((user) => user.email === state.user.email);
         return currentUserRecord ? currentUserRecord.id : null;
+    }
+
+    function parseProfileListInput(rawValue) {
+        return String(rawValue || '')
+            .split(/[\n,]/)
+            .map((item) => item.trim())
+            .filter(Boolean)
+            .slice(0, 20);
+    }
+
+    function getProfileDraftFromState() {
+        const memberRecord = getCurrentMemberRecord() || {};
+        return {
+            name: state.user.name || '',
+            phone: memberRecord.phone || state.user.phone || '',
+            skillsText: Array.isArray(memberRecord.skills) && memberRecord.skills.length
+                ? memberRecord.skills.join(', ')
+                : Array.isArray(state.user.skills) && state.user.skills.length
+                    ? state.user.skills.join(', ')
+                    : '',
+            certificatesText: Array.isArray(memberRecord.certificates) && memberRecord.certificates.length
+                ? memberRecord.certificates.join(', ')
+                : Array.isArray(state.user.certificates) && state.user.certificates.length
+                    ? state.user.certificates.join(', ')
+                    : ''
+        };
+    }
+
+    function setProfileEditMode(isEditing) {
+        state.profileEditor.isEditing = Boolean(isEditing);
+        if (state.profileEditor.isEditing && !state.profileEditor.draft) {
+            state.profileEditor.draft = getProfileDraftFromState();
+        }
+        if (!state.profileEditor.isEditing) {
+            state.profileEditor.draft = null;
+            state.profileEditor.saving = false;
+        }
+        renderMemberProfile();
+    }
+
+    async function saveMemberProfileFromEditor() {
+        if (userRole !== 'member' || state.profileEditor.saving) return;
+
+        const nameInput = document.getElementById('profileEditName');
+        const phoneInput = document.getElementById('profileEditPhone');
+        const skillsInput = document.getElementById('profileEditSkills');
+        const certsInput = document.getElementById('profileEditCertificates');
+        const profilePicInput = document.getElementById('profilePicInput');
+        const profileCertificatesInput = document.getElementById('profileCertificatesInput');
+
+        const name = nameInput ? nameInput.value.trim() : '';
+        if (!name) {
+            showDashboardToast('Name is required.', 'error');
+            return;
+        }
+
+        state.profileEditor.saving = true;
+        renderMemberProfile();
+
+        try {
+            // 1) Upload profile picture if selected
+            let uploadedProfileUser = null;
+            if (profilePicInput && profilePicInput.files && profilePicInput.files.length) {
+                const f = profilePicInput.files[0];
+                const fd = new FormData();
+                fd.append('profilePic', f);
+                const upRes = await apiRequest('/members/upload-profile-pic', { method: 'POST', body: fd, isForm: true });
+                if (upRes && upRes.user) {
+                    uploadedProfileUser = upRes.user;
+                    state.user.profilePic = upRes.user.profilePic || state.user.profilePic;
+                }
+            }
+
+            // 2) Upload certificates if any selected
+            let uploadedCertsUser = null;
+            if (profileCertificatesInput && profileCertificatesInput.files && profileCertificatesInput.files.length) {
+                const fd = new FormData();
+                Array.from(profileCertificatesInput.files).forEach((file) => fd.append('certificates', file));
+                const certRes = await apiRequest('/members/upload-certificates', { method: 'POST', body: fd, isForm: true });
+                if (certRes && certRes.user) {
+                    uploadedCertsUser = certRes.user;
+                    // update local certificates list for immediate preview
+                    state.user.certificates = Array.isArray(certRes.user.certificates) ? certRes.user.certificates : state.user.certificates;
+                }
+            }
+
+            // 3) Build payload for textual fields (merge certificates if upload returned them)
+            const payload = {
+                name,
+                phone: phoneInput ? phoneInput.value.trim() : '',
+                skills: parseProfileListInput(skillsInput ? skillsInput.value : ''),
+                certificates: uploadedCertsUser && Array.isArray(uploadedCertsUser.certificates) && uploadedCertsUser.certificates.length
+                    ? uploadedCertsUser.certificates
+                    : parseProfileListInput(certsInput ? certsInput.value : '')
+            };
+
+            // 4) Persist textual changes
+            const result = await apiRequest('/members/update-my-profile', { method: 'PUT', body: payload });
+
+            if (result && result.user) {
+                state.user = {
+                    ...state.user,
+                    name: result.user.name,
+                    email: result.user.email,
+                    phone: result.user.phone || '',
+                    skills: Array.isArray(result.user.skills) ? result.user.skills : [],
+                    certificates: Array.isArray(result.user.certificates) ? result.user.certificates : [],
+                    profilePic: result.user.profilePic || state.user.profilePic,
+                    createdAt: result.user.createdAt || state.user.createdAt || null,
+                    updatedAt: result.user.updatedAt || state.user.updatedAt || null
+                };
+
+                localStorage.setItem('currentUser', JSON.stringify(result.user));
+
+                if (Array.isArray(state.members) && state.members[0]) {
+                    state.members[0] = {
+                        ...state.members[0],
+                        name: state.user.name,
+                        phone: state.user.phone,
+                        skills: state.user.skills,
+                        certificates: state.user.certificates,
+                        profilePic: state.user.profilePic
+                    };
+                }
+            }
+
+            syncHeader();
+            state.profileEditor.isEditing = false;
+            state.profileEditor.draft = null;
+            state.profileEditor.saving = false;
+            renderMemberProfile();
+            showDashboardToast('Profile updated successfully.', 'success');
+        } catch (err) {
+            state.profileEditor.saving = false;
+            renderMemberProfile();
+            if (!handleAuthFailure(err)) {
+                showDashboardToast(err.message || 'Failed to update profile.', 'error');
+            }
+        }
     }
 
     function getInstallmentsFromPaidAmount(paidAmount, totalFee) {
@@ -2226,6 +3132,775 @@ function renderDashboardApp() {
         `;
     }
 
+    function populateMemberReceiverSelect() {
+        if (!elements.memberTransactionReceiver) return;
+        const memberOptions = state.users.filter((user) => user.role === 'member' && user.id !== state.user.id);
+        elements.memberTransactionReceiver.innerHTML = `
+            <option value="">Select receiver</option>
+            ${memberOptions.map((member) => `<option value="${member.id}">${member.name}</option>`).join('')}
+        `;
+    }
+
+    function renderEvents() {
+        const container = document.getElementById('events-container');
+        if (!container) return;
+
+        const events = Array.isArray(state.enterprise && state.enterprise.events) ? state.enterprise.events : [];
+
+        if (events.length === 0) {
+            container.innerHTML = userRole === 'member'
+                ? '<div class="receipt-empty">No upcoming events available right now. New workshops and competitions will appear here.</div>'
+                : '<div class="receipt-empty">No events scheduled yet. Create one from this panel.</div>';
+            return;
+        }
+
+        container.innerHTML = events.map((event) => `
+            <article class="info-card enterprise-card event-card-item">
+                <div class="info-card-head">
+                    <div>
+                        <strong>${event.name || 'Untitled event'}</strong>
+                        <span>${event.eventType || 'event'} · ${event.status || 'planning'}</span>
+                    </div>
+                    <span class="status-chip status-${event.status || 'planning'}">${event.visibility || 'public'}</span>
+                </div>
+                <div class="info-card-body">
+                    <p>${event.description || 'No event description added yet.'}</p>
+                    <div class="enterprise-meta-grid">
+                        <div><span>Start</span><strong>${formatDate(event.startDate || event.createdAt || new Date())}</strong></div>
+                        <div><span>End</span><strong>${formatDate(event.endDate || event.startDate || new Date())}</strong></div>
+                        <div><span>Fee</span><strong>${formatCurrency(Number(event.registrationFee) || 0)}</strong></div>
+                        <div><span>Location</span><strong>${event.location || 'TBA'}</strong></div>
+                    </div>
+                </div>
+            </article>
+        `).join('');
+    }
+
+    function renderMemberTransactions() {
+        const container = document.getElementById('member-transactions-container');
+        if (!container) return;
+
+        const transactions = Array.isArray(state.enterprise && state.enterprise.memberTransactions) ? state.enterprise.memberTransactions : [];
+        const visibleTransactions = userRole === 'member'
+            ? transactions.filter((transaction) => {
+                const senderId = transaction.sender && (transaction.sender._id || transaction.sender.id) ? String(transaction.sender._id || transaction.sender.id) : String(transaction.sender || '');
+                const receiverId = transaction.receiver && (transaction.receiver._id || transaction.receiver.id) ? String(transaction.receiver._id || transaction.receiver.id) : String(transaction.receiver || '');
+                return senderId === String(state.user.id) || receiverId === String(state.user.id);
+            })
+            : transactions;
+
+        if (visibleTransactions.length === 0) {
+            container.innerHTML = '<div class="receipt-empty">No transfer records available.</div>';
+            return;
+        }
+
+        container.innerHTML = visibleTransactions.map((transaction) => {
+            const sender = transaction.sender && transaction.sender.name ? transaction.sender.name : 'Unknown';
+            const receiver = transaction.receiver && transaction.receiver.name ? transaction.receiver.name : 'Unknown';
+            return `
+                <div class="list-row enterprise-list-row">
+                    <div>
+                        <strong>${sender} → ${receiver}</strong>
+                        <span>${transaction.reason || 'other'} · ${formatDate(transaction.createdAt || transaction.updatedAt || new Date())}</span>
+                    </div>
+                    <div class="list-amount">${formatCurrency(Number(transaction.amount) || 0)}</div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    function renderReimbursements() {
+        if (!elements.memberReceiptStatus) return;
+
+        const reimbursements = Array.isArray(state.enterprise && state.enterprise.reimbursements) ? state.enterprise.reimbursements : [];
+        const visibleReimbursements = userRole === 'member'
+            ? reimbursements.filter((claim) => {
+                const memberId = claim.member && (claim.member._id || claim.member.id) ? String(claim.member._id || claim.member.id) : String(claim.member || '');
+                return memberId === String(state.user.id);
+            })
+            : reimbursements;
+
+        if (visibleReimbursements.length === 0) {
+            elements.memberReceiptStatus.innerHTML = userRole === 'member'
+                ? '<div class="receipt-empty">No expense claims submitted yet.</div>'
+                : '<div class="receipt-empty">No reimbursement claims yet.</div>';
+            return;
+        }
+
+        elements.memberReceiptStatus.innerHTML = visibleReimbursements.map((claim) => {
+            const claimant = claim.member && claim.member.name ? claim.member.name : 'Member';
+            const projectName = claim.linkedProject && claim.linkedProject.name ? claim.linkedProject.name : '';
+            return `
+                <div class="receipt-row reimbursement-row">
+                    <div>
+                        <strong>${claim.itemName || 'Reimbursement'} · ${formatCurrency(Number(claim.totalAmount) || 0)}</strong>
+                        <span>${claimant}${projectName ? ` | ${projectName}` : ''} | ${formatDate(claim.purchaseDate || claim.createdAt || new Date())}</span>
+                    </div>
+                    <span class="status-chip status-${claim.status || 'submitted'}">${claim.status || 'submitted'}</span>
+                </div>
+            `;
+        }).join('');
+    }
+
+    function renderContributionAnalytics() {
+        const container = document.getElementById('contribution-analytics-container');
+        if (!container) return;
+
+        const stats = state.enterprise && state.enterprise.contributionStats ? state.enterprise.contributionStats : {};
+        const topContributors = Array.isArray(stats.topContributors) ? stats.topContributors : [];
+        const topRequests = Array.isArray(stats.topRequests) ? stats.topRequests : [];
+
+        const contributorRows = topContributors.slice(0, 5).map((entry) => {
+            const user = Array.isArray(entry.user) ? entry.user[0] : entry.user;
+            return `<div class="list-row"><div><strong>${user && user.name ? user.name : 'Member'}</strong><span>${Number(entry.transactionCount) || 0} contributions</span></div><div class="list-amount">${formatCurrency(Number(entry.totalContributed) || 0)}</div></div>`;
+        }).join('');
+
+        const requestRows = topRequests.slice(0, 5).map((entry) => {
+            const user = Array.isArray(entry.user) ? entry.user[0] : entry.user;
+            return `<div class="list-row"><div><strong>${user && user.name ? user.name : 'Member'}</strong><span>${Number(entry.transactionCount) || 0} requests</span></div><div class="list-amount">${formatCurrency(Number(entry.totalReceived) || 0)}</div></div>`;
+        }).join('');
+
+        container.innerHTML = `
+            <div class="enterprise-columns">
+                <div class="enterprise-column">
+                    <h4>Top Contributors</h4>
+                    ${contributorRows || '<div class="receipt-empty">No contribution data yet.</div>'}
+                </div>
+                <div class="enterprise-column">
+                    <h4>Top Requests</h4>
+                    ${requestRows || '<div class="receipt-empty">No contribution requests yet.</div>'}
+                </div>
+            </div>
+        `;
+    }
+
+    function renderAnnouncements() {
+        const container = document.getElementById('announcements-container');
+        if (!container || userRole !== 'member') return;
+
+        const events = Array.isArray(state.enterprise && state.enterprise.events) ? state.enterprise.events : [];
+        const pendingAmount = Number(state.memberFee && state.memberFee.remainingAmount) || 0;
+
+        const eventAnnouncements = events
+            .slice()
+            .sort((a, b) => new Date(b.startDate || b.createdAt || 0) - new Date(a.startDate || a.createdAt || 0))
+            .slice(0, 4)
+            .map((event) => ({
+                title: `${event.eventType || 'Club'} update: ${event.name || 'Upcoming activity'}`,
+                detail: `${formatDate(event.startDate || event.createdAt || new Date())} · ${event.location || 'Venue to be announced'}`
+            }));
+
+        const baseAnnouncements = [
+            {
+                title: pendingAmount > 0 ? 'Membership fee reminder' : 'Membership fee status',
+                detail: pendingAmount > 0
+                    ? `Your pending fee is ${formatCurrency(pendingAmount)}. Please complete payment and upload receipt.`
+                    : 'Your membership fee is currently up to date.'
+            },
+            {
+                title: 'Project assignment updates',
+                detail: 'Projects assigned by administrators will appear in your Projects page.'
+            }
+        ];
+
+        const announcements = [...baseAnnouncements, ...eventAnnouncements].slice(0, 6);
+        container.innerHTML = announcements.map((item) => `
+            <div class="list-row enterprise-list-row">
+                <div>
+                    <strong>${item.title}</strong>
+                    <span>${item.detail}</span>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    function renderMemberProfile() {
+        const container = document.getElementById('member-profile-container');
+        if (!container || userRole !== 'member') return;
+
+        const memberRecord = getCurrentMemberRecord() || {};
+        const joinDate = memberRecord.joinedAt || state.user.createdAt || state.user.joinDate || null;
+        const skills = Array.isArray(memberRecord.skills) && memberRecord.skills.length
+            ? memberRecord.skills
+            : (Array.isArray(state.user.skills) ? state.user.skills : []);
+        const certs = Array.isArray(memberRecord.certificates) && memberRecord.certificates.length
+            ? memberRecord.certificates
+            : (Array.isArray(state.user.certificates) ? state.user.certificates : []);
+
+        if (!state.profileEditor.draft) {
+            state.profileEditor.draft = getProfileDraftFromState();
+        }
+
+        if (!state.profileEditor.isEditing) {
+            container.innerHTML = `
+                <div class="profile-shell">
+                    <div class="profile-left-spacer" aria-hidden="true"></div>
+                    <div class="profile-actions-vertical">
+                        <button class="profile-action profile-action-cancel" id="profileEditButton" type="button"><i class="fas fa-pen"></i> Edit</button>
+                    </div>
+                    <div class="member-profile-grid enterprise-columns profile-content">
+                        <section class="enterprise-column member-profile-column">
+                            <h4>Member Details</h4>
+                            <div class="member-profile-row"><span class="member-profile-key">Name</span><strong class="member-profile-value">${state.user.name || '—'}</strong></div>
+                            <div class="member-profile-row"><span class="member-profile-key">Role</span><strong class="member-profile-value">${state.user.role || 'member'}</strong></div>
+                            <div class="member-profile-row"><span class="member-profile-key">Membership ID</span><strong class="member-profile-value">${memberRecord.memberId || memberRecord._id || 'Not assigned'}</strong></div>
+                            <div class="member-profile-row"><span class="member-profile-key">Join Date</span><strong class="member-profile-value">${joinDate ? formatDate(joinDate) : 'Not available'}</strong></div>
+                        </section>
+                        <section class="enterprise-column member-profile-column">
+                            <h4>Contact & Skills</h4>
+                            <div class="member-profile-row"><span class="member-profile-key">Email</span><strong class="member-profile-value">${state.user.email || '—'}</strong></div>
+                            <div class="member-profile-row"><span class="member-profile-key">Phone</span><strong class="member-profile-value">${memberRecord.phone || state.user.phone || 'Not provided'}</strong></div>
+                            <div class="member-profile-row"><span class="member-profile-key">Skills</span><strong class="member-profile-value">${skills.length ? skills.join(', ') : 'No skills added yet'}</strong></div>
+                            <div class="member-profile-row"><span class="member-profile-key">Certificates</span><div class="member-profile-value certs-preview">${certs.length ? certs.map(c => `<div class="cert-item" data-url="${c}"><a href="${c}" target="_blank">${c.split('/').pop()}</a></div>`).join('') : 'No certificates added yet'}</div></div>
+                        </section>
+                    </div>
+                </div>
+            `;
+
+            const editButton = document.getElementById('profileEditButton');
+            if (editButton) {
+                editButton.addEventListener('click', () => setProfileEditMode(true));
+            }
+            return;
+        }
+
+        container.innerHTML = `
+            <div class="profile-shell">
+                <div class="profile-left-spacer" aria-hidden="true"></div>
+                <div class="profile-actions-vertical">
+                    <button class="profile-action" id="profileCancelButton" type="button" ${state.profileEditor.saving ? 'disabled' : ''}>Cancel</button>
+                    <button class="profile-action profile-action-save" id="profileSaveButton" type="button" ${state.profileEditor.saving ? 'disabled' : ''}>${state.profileEditor.saving ? 'Saving...' : 'Save Changes'}</button>
+                </div>
+                <div class="member-profile-grid enterprise-columns profile-content">
+                    <section class="enterprise-column member-profile-column">
+                        <h4>Member Details</h4>
+                        <div class="member-profile-row"><span class="member-profile-key">Name</span><input class="member-profile-input" id="profileEditName" type="text" maxlength="80" required></div>
+                        <div class="member-profile-row"><span class="member-profile-key">Role</span><strong class="member-profile-value">${state.user.role || 'member'}</strong></div>
+                        <div class="member-profile-row"><span class="member-profile-key">Membership ID</span><strong class="member-profile-value">${memberRecord.memberId || memberRecord._id || 'Not assigned'}</strong></div>
+                        <div class="member-profile-row"><span class="member-profile-key">Join Date</span><strong class="member-profile-value">${joinDate ? formatDate(joinDate) : 'Not available'}</strong></div>
+                        <div class="member-profile-row"><span class="member-profile-key">Profile Photo</span>
+                            <div class="member-profile-value">
+                                <div id="profilePicPreview" class="profile-pic-preview">${state.user.profilePic ? `<img src="${state.user.profilePic}" alt="Profile photo" class="profile-thumb">` : '<div class="profile-thumb-placeholder">No photo</div>'}</div>
+                                <input type="file" id="profilePicInput" accept="image/*">
+                            </div>
+                        </div>
+                    </section>
+                    <section class="enterprise-column member-profile-column">
+                        <h4>Contact & Skills</h4>
+                        <div class="member-profile-row"><span class="member-profile-key">Email</span><strong class="member-profile-value">${state.user.email || '—'}</strong></div>
+                        <div class="member-profile-row"><span class="member-profile-key">Phone</span><input class="member-profile-input" id="profileEditPhone" type="text" maxlength="20"></div>
+                        <div class="member-profile-row"><span class="member-profile-key">Skills</span><textarea class="member-profile-input member-profile-textarea" id="profileEditSkills" rows="2" placeholder="e.g. CAD, Arduino, Embedded C"></textarea></div>
+                        <div class="member-profile-row"><span class="member-profile-key">Certificates</span>
+                            <div class="member-profile-value">
+                                <div id="profileCertificatesPreview" class="certs-preview">${certs.length ? certs.map(c => `<div class="cert-item" data-url="${c}"><a href="${c}" target="_blank">${c.split('/').pop()}</a><button class="cert-remove" data-url="${c}" title="Remove certificate">✕</button></div>`).join('') : 'No certificates added yet'}</div>
+                                <input type="file" id="profileCertificatesInput" accept="image/*,.pdf" multiple>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            </div>
+        `;
+
+        const draft = state.profileEditor.draft || getProfileDraftFromState();
+        const nameInput = document.getElementById('profileEditName');
+        const phoneInput = document.getElementById('profileEditPhone');
+        const skillsInput = document.getElementById('profileEditSkills');
+        const certsInput = document.getElementById('profileEditCertificates');
+        if (nameInput) nameInput.value = draft.name || '';
+        if (phoneInput) phoneInput.value = draft.phone || '';
+        if (skillsInput) skillsInput.value = draft.skillsText || '';
+        if (certsInput) certsInput.value = draft.certificatesText || '';
+
+        const cancelButton = document.getElementById('profileCancelButton');
+        const saveButton = document.getElementById('profileSaveButton');
+
+        if (cancelButton) {
+            cancelButton.addEventListener('click', () => setProfileEditMode(false));
+        }
+
+        if (saveButton) {
+            saveButton.addEventListener('click', saveMemberProfileFromEditor);
+        }
+
+        [nameInput, phoneInput, skillsInput, certsInput].forEach((input) => {
+            if (!input) return;
+            input.addEventListener('input', () => {
+                state.profileEditor.draft = {
+                    name: nameInput ? nameInput.value : '',
+                    phone: phoneInput ? phoneInput.value : '',
+                    skillsText: skillsInput ? skillsInput.value : '',
+                    certificatesText: certsInput ? certsInput.value : ''
+                };
+            });
+        });
+
+        // Preview selected files for profile photo and certificates
+        const profilePicInput = document.getElementById('profilePicInput');
+        const profileCertificatesInput = document.getElementById('profileCertificatesInput');
+        const profilePicPreview = document.getElementById('profilePicPreview');
+        const certsPreviewRoot = document.getElementById('profileCertificatesPreview');
+
+        if (profilePicInput) {
+            profilePicInput.addEventListener('change', () => {
+                const f = profilePicInput.files && profilePicInput.files[0];
+                if (!f) {
+                    if (profilePicPreview) profilePicPreview.innerHTML = '<div class="profile-thumb-placeholder">No photo</div>';
+                    return;
+                }
+                if (f.type && f.type.startsWith('image/')) {
+                    const url = URL.createObjectURL(f);
+                    if (profilePicPreview) profilePicPreview.innerHTML = `<img src="${url}" alt="Profile preview" class="profile-thumb">`;
+                } else {
+                    if (profilePicPreview) profilePicPreview.innerHTML = `<div class="profile-thumb-placeholder">${f.name}</div>`;
+                }
+            });
+        }
+
+        if (profileCertificatesInput) {
+            profileCertificatesInput.addEventListener('change', () => {
+                const files = profileCertificatesInput.files ? Array.from(profileCertificatesInput.files) : [];
+                if (!files.length) {
+                    if (certsPreviewRoot) certsPreviewRoot.innerHTML = 'No certificates selected';
+                    return;
+                }
+                if (certsPreviewRoot) {
+                    certsPreviewRoot.innerHTML = files.map((f) => {
+                        if (f.type && f.type.startsWith('image/')) {
+                            const url = URL.createObjectURL(f);
+                            return `<div class="cert-item"><img src="${url}" class="cert-thumb"><div class="cert-name">${f.name}</div></div>`;
+                        }
+                        return `<div class="cert-item"><div class="cert-file">${f.name}</div></div>`;
+                    }).join('');
+                }
+            });
+        }
+
+        // handle removal of already uploaded certificates (click on remove button)
+        if (certsPreviewRoot) {
+            certsPreviewRoot.addEventListener('click', async (ev) => {
+                const btn = ev.target.closest('.cert-remove');
+                if (!btn) return;
+                const url = btn.dataset.url;
+                if (!url) return;
+                const confirmRemove = confirm('Remove this certificate from your profile?');
+                if (!confirmRemove) return;
+                try {
+                    const res = await apiRequest('/members/remove-certificate', { method: 'POST', body: { url } });
+                    if (res && res.user) {
+                        state.user.certificates = Array.isArray(res.user.certificates) ? res.user.certificates : [];
+                        // re-render profile to reflect removal
+                        renderMemberProfile();
+                        showDashboardToast('Certificate removed.', 'success');
+                    }
+                } catch (err) {
+                    if (!handleAuthFailure(err)) showDashboardToast(err.message || 'Failed to remove certificate', 'error');
+                }
+            });
+        }
+
+        if (nameInput) {
+            nameInput.focus();
+            nameInput.selectionStart = nameInput.value.length;
+            nameInput.selectionEnd = nameInput.value.length;
+        }
+    }
+
+    function renderRulesPortal() {
+        const toc = document.getElementById('rulesToc');
+        const content = document.getElementById('rulesContent');
+        const progressBar = document.getElementById('rulesProgressBar');
+        const progressText = document.getElementById('rulesProgressText');
+        const searchInput = document.getElementById('rulesSearchInput');
+        const acceptanceCheckbox = document.getElementById('sopAcceptanceCheckbox');
+
+        if (!toc || !content) return;
+
+        const currentUser = state.user || {};
+        const isAccepted = Boolean(currentUser.sopAcceptedAt && currentUser.sopAcceptedVersion === SOP_VERSION);
+        if (acceptanceCheckbox) acceptanceCheckbox.checked = isAccepted;
+
+        toc.innerHTML = SOP_SECTIONS.map((section) => `
+            <button type="button" class="rules-toc-link" data-section-target="${section.id}">
+                <span>${section.title}</span>
+            </button>
+        `).join('');
+
+        content.innerHTML = SOP_SECTIONS.map((section) => `
+            <section class="rules-section-card" id="${section.id}" data-rules-section>
+                <button type="button" class="rules-section-header" data-section-toggle="${section.id}">
+                    <span>${section.title}</span>
+                    <i class="fas fa-chevron-down"></i>
+                </button>
+                <div class="rules-section-body">${buildSopSectionHtml(section)}</div>
+            </section>
+        `).join('');
+
+        const sectionCards = Array.from(content.querySelectorAll('[data-rules-section]'));
+
+        const updateProgress = () => {
+            const viewportTop = window.scrollY + 120;
+            let visibleCount = 0;
+            sectionCards.forEach((card) => {
+                const top = card.getBoundingClientRect().top + window.scrollY;
+                if (top <= viewportTop) visibleCount += 1;
+            });
+            const pct = Math.max(0, Math.min(100, Math.round((visibleCount / SOP_SECTIONS.length) * 100)));
+            if (progressBar) progressBar.style.width = `${pct}%`;
+            if (progressText) progressText.textContent = `${pct}% read`;
+        };
+
+        toc.querySelectorAll('[data-section-target]').forEach((button) => {
+            button.addEventListener('click', () => {
+                const target = document.getElementById(button.getAttribute('data-section-target'));
+                if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            });
+        });
+
+        content.querySelectorAll('[data-section-toggle]').forEach((button) => {
+            button.addEventListener('click', () => {
+                const card = button.closest('.rules-section-card');
+                if (card) card.classList.toggle('is-collapsed');
+            });
+        });
+
+        const expandAllBtn = document.getElementById('expandAllRulesButton');
+        const collapseAllBtn = document.getElementById('collapseAllRulesButton');
+        if (expandAllBtn) expandAllBtn.addEventListener('click', () => sectionCards.forEach((card) => card.classList.remove('is-collapsed')));
+        if (collapseAllBtn) collapseAllBtn.addEventListener('click', () => sectionCards.forEach((card) => card.classList.add('is-collapsed')));
+
+        if (searchInput) {
+            searchInput.addEventListener('input', () => {
+                const query = searchInput.value.trim().toLowerCase();
+                sectionCards.forEach((card) => {
+                    const match = !query || card.textContent.toLowerCase().includes(query);
+                    card.style.display = match ? '' : 'none';
+                });
+            });
+        }
+
+        updateProgress();
+        window.addEventListener('scroll', updateProgress, { passive: true });
+
+        const saveAcceptanceBtn = document.getElementById('saveSopAcceptanceButton');
+        if (saveAcceptanceBtn && acceptanceCheckbox) {
+            saveAcceptanceBtn.addEventListener('click', async () => {
+                if (!acceptanceCheckbox.checked) {
+                    showDashboardToast('Please check the acknowledgement box first.', 'error');
+                    return;
+                }
+
+                try {
+                    const result = await apiRequest('/members/accept-sop', {
+                        method: 'POST',
+                        body: { version: SOP_VERSION }
+                    });
+
+                    if (result && result.user) {
+                        state.user.sopAcceptedAt = result.user.sopAcceptedAt;
+                        state.user.sopAcceptedVersion = result.user.sopAcceptedVersion;
+                        localStorage.setItem('currentUser', JSON.stringify({
+                            ...currentUser,
+                            sopAcceptedAt: result.user.sopAcceptedAt,
+                            sopAcceptedVersion: result.user.sopAcceptedVersion
+                        }));
+                    }
+
+                    showDashboardToast('SOP acknowledgement saved.', 'success');
+                } catch (err) {
+                    if (!handleAuthFailure(err)) {
+                        showDashboardToast(err.message || 'Failed to save acknowledgement.', 'error');
+                    }
+                }
+            });
+        }
+
+        const printBtn = document.getElementById('printRulesButton');
+        if (printBtn) printBtn.addEventListener('click', () => window.print());
+    }
+
+    const SOP_VERSION = 'official-sop-v1';
+    const SOP_SECTIONS = [
+        {
+            id: 'purpose',
+            title: '1. Purpose',
+            text: 'This SOP defines the operational structure, membership policies, financial guidelines, and project execution process for Texcelrators Robotics Club to ensure smooth functioning, transparency, and efficiency.'
+        },
+        {
+            id: 'objectives',
+            title: '2. Objectives',
+            bullets: [
+                'Promote robotics, automation, and AI among students.',
+                'Provide hands-on learning experiences through technical projects.',
+                'Organize workshops, competitions, and guest lectures.',
+                'Represent the college in national and international robotics competitions.',
+                'Collaborate with industry experts, companies, and academic institutions.'
+            ]
+        },
+        {
+            id: 'membership-guidelines',
+            title: '3. Membership Guidelines',
+            bullets: [
+                'Eligibility: Open to all students of the college from any branch.',
+                'Membership Categories:',
+                'New Members: Students joining the club for the first time.',
+                'Renewing Members: Students who have completed one year in the club.',
+                'Fee Structure:',
+                'New Members: ₹10,000 per year (payable in two installments of ₹5,000 each).',
+                'Renewing Members: ₹2,000 per year.',
+                'Responsibilities:',
+                'Active participation in club projects, competitions, and meetings.',
+                'Contribution to club activities, mentoring juniors, and maintaining discipline.',
+                'Non-Payment Penalty:',
+                'If a member fails to pay the second installment on time, they will be given a grace period of 15 days.',
+                'After that, they will be temporarily suspended from club activities until the payment is made',
+                'Renewing members must pay within the first month of the new term to maintain active status.'
+            ]
+        },
+        {
+            id: 'leadership-core-team-selection',
+            title: '4. Leadership & Core Team Selection',
+            bullets: [
+                'Organizational Structure:',
+                'President: Leads the club and oversees all activities.',
+                'Vice President: Assists the president and manages internal affairs.',
+                'General Secretary: Maintains records, documentation, and official communication.',
+                'Technical Head: Leads technical projects, training, and innovation initiatives.',
+                'Event Coordinator: Manages workshops, competitions, and logistics.',
+                'Treasurer: Handles financial transactions, budgeting, and sponsorships.',
+                'Mentors: Alumni or senior members providing technical and strategic guidance.',
+                'Selection Process:',
+                'The President and Vice President will be selected based on leadership skills, past contributions, and performance in the club.',
+                'Other core team positions will be appointed based on interviews, project involvement, and experience.',
+                'Leadership roles are held for one academic year, with re-elections at the end of the term.'
+            ]
+        },
+        {
+            id: 'meetings-communication',
+            title: '5. Meetings & Communication',
+            bullets: [
+                'Regular Meetings: Weekly or bi-weekly to discuss project updates and upcoming events.',
+                'Emergency Meetings: Conducted as needed for urgent decisions or competition preparations.',
+                'Communication Platforms: WhatsApp/Discord for quick updates, and email for formal communication.',
+                'Meeting Documentation: The General Secretary records meeting minutes, which are shared with members.'
+            ]
+        },
+        {
+            id: 'project-execution-lab-access',
+            title: '6. Project Execution & Lab Access',
+            bullets: [
+                'Project Assignment: Teams are formed based on interest and expertise. Each project must have a team leader and mentor.',
+                'Lab & Equipment Access:',
+                'Members can use club resources but must follow proper handling procedures.',
+                'Any damage to equipment due to negligence may require reimbursement from the responsible member(s).',
+                'Access to certain high-cost or sensitive equipment may require prior approval from the core team.',
+                'Intellectual Property: Any robotics projects developed under the club belong to the team and the club, and cannot be used for personal gain without approval.'
+            ]
+        },
+        {
+            id: 'financial-policy',
+            title: '7. Financial Policy',
+            bullets: [
+                'Membership Fees:',
+                'New Members: ₹10,000 per year (payable in two installments of ₹5,000 each).',
+                'Renewing Members: ₹2,000 per year.',
+                'Payment Schedule:',
+                'New Members: ₹5,000 at the time of joining + ₹5,000 at mid-year.',
+                'Renewing Members: ₹2,000 at the start of the new membership cycle.',
+                'Expenses Not Covered:',
+                'Accommodation and food costs for competitions, workshops, and events must be borne separately by members.',
+                'Travel Fee Reimbursement:',
+                'Travel expenses for club-related activities will be refunded by the college.',
+                'Reimbursement applies only to sleeper class train tickets (other classes or modes of transport will not be covered).',
+                'If members travel in AC class, the refund will be given equivalent to a sleeper class fare.',
+                'Members must submit valid travel receipts and required documents for reimbursement.',
+                'Utilization of Funds:',
+                'Purchasing robotics kits, components, and tools.',
+                'Organizing workshops, competitions, and guest lectures.',
+                'Maintenance and upgrades of lab infrastructure.',
+                'Participation in national and international competitions.',
+                'Competition Winnings:',
+                'The full amount won in competitions will be given to the students who participated.',
+                'The club will not take any percentage of the prize money.',
+                'Financial Transparency: The Treasurer will maintain detailed financial records, and an annual budget report will be shared with members.'
+            ]
+        },
+        {
+            id: 'event-management',
+            title: '8. Event Management',
+            bullets: [
+                'Workshops & Training: Organized to train members in robotics, AI, and automation.',
+                'Competitions:',
+                'The club will participate in and host robotics competitions.',
+                'Members selected for competitions must demonstrate commitment and technical skills.',
+                'Collaborations: The club will seek tie-ups with companies, research institutions, and alumni to provide opportunities for members.',
+                'Feedback & Improvement: After every event, a review meeting will be conducted to discuss improvements.'
+            ]
+        },
+        {
+            id: 'code-of-conduct',
+            title: '9. Code of Conduct',
+            bullets: [
+                'Members must maintain professionalism, teamwork, and respect.',
+                'Any misconduct, rule violation, or unethical behaviour (e.g., plagiarism, misuse of funds, or damaging club property) may result in suspension or termination.',
+                'Confidentiality: Members must not share confidential club projects or strategies with external organizations without approval.'
+            ]
+        },
+        {
+            id: 'amendments-review',
+            title: '10. Amendments & Review',
+            bullets: [
+                'This SOP will be reviewed annually, and necessary updates will be made.',
+                'Any changes require approval from the core team and faculty advisor.'
+            ]
+        },
+        {
+            id: 'approval-signatures',
+            title: '11. Approval & Signatures',
+            bullets: [
+                'Approved by:',
+                'Ashutosh Maske',
+                'Founder & Faculty Advisor, Texcelrators Robotics Club',
+                'Signature - _____________________',
+                'Date - __________________________'
+            ]
+        }
+    ];
+
+    function buildSopSectionHtml(section) {
+        if (section.text) {
+            return `<p>${section.text}</p>`;
+        }
+
+        if (Array.isArray(section.bullets)) {
+            return `<ul>${section.bullets.map((item) => `<li>${item}</li>`).join('')}</ul>`;
+        }
+
+        return '';
+    }
+
+    function renderRulesPortal() {
+        const toc = document.getElementById('rulesToc');
+        const content = document.getElementById('rulesContent');
+        const progressBar = document.getElementById('rulesProgressBar');
+        const progressText = document.getElementById('rulesProgressText');
+        const searchInput = document.getElementById('rulesSearchInput');
+        const acceptanceCheckbox = document.getElementById('sopAcceptanceCheckbox');
+
+        if (!toc || !content) return;
+
+        const currentUser = state.user || {};
+        const acceptedVersion = currentUser.sopAcceptedVersion || '';
+        const isAccepted = Boolean(currentUser.sopAcceptedAt && acceptedVersion === SOP_VERSION);
+
+        if (acceptanceCheckbox) acceptanceCheckbox.checked = isAccepted;
+
+        toc.innerHTML = SOP_SECTIONS.map((section) => `
+            <button type="button" class="rules-toc-link" data-section-target="${section.id}">
+                <span>${section.title}</span>
+            </button>
+        `).join('');
+
+        content.innerHTML = SOP_SECTIONS.map((section) => `
+            <section class="rules-section-card" id="${section.id}" data-rules-section>
+                <button type="button" class="rules-section-header" data-section-toggle="${section.id}">
+                    <span>${section.title}</span>
+                    <i class="fas fa-chevron-down"></i>
+                </button>
+                <div class="rules-section-body">${buildSopSectionHtml(section)}</div>
+            </section>
+        `).join('');
+
+        const sectionCards = Array.from(content.querySelectorAll('[data-rules-section]'));
+
+        const updateProgress = () => {
+            const viewportTop = window.scrollY + 120;
+            let visibleCount = 0;
+            sectionCards.forEach((card) => {
+                const rect = card.getBoundingClientRect();
+                const top = rect.top + window.scrollY;
+                if (top <= viewportTop) visibleCount += 1;
+            });
+            const pct = Math.max(0, Math.min(100, Math.round((visibleCount / SOP_SECTIONS.length) * 100)));
+            if (progressBar) progressBar.style.width = `${pct}%`;
+            if (progressText) progressText.textContent = `${pct}% read`;
+        };
+
+        const scrollToSection = (id) => {
+            const target = document.getElementById(id);
+            if (!target) return;
+            target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        };
+
+        toc.querySelectorAll('[data-section-target]').forEach((button) => {
+            button.addEventListener('click', () => scrollToSection(button.getAttribute('data-section-target')));
+        });
+
+        content.querySelectorAll('[data-section-toggle]').forEach((button) => {
+            button.addEventListener('click', () => {
+                const card = button.closest('.rules-section-card');
+                if (!card) return;
+                card.classList.toggle('is-collapsed');
+            });
+        });
+
+        const expandAllBtn = document.getElementById('expandAllRulesButton');
+        const collapseAllBtn = document.getElementById('collapseAllRulesButton');
+
+        if (expandAllBtn) {
+            expandAllBtn.addEventListener('click', () => sectionCards.forEach((card) => card.classList.remove('is-collapsed')));
+        }
+        if (collapseAllBtn) {
+            collapseAllBtn.addEventListener('click', () => sectionCards.forEach((card) => card.classList.add('is-collapsed')));
+        }
+
+        if (searchInput) {
+            searchInput.addEventListener('input', () => {
+                const query = searchInput.value.trim().toLowerCase();
+                sectionCards.forEach((card) => {
+                    const text = card.textContent.toLowerCase();
+                    card.style.display = !query || text.includes(query) ? '' : 'none';
+                });
+            });
+        }
+
+        updateProgress();
+        window.addEventListener('scroll', updateProgress, { passive: true });
+
+        const saveAcceptanceBtn = document.getElementById('saveSopAcceptanceButton');
+        if (saveAcceptanceBtn && acceptanceCheckbox) {
+            saveAcceptanceBtn.addEventListener('click', async () => {
+                if (!acceptanceCheckbox.checked) {
+                    showDashboardToast('Please check the acknowledgement box first.', 'error');
+                    return;
+                }
+
+                try {
+                    const result = await apiRequest('/members/accept-sop', {
+                        method: 'POST',
+                        body: { version: SOP_VERSION }
+                    });
+
+                    if (result && result.user) {
+                        state.user.sopAcceptedAt = result.user.sopAcceptedAt;
+                        state.user.sopAcceptedVersion = result.user.sopAcceptedVersion;
+                        localStorage.setItem('currentUser', JSON.stringify({ ...currentUser, sopAcceptedAt: result.user.sopAcceptedAt, sopAcceptedVersion: result.user.sopAcceptedVersion }));
+                    }
+
+                    showDashboardToast('SOP acknowledgement saved.', 'success');
+                } catch (err) {
+                    if (!handleAuthFailure(err)) {
+                        showDashboardToast(err.message || 'Failed to save acknowledgement.', 'error');
+                    }
+                }
+            });
+        }
+
+        const printBtn = document.getElementById('printRulesButton');
+        if (printBtn) {
+            printBtn.addEventListener('click', () => window.print());
+        }
+    }
+
     function formatMemberStatus(status) {
         const normalized = status || 'inactive';
         return normalized.charAt(0).toUpperCase() + normalized.slice(1);
@@ -2262,16 +3937,124 @@ function renderDashboardApp() {
             elements.amountToPay.textContent = formatCurrency(state.memberFee.nextDueAmount);
         }
 
+        if (elements.paymentStatusChip) {
+            const paid = Number(state.memberFee.paidAmount) || 0;
+            const total = Number(state.memberFee.totalFee) || 0;
+            const settled = total > 0 && paid >= total;
+            elements.paymentStatusChip.textContent = settled ? 'Paid' : 'Pending';
+            elements.paymentStatusChip.className = `status-chip ${settled ? 'status-active' : 'status-pending'}`;
+        }
+
         const progressFill = document.getElementById('paymentProgress');
         if (progressFill) {
             progressFill.style.width = `${state.memberFee.progress}%`;
         }
 
         if (elements.qrCode) {
-            elements.qrCode.innerHTML = `<img src="${createQrSvgData('₹' + state.memberFee.nextDueAmount)}" alt="Payment QR code">`;
+            // Try to auto-crop the source QR image in-browser so only the QR square remains.
+            // Falls back to background image if cropping fails.
+            (function cropAndSetQr(targetEl, srcUrl) {
+                const img = new Image();
+                img.src = srcUrl;
+                img.onload = () => {
+                    try {
+                        const w = img.naturalWidth;
+                        const h = img.naturalHeight;
+                        const canvas = document.createElement('canvas');
+                        canvas.width = w;
+                        canvas.height = h;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0);
+                        const data = ctx.getImageData(0, 0, w, h).data;
+                        const threshold = 250; // consider pixel 'non-white' if any channel < threshold
+                        let minX = w, minY = h, maxX = 0, maxY = 0;
+                        for (let y = 0; y < h; y++) {
+                            for (let x = 0; x < w; x++) {
+                                const i = (y * w + x) * 4;
+                                const r = data[i], g = data[i+1], b = data[i+2], a = data[i+3];
+                                if (a > 16 && (r < threshold || g < threshold || b < threshold)) {
+                                    if (x < minX) minX = x;
+                                    if (y < minY) minY = y;
+                                    if (x > maxX) maxX = x;
+                                    if (y > maxY) maxY = y;
+                                }
+                            }
+                        }
+                        // if no dark pixels found, fallback
+                        if (minX > maxX || minY > maxY) throw new Error('no-qr-found');
+                        // add small padding
+                        const pad = Math.round(Math.max((maxX-minX), (maxY-minY)) * 0.06);
+                        minX = Math.max(0, minX - pad);
+                        minY = Math.max(0, minY - pad);
+                        maxX = Math.min(w, maxX + pad);
+                        maxY = Math.min(h, maxY + pad);
+                        const cw = maxX - minX;
+                        const ch = maxY - minY;
+                        const out = document.createElement('canvas');
+                        const size = Math.max(cw, ch);
+                        out.width = size;
+                        out.height = size;
+                        const octx = out.getContext('2d');
+                        // fill white background (preserve QR contrast)
+                        octx.fillStyle = '#ffffff';
+                        octx.fillRect(0,0,size,size);
+                        // draw cropped area centered
+                        octx.drawImage(canvas, minX, minY, cw, ch, (size - cw)/2, (size - ch)/2, cw, ch);
+                        const dataUrl = out.toDataURL('image/png');
+                        targetEl.innerHTML = `<img class="qr-img-cropped" src="${dataUrl}" alt="Payment QR">`;
+                    } catch (err) {
+                        // fallback to background div if any error (CORS or detection failure)
+                        targetEl.innerHTML = `<div class="qr-bg" style="background-image:url('${srcUrl}');" aria-hidden="true"></div>`;
+                    }
+                };
+                img.onerror = () => {
+                    targetEl.innerHTML = `<div class="qr-bg" style="background-image:url('${srcUrl}');" aria-hidden="true"></div>`;
+                };
+            })(elements.qrCode, 'assets/images/payment-qr.png');
         }
 
+        renderMemberPaymentHistory();
+
         updatePaymentFlowUI();
+    }
+
+    function renderMemberPaymentHistory() {
+        if (!elements.memberPaymentHistoryBody) return;
+
+        const paymentRows = state.payments
+            .filter((payment) => {
+                const paymentUser = state.users.find((user) => user.id === payment.userId);
+                return paymentUser && paymentUser.name === state.user.name;
+            })
+            .sort((a, b) => String(b.date).localeCompare(String(a.date)));
+
+        if (!paymentRows.length) {
+            elements.memberPaymentHistoryBody.innerHTML = '';
+            if (elements.memberPaymentHistoryEmpty) elements.memberPaymentHistoryEmpty.style.display = 'block';
+            return;
+        }
+
+        if (elements.memberPaymentHistoryEmpty) elements.memberPaymentHistoryEmpty.style.display = 'none';
+
+        elements.memberPaymentHistoryBody.innerHTML = paymentRows.map((payment) => {
+            const status = payment.status || 'pending';
+            const receiptCell = payment.receiptPreview && payment.receiptType === 'image'
+                ? `<img src="${payment.receiptPreview}" alt="Receipt" class="receipt-thumb">`
+                : `<span class="receipt-file-name">${payment.receiptName || 'NA'}</span>`;
+            const downloadLink = payment.receiptPreview
+                ? `<a href="${payment.receiptPreview}" class="dashboard-button" download>Download</a>`
+                : '<span class="receipt-file-name">NA</span>';
+
+            return `
+                <tr>
+                    <td>${formatDate(payment.date)}</td>
+                    <td>${formatCurrency(payment.amount)}</td>
+                    <td><span class="status-chip status-${status}">${status}</span></td>
+                    <td><div class="receipt-cell">${receiptCell}</div></td>
+                    <td>${downloadLink}</td>
+                </tr>
+            `;
+        }).join('');
     }
 
     function renderTransactions() {
@@ -2329,47 +4112,37 @@ function renderDashboardApp() {
     }
 
     function renderMemberExpenses() {
-        if (!elements.memberExpensesContainer) return;
+        if (!elements.expenseTableBody) return;
 
-        elements.memberExpensesContainer.innerHTML = state.expenses.map((expense) => `
-            <div class="list-row">
-                <div>
-                    <strong>${expense.title}</strong>
-                    <span>${formatDate(expense.date)}</span>
-                </div>
-                <div class="list-amount">${formatCurrency(expense.amount)}</div>
-            </div>
+        if (!Array.isArray(state.expenses) || state.expenses.length === 0) {
+            elements.expenseTableBody.innerHTML = '';
+            if (elements.expenseEmptyState) elements.expenseEmptyState.style.display = 'block';
+            return;
+        }
+
+        if (elements.expenseEmptyState) elements.expenseEmptyState.style.display = 'none';
+
+        elements.expenseTableBody.innerHTML = state.expenses.map((expense) => `
+            <tr>
+                <td>
+                    <div class="member-cell">
+                        <span class="member-avatar" aria-hidden="true">${String(expense.title || 'E').trim().charAt(0).toUpperCase()}</span>
+                        <span class="member-name">${expense.title || 'Untitled Expense'}</span>
+                    </div>
+                </td>
+                <td><span class="status-chip status-pending">${expense.category || 'Other'}</span></td>
+                <td>${formatCurrency(expense.amount)}</td>
+                <td>${formatDate(expense.date)}</td>
+                <td><span class="status-chip status-active">Recorded</span></td>
+                <td class="expense-actions">
+                    <button type="button" class="dashboard-button">View</button>
+                </td>
+            </tr>
         `).join('');
     }
 
     function renderMemberReceiptStatus() {
-        if (!elements.memberReceiptStatus || userRole !== 'member') return;
-        const memberId = getCurrentMemberId();
-        if (!memberId) {
-            elements.memberReceiptStatus.innerHTML = '';
-            return;
-        }
-
-        const memberPayments = state.payments
-            .filter((payment) => payment.userId === memberId)
-            .slice()
-            .sort((a, b) => b.date.localeCompare(a.date))
-            .slice(0, 4);
-
-        if (memberPayments.length === 0) {
-            elements.memberReceiptStatus.innerHTML = '<div class="receipt-empty">No receipt submitted yet.</div>';
-            return;
-        }
-
-        elements.memberReceiptStatus.innerHTML = memberPayments.map((payment) => `
-            <div class="receipt-row">
-                <div>
-                    <strong>${formatCurrency(payment.amount)}</strong>
-                    <span>${formatDate(payment.date)} | ${payment.receiptName || 'NA'}</span>
-                </div>
-                <span class="status-chip status-${payment.status}">${payment.status}</span>
-            </div>
-        `).join('');
+        renderReimbursements();
     }
 
     function renderVerificationQueue() {
@@ -2377,7 +4150,13 @@ function renderDashboardApp() {
         const pendingPayments = state.payments.filter((payment) => payment.status === 'pending');
 
         if (pendingPayments.length === 0) {
-            elements.receiptVerificationContainer.innerHTML = '<div class="receipt-empty">No pending payment receipts.</div>';
+            elements.receiptVerificationContainer.innerHTML = `
+                <div class="verification-empty">
+                    <div class="verification-empty-icon"><i class="fas fa-shield-check"></i></div>
+                    <strong>No pending verifications</strong>
+                    <span>Everything is up to date</span>
+                </div>
+            `;
             return;
         }
 
@@ -2417,12 +4196,17 @@ function renderDashboardApp() {
                 <tbody>
                     ${state.members.map((member) => `
                         <tr>
-                            <td>${member.name}</td>
+                            <td>
+                                <div class="member-cell">
+                                    <span class="member-avatar" aria-hidden="true">${String(member.name || 'M').trim().charAt(0).toUpperCase()}</span>
+                                    <span class="member-name">${member.name}</span>
+                                </div>
+                            </td>
                             ${isAdmin ? `<td><span class="status-chip status-${member.status || 'inactive'}">${formatMemberStatus(member.status)}</span></td>` : ''}
                             <td>${formatCurrency(member.paid)}</td>
                             <td>${formatCurrency(member.remaining)}</td>
                             ${isAdmin ? `
-                                <td>
+                                <td class="member-actions-cell">
                                     <button type="button" class="dashboard-button" data-member-action="reset" data-member-id="${member.id}">Reset Password</button>
                                     <button type="button" class="dashboard-button" data-member-action="deactivate" data-member-id="${member.id}" ${member.status === 'inactive' ? 'disabled' : ''}>Deactivate</button>
                                     <button type="button" class="dashboard-button" data-member-action="remove" data-member-id="${member.id}" ${member.status === 'removed' ? 'disabled' : ''}>Remove</button>
@@ -2439,21 +4223,89 @@ function renderDashboardApp() {
     function renderExpenses() {
         if (!elements.expensesContainer) return;
 
-        elements.expensesContainer.innerHTML = state.expenses.map((expense) => `
-            <div class="list-row">
-                <div>
-                    <strong>${expense.title}</strong>
-                    <span>${formatDate(expense.date)}</span>
+        const recentActivity = [];
+
+        state.members.slice(0, 2).forEach((member) => {
+            recentActivity.push({
+                icon: 'fa-user-plus',
+                title: 'Member joined',
+                meta: member.name,
+                amount: null,
+                date: member.createdAt || member.joinedAt || new Date().toISOString(),
+                tone: 'neutral'
+            });
+        });
+
+        state.payments.slice(0, 2).forEach((payment) => {
+            const paymentUser = state.users.find((user) => user.id === payment.userId);
+            recentActivity.push({
+                icon: 'fa-credit-card',
+                title: 'Payment recorded',
+                meta: paymentUser ? paymentUser.name : 'Member payment',
+                amount: payment.amount,
+                date: payment.date,
+                tone: payment.status === 'verified' ? 'success' : 'warning'
+            });
+        });
+
+        state.expenses.slice(0, 2).forEach((expense) => {
+            recentActivity.push({
+                icon: 'fa-receipt',
+                title: 'Expense added',
+                meta: expense.title,
+                amount: expense.amount,
+                date: expense.date,
+                tone: 'danger'
+            });
+        });
+
+        const verifiedPayments = state.payments.filter((payment) => payment.status === 'verified').slice(0, 1);
+        verifiedPayments.forEach((payment) => {
+            const paymentUser = state.users.find((user) => user.id === payment.userId);
+            recentActivity.push({
+                icon: 'fa-circle-check',
+                title: 'Verification approved',
+                meta: paymentUser ? paymentUser.name : 'Payment verified',
+                amount: payment.amount,
+                date: payment.date,
+                tone: 'success'
+            });
+        });
+
+        recentActivity.sort((a, b) => String(b.date).localeCompare(String(a.date)));
+
+        elements.expensesContainer.innerHTML = recentActivity.length === 0
+            ? '<div class="receipt-empty">No recent activity.</div>'
+            : recentActivity.slice(0, 4).map((item) => `
+                <div class="activity-item recent-activity-item recent-${item.tone}">
+                    <div class="activity-leading">
+                        <div class="activity-icon"><i class="fas ${item.icon}"></i></div>
+                        <div>
+                            <strong>${item.title}</strong>
+                            <span>${item.meta}</span>
+                        </div>
+                    </div>
+                    <div class="activity-trailing">
+                        ${item.amount != null ? `<div class="list-amount ${item.tone === 'danger' ? 'is-danger' : 'is-success'}">${formatCurrency(item.amount)}</div>` : ''}
+                        <div class="activity-time">${formatDate(item.date)}</div>
+                    </div>
                 </div>
-                <div class="list-amount">${formatCurrency(expense.amount)}</div>
-            </div>
-        `).join('');
+            `).join('');
     }
 
     function renderFinance() {
         if (elements.totalIncomeCard) elements.totalIncomeCard.textContent = formatCurrency(state.finance.totalIncome);
         if (elements.totalExpensesCard) elements.totalExpensesCard.textContent = formatCurrency(state.finance.totalExpenses);
         if (elements.totalFundsCard) elements.totalFundsCard.textContent = formatCurrency(state.finance.totalFunds);
+
+        const activeMembers = state.members.filter((member) => member.active !== false && member.status !== 'inactive' && member.status !== 'removed').length;
+        const pendingVerifications = Array.isArray(state.payments) ? state.payments.filter((payment) => payment.status === 'pending').length : 0;
+        const recentReceipts = Array.isArray(state.payments) ? state.payments.filter((payment) => Boolean(payment.receiptName || payment.receiptPreview)).length : 0;
+
+        if (elements.activeMembersCard) elements.activeMembersCard.textContent = activeMembers ? String(activeMembers) : '—';
+        if (elements.pendingVerificationsCard) elements.pendingVerificationsCard.textContent = pendingVerifications ? String(pendingVerifications) : '—';
+        if (elements.pendingVerificationsSmall) elements.pendingVerificationsSmall.textContent = pendingVerifications ? String(pendingVerifications) : '—';
+        if (elements.recentReceiptsCount) elements.recentReceiptsCount.textContent = recentReceipts ? String(recentReceipts) : '—';
 
         if (elements.incomeBar) elements.incomeBar.style.width = `${Math.max(35, (state.finance.totalIncome / 70000) * 100)}%`;
         if (elements.expenseBar) elements.expenseBar.style.width = `${Math.max(20, (state.finance.totalExpenses / 25000) * 100)}%`;
@@ -2512,6 +4364,13 @@ function renderDashboardApp() {
         }).then(async () => {
             await refreshDashboardFromApi();
             refreshCurrentMemberFeeState();
+            populateAdminMemberSelect();
+            populateMemberReceiverSelect();
+            renderProjects();
+            renderEvents();
+            renderMemberTransactions();
+            renderReimbursements();
+            renderContributionAnalytics();
             renderMemberPayments();
             renderTransactions();
             renderMembers();
@@ -2536,6 +4395,13 @@ function renderDashboardApp() {
         }).then(async () => {
             await refreshDashboardFromApi();
             refreshCurrentMemberFeeState();
+            populateAdminMemberSelect();
+            populateMemberReceiverSelect();
+            renderProjects();
+            renderEvents();
+            renderMemberTransactions();
+            renderReimbursements();
+            renderContributionAnalytics();
             renderMemberPayments();
             renderTransactions();
             renderMembers();
@@ -2574,6 +4440,13 @@ function renderDashboardApp() {
             }
 
             await refreshDashboardFromApi();
+            populateAdminMemberSelect();
+            populateMemberReceiverSelect();
+            renderProjects();
+            renderEvents();
+            renderMemberTransactions();
+            renderReimbursements();
+            renderContributionAnalytics();
             renderTransactions();
             renderMembers();
             renderFinance();
@@ -2605,6 +4478,11 @@ function renderDashboardApp() {
         }).then(async () => {
             elements.expenseForm.reset();
             await refreshDashboardFromApi();
+            renderProjects();
+            renderEvents();
+            renderMemberTransactions();
+            renderReimbursements();
+            renderContributionAnalytics();
             renderExpenses();
             renderMemberExpenses();
             renderFinance();
@@ -2645,6 +4523,12 @@ function renderDashboardApp() {
 
             await refreshDashboardFromApi();
             populateAdminMemberSelect();
+            populateMemberReceiverSelect();
+            renderProjects();
+            renderEvents();
+            renderMemberTransactions();
+            renderReimbursements();
+            renderContributionAnalytics();
             renderMembers();
             showDashboardToast('Member created successfully.', 'success');
 
@@ -2654,6 +4538,196 @@ function renderDashboardApp() {
             console.error('Add member failed:', err);
             if (!handleAuthFailure(err)) {
                 alert(err.message || 'Failed to add member');
+            }
+        }
+    }
+
+    function focusDashboardForm(sectionId, selector) {
+        activateDashboardSection(sectionId);
+        window.setTimeout(() => {
+            const targetSection = document.getElementById(sectionId);
+            if (targetSection) {
+                targetSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+
+            const targetField = selector ? document.querySelector(selector) : null;
+            if (targetField && typeof targetField.focus === 'function') {
+                targetField.focus({ preventScroll: true });
+            }
+        }, 50);
+    }
+
+    async function createProject(event) {
+        event.preventDefault();
+
+        const name = elements.projectName?.value?.trim();
+        const category = elements.projectCategory?.value;
+        const budgetAllocated = Number(elements.projectBudgetAllocated?.value);
+        const startDate = elements.projectStartDate?.value;
+        const endDate = elements.projectEndDate?.value;
+        const visibility = elements.projectVisibility?.value || 'team_only';
+        const description = elements.projectDescription?.value?.trim() || '';
+
+        if (!name || !category || !budgetAllocated || !startDate) {
+            alert('Please fill in the project name, category, budget, and start date.');
+            return;
+        }
+
+        try {
+            await apiRequest('/projects/create', {
+                method: 'POST',
+                body: {
+                    name,
+                    category,
+                    budgetAllocated,
+                    startDate,
+                    endDate: endDate || undefined,
+                    visibility,
+                    description
+                }
+            });
+
+            elements.projectForm?.reset();
+            await refreshDashboardFromApi();
+            populateAdminMemberSelect();
+            populateMemberReceiverSelect();
+            renderProjects();
+            renderContributionAnalytics();
+            showDashboardToast('Project created successfully.', 'success');
+        } catch (err) {
+            console.error('Create project failed:', err);
+            if (!handleAuthFailure(err)) {
+                alert(err.message || 'Failed to create project');
+            }
+        }
+    }
+
+    async function createEvent(event) {
+        event.preventDefault();
+
+        const name = elements.eventName?.value?.trim();
+        const eventType = elements.eventType?.value;
+        const startDate = elements.eventStartDate?.value;
+        const endDate = elements.eventEndDate?.value;
+        const location = elements.eventLocation?.value?.trim() || '';
+        const registrationFee = Number(elements.eventRegistrationFee?.value || 0);
+        const visibility = elements.eventVisibility?.value || 'public';
+        const description = elements.eventDescription?.value?.trim() || '';
+
+        if (!name || !eventType || !startDate || !endDate) {
+            alert('Please fill in the event name, type, start date, and end date.');
+            return;
+        }
+
+        try {
+            await apiRequest('/events/create', {
+                method: 'POST',
+                body: {
+                    name,
+                    eventType,
+                    startDate,
+                    endDate,
+                    location,
+                    registrationFee,
+                    visibility,
+                    description
+                }
+            });
+
+            elements.eventForm?.reset();
+            await refreshDashboardFromApi();
+            renderEvents();
+            renderContributionAnalytics();
+            showDashboardToast('Event created successfully.', 'success');
+        } catch (err) {
+            console.error('Create event failed:', err);
+            if (!handleAuthFailure(err)) {
+                alert(err.message || 'Failed to create event');
+            }
+        }
+    }
+
+    async function createMemberTransaction(event) {
+        event.preventDefault();
+
+        const receiverId = elements.memberTransactionReceiver?.value;
+        const amount = Number(elements.memberTransactionAmount?.value);
+        const reason = elements.memberTransactionReason?.value;
+        const description = elements.memberTransactionDescription?.value?.trim() || '';
+        const receiptFile = elements.memberTransactionReceipt?.files && elements.memberTransactionReceipt.files[0];
+
+        if (!receiverId || !amount || !reason) {
+            alert('Please choose a receiver, amount, and reason.');
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('receiverId', receiverId);
+        formData.append('amount', String(amount));
+        formData.append('reason', reason);
+        formData.append('description', description);
+        if (receiptFile) {
+            formData.append('receipt', receiptFile);
+        }
+
+        try {
+            await apiRequest('/member-transactions/create', { method: 'POST', body: formData, isForm: true });
+            elements.memberTransactionForm?.reset();
+            await refreshDashboardFromApi();
+            populateAdminMemberSelect();
+            populateMemberReceiverSelect();
+            renderMemberTransactions();
+            renderContributionAnalytics();
+            showDashboardToast('Transfer created successfully.', 'success');
+        } catch (err) {
+            console.error('Create member transaction failed:', err);
+            if (!handleAuthFailure(err)) {
+                alert(err.message || 'Failed to create transfer');
+            }
+        }
+    }
+
+    async function createReimbursement(event) {
+        event.preventDefault();
+
+        const itemName = elements.reimbursementItemName?.value?.trim();
+        const category = elements.reimbursementCategory?.value;
+        const quantity = Number(elements.reimbursementQuantity?.value);
+        const unitPrice = Number(elements.reimbursementUnitPrice?.value);
+        const purchaseDate = elements.reimbursementPurchaseDate?.value;
+        const vendorName = elements.reimbursementVendorName?.value?.trim() || '';
+        const vendorContact = elements.reimbursementVendorContact?.value?.trim() || '';
+        const linkedProjectId = elements.reimbursementLinkedProjectId?.value?.trim() || '';
+        const receiptFile = elements.reimbursementReceipt?.files && elements.reimbursementReceipt.files[0];
+
+        if (!itemName || !category || !quantity || !unitPrice || !purchaseDate || !receiptFile) {
+            alert('Please complete all reimbursement fields and attach a receipt.');
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('itemName', itemName);
+        formData.append('category', category);
+        formData.append('quantity', String(quantity));
+        formData.append('unitPrice', String(unitPrice));
+        formData.append('purchaseDate', purchaseDate);
+        formData.append('vendor', JSON.stringify({ name: vendorName, contact: vendorContact }));
+        if (linkedProjectId) {
+            formData.append('linkedProjectId', linkedProjectId);
+        }
+        formData.append('receipt', receiptFile);
+
+        try {
+            await apiRequest('/reimbursements/submit', { method: 'POST', body: formData, isForm: true });
+            elements.reimbursementForm?.reset();
+            await refreshDashboardFromApi();
+            renderReimbursements();
+            renderContributionAnalytics();
+            showDashboardToast('Reimbursement submitted successfully.', 'success');
+        } catch (err) {
+            console.error('Create reimbursement failed:', err);
+            if (!handleAuthFailure(err)) {
+                alert(err.message || 'Failed to submit reimbursement');
             }
         }
     }
@@ -2741,12 +4815,477 @@ function renderDashboardApp() {
 
                 if (!targetSection) return;
 
+                // toggle active state on sidebar links
+                document.querySelectorAll('[data-sidebar-link]').forEach((l) => l.classList.remove('is-active'));
+                link.classList.add('is-active');
+
+                // show only the selected dashboard section
                 document.querySelectorAll('[data-dashboard-section]').forEach((section) => {
                     section.classList.remove('is-active');
+                    section.style.display = 'none';
                 });
 
                 targetSection.classList.add('is-active');
-                targetSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                targetSection.style.display = '';
+                updateDashboardWorkspaceState(targetId);
+            });
+        });
+    }
+
+    function updateDashboardWorkspaceState(activeSectionId) {
+        if (!dashboardRootEl) return;
+
+        const isMember = userRole === 'member';
+        const isOverview = activeSectionId === 'analytics';
+
+        dashboardRootEl.classList.toggle('is-member', isMember);
+        dashboardRootEl.classList.toggle('member-overview-active', isMember && isOverview);
+        dashboardRootEl.setAttribute('data-active-section', activeSectionId || '');
+    }
+
+    function activateDashboardSection(targetId) {
+        const targetSection = document.getElementById(targetId);
+        if (!targetSection) return;
+        // activate matching sidebar link if exists
+        document.querySelectorAll('[data-sidebar-link]').forEach((link) => link.classList.remove('is-active'));
+        const matchingLink = document.querySelector(`[data-sidebar-link][data-target="${targetId}"]`);
+        if (matchingLink) matchingLink.classList.add('is-active');
+
+        document.querySelectorAll('[data-dashboard-section]').forEach((section) => {
+            section.classList.remove('is-active');
+            section.style.display = 'none';
+        });
+
+        targetSection.classList.add('is-active');
+        targetSection.style.display = '';
+        updateDashboardWorkspaceState(targetId);
+    }
+
+    // ===== PROJECT MANAGEMENT SYSTEM =====
+
+    let currentProjectId = null;
+    let currentProjectExpenses = [];
+
+    function openProjectDetailModal(projectId) {
+        currentProjectId = projectId;
+        const modal = document.getElementById('projectDetailModal');
+        const projects = state.enterprise?.projects || [];
+        const project = projects.find(p => p._id === projectId);
+
+        if (!project) {
+            alert('Project not found');
+            return;
+        }
+
+        // Set project info
+        document.getElementById('projectModalTitle').textContent = project.name || 'Project Details';
+        document.getElementById('projectModalSubtitle').textContent = `${project.category} • ${formatDate(project.createdAt)}`;
+        document.getElementById('projectDisplayName').textContent = project.name || '—';
+        document.getElementById('projectDisplayCategory').textContent = project.category || '—';
+        document.getElementById('projectDisplayDescription').value = project.description || '';
+        document.getElementById('projectDisplayVisibility').textContent = project.visibility || '—';
+
+        // Status badge
+        const statusEl = document.getElementById('projectDisplayStatus');
+        statusEl.textContent = project.status || 'planning';
+        statusEl.className = `status-pill status-${project.status || 'planning'}`;
+
+        // Team lead
+        const teamLeadName = project.teamLead?.name || project.teamLead?.email || 'Not assigned';
+        document.getElementById('projectDisplayTeamLead').textContent = teamLeadName;
+
+        // Dates
+        document.getElementById('projectDisplayStartDate').textContent = formatDate(project.startDate) || '—';
+        document.getElementById('projectDisplayEndDate').textContent = formatDate(project.endDate) || '—';
+
+        // Budget information
+        const allocated = Number(project.budgetAllocated) || 0;
+        const spent = Number(project.totalExpense) || 0;
+        const remaining = allocated - spent;
+        const usedPercent = allocated > 0 ? Math.round((spent / allocated) * 100) : 0;
+
+        document.getElementById('projectBudgetAllocated').textContent = formatCurrency(allocated);
+        document.getElementById('projectBudgetSpent').textContent = formatCurrency(spent);
+        document.getElementById('projectBudgetRemaining').textContent = formatCurrency(remaining);
+        document.getElementById('projectBudgetUsedPercent').textContent = `${usedPercent}%`;
+        document.getElementById('projectBudgetBar').style.width = `${Math.min(usedPercent, 100)}%`;
+
+        // Progress calculation based on dates
+        const progress = calculateProjectProgress(project.startDate, project.endDate);
+        document.getElementById('projectDisplayProgress').textContent = `${progress}%`;
+
+        // Load expenses
+        loadProjectExpenses(projectId);
+
+        // Load team members
+        loadProjectTeamMembers(project.teamMembers || []);
+
+        // Load reimbursements
+        loadProjectReimbursements(projectId);
+
+        // Show modal
+        modal.classList.remove('modal-hidden');
+    }
+
+    function closeProjectDetailModal() {
+        const modal = document.getElementById('projectDetailModal');
+        modal.classList.add('modal-hidden');
+        currentProjectId = null;
+        currentProjectExpenses = [];
+    }
+
+    function calculateProjectProgress(startDate, endDate) {
+        if (!startDate || !endDate) return 0;
+
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+        const now = new Date();
+
+        const totalDuration = end - start;
+        const elapsed = now - start;
+        const progress = Math.min(Math.round((elapsed / totalDuration) * 100), 100);
+
+        return Math.max(progress, 0);
+    }
+
+    async function loadProjectExpenses(projectId) {
+        try {
+            const response = await apiRequest(`/projects/${projectId}/expenses`, { method: 'GET' });
+            currentProjectExpenses = response.expenses || [];
+
+            const tbody = document.getElementById('expensesTableBody');
+            const emptyState = document.getElementById('expensesEmptyState');
+            const table = document.getElementById('expensesTableContent');
+
+            if (currentProjectExpenses.length === 0) {
+                tbody.innerHTML = '';
+                table.style.display = 'none';
+                emptyState.style.display = 'block';
+            } else {
+                table.style.display = 'table';
+                emptyState.style.display = 'none';
+                tbody.innerHTML = currentProjectExpenses.map((expense) => `
+                    <tr>
+                        <td>${formatDate(expense.date)}</td>
+                        <td>${expense.title || 'Untitled'}</td>
+                        <td>${expense.category || '—'}</td>
+                        <td>${formatCurrency(expense.amount)}</td>
+                        <td>
+                            <button class="icon-btn delete-expense-btn" data-expense-id="${expense._id}" title="Delete">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `).join('');
+
+                // Add delete listeners
+                document.querySelectorAll('.delete-expense-btn').forEach(btn => {
+                    btn.addEventListener('click', async (e) => {
+                        const expenseId = e.currentTarget.dataset.expenseId;
+                        if (confirm('Delete this expense?')) {
+                            await deleteProjectExpense(expenseId);
+                        }
+                    });
+                });
+            }
+        } catch (err) {
+            console.error('Load expenses failed:', err);
+        }
+    }
+
+    async function loadProjectTeamMembers(teamMemberIds) {
+        const container = document.getElementById('projectTeamList');
+        
+        if (!teamMemberIds || teamMemberIds.length === 0) {
+            container.innerHTML = '<p class="empty-state-text">No team members assigned.</p>';
+            return;
+        }
+
+        const members = state.members || [];
+        const teamMembers = members.filter(m => 
+            teamMemberIds.includes(m._id) || teamMemberIds.includes(m._id?.toString())
+        );
+
+        if (teamMembers.length === 0) {
+            container.innerHTML = '<p class="empty-state-text">No team members assigned.</p>';
+            return;
+        }
+
+        container.innerHTML = teamMembers.map((member) => {
+            const initials = (member.name || member.email || 'M').substring(0, 2).toUpperCase();
+            return `
+                <div class="team-member-card">
+                    <div class="team-member-avatar">${initials}</div>
+                    <div class="team-member-name">${member.name || member.email}</div>
+                    <div class="team-member-role">${member.role || 'Member'}</div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    async function loadProjectReimbursements(projectId) {
+        try {
+            // Get reimbursements linked to this project
+            const allReimbursements = state.enterprise?.memberTransactions || [];
+            const projectReimbursements = allReimbursements.filter(t => 
+                t.linkedProject?.toString() === projectId || t.linkedProject === projectId
+            );
+
+            const tbody = document.getElementById('reimbursementsTableBody');
+            const emptyState = document.getElementById('reimbursementsEmptyState');
+            const table = document.getElementById('reimbursementsTableContent');
+
+            if (projectReimbursements.length === 0) {
+                tbody.innerHTML = '';
+                table.style.display = 'none';
+                emptyState.style.display = 'block';
+            } else {
+                table.style.display = 'table';
+                emptyState.style.display = 'none';
+                tbody.innerHTML = projectReimbursements.map((reimb) => {
+                    const memberName = reimb.sender?.name || reimb.sender?.email || 'Unknown';
+                    return `
+                        <tr>
+                            <td>${memberName}</td>
+                            <td>${reimb.description || reimb.reason}</td>
+                            <td>${formatCurrency(reimb.amount)}</td>
+                            <td><span class="status-pill status-${reimb.status}">${reimb.status}</span></td>
+                            <td>
+                                <button class="icon-btn" title="View details">
+                                    <i class="fas fa-external-link-alt"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+            }
+        } catch (err) {
+            console.error('Load reimbursements failed:', err);
+        }
+    }
+
+    async function addProjectExpense(event) {
+        event.preventDefault();
+
+        if (!currentProjectId) {
+            alert('No project selected');
+            return;
+        }
+
+        const title = document.getElementById('expenseTitle')?.value?.trim();
+        const amount = Number(document.getElementById('expenseAmount')?.value);
+        const category = document.getElementById('expenseCategory')?.value;
+        const date = document.getElementById('expenseDate')?.value;
+        const notes = document.getElementById('expenseNotes')?.value?.trim() || '';
+
+        if (!title || !amount || !date) {
+            alert('Please fill in title, amount, and date');
+            return;
+        }
+
+        try {
+            await apiRequest(`/projects/${currentProjectId}/add-expense`, {
+                method: 'POST',
+                body: {
+                    title,
+                    amount,
+                    category: category || 'other',
+                    notes,
+                    expenseDate: date
+                }
+            });
+
+            document.getElementById('projectExpenseForm').reset();
+            document.getElementById('projectExpenseForm').style.display = 'none';
+            document.getElementById('addExpenseToProjectBtn').style.display = 'inline-flex';
+
+            await loadProjectExpenses(currentProjectId);
+            await refreshDashboardFromApi();
+            renderProjects();
+
+            showDashboardToast('Expense added successfully', 'success');
+        } catch (err) {
+            console.error('Add expense failed:', err);
+            if (!handleAuthFailure(err)) {
+                alert(err.message || 'Failed to add expense');
+            }
+        }
+    }
+
+    async function deleteProjectExpense(expenseId) {
+        try {
+            // Note: You may need to add a DELETE endpoint for expenses
+            // For now, this is a placeholder - the backend would handle this
+            alert('Expense deletion endpoint needed on backend');
+        } catch (err) {
+            console.error('Delete expense failed:', err);
+        }
+    }
+
+    async function editProject() {
+        if (!currentProjectId) return;
+
+        const projects = state.enterprise?.projects || [];
+        const project = projects.find(p => p._id === currentProjectId);
+        if (!project) return;
+
+        const newStatus = prompt('Enter new status (planning/active/in_progress/completed/archived):', project.status);
+        if (!newStatus) return;
+
+        const newBudget = prompt('Enter new budget amount:', project.budgetAllocated);
+        if (!newBudget) return;
+
+        try {
+            await apiRequest(`/projects/${currentProjectId}`, {
+                method: 'PUT',
+                body: {
+                    status: newStatus,
+                    budgetAllocated: Number(newBudget),
+                    description: document.getElementById('projectDisplayDescription').value
+                }
+            });
+
+            await refreshDashboardFromApi();
+            renderProjects();
+            openProjectDetailModal(currentProjectId);
+
+            showDashboardToast('Project updated successfully', 'success');
+        } catch (err) {
+            console.error('Update project failed:', err);
+            if (!handleAuthFailure(err)) {
+                alert(err.message || 'Failed to update project');
+            }
+        }
+    }
+
+    async function archiveProject() {
+        if (!currentProjectId) return;
+
+        if (!confirm('Archive this project? It will remain editable by admins.')) return;
+
+        try {
+            await apiRequest(`/projects/${currentProjectId}`, {
+                method: 'PUT',
+                body: {
+                    status: 'archived'
+                }
+            });
+
+            await refreshDashboardFromApi();
+            renderProjects();
+            closeProjectDetailModal();
+
+            showDashboardToast('Project archived successfully', 'success');
+        } catch (err) {
+            console.error('Archive project failed:', err);
+            if (!handleAuthFailure(err)) {
+                alert(err.message || 'Failed to archive project');
+            }
+        }
+    }
+
+    async function deleteProject() {
+        if (!currentProjectId) return;
+
+        if (!confirm('Permanently delete this project? This cannot be undone.')) return;
+
+        try {
+            // Note: You may need to add a DELETE endpoint for projects on the backend
+            // For now, this marks it as archived instead
+            await apiRequest(`/projects/${currentProjectId}`, {
+                method: 'PUT',
+                body: {
+                    status: 'archived'
+                }
+            });
+
+            await refreshDashboardFromApi();
+            renderProjects();
+            closeProjectDetailModal();
+
+            showDashboardToast('Project archived (delete endpoint needed on backend)', 'success');
+        } catch (err) {
+            console.error('Delete project failed:', err);
+            if (!handleAuthFailure(err)) {
+                alert(err.message || 'Failed to delete project');
+            }
+        }
+    }
+
+    function renderProjects() {
+        const container = document.getElementById('projects-container');
+        if (!container) return;
+
+        const allProjects = Array.isArray(state.enterprise && state.enterprise.projects) ? state.enterprise.projects : [];
+        const projects = userRole === 'member'
+            ? allProjects.filter((project) => {
+                const teamMembers = Array.isArray(project.teamMembers) ? project.teamMembers : [];
+                return teamMembers.some((member) => {
+                    const memberId = member && (member._id || member.id || member);
+                    return String(memberId) === String(state.user.id);
+                });
+            })
+            : allProjects;
+
+        if (projects.length === 0) {
+            container.innerHTML = userRole === 'member'
+                ? '<div class="receipt-empty">No project assignments available currently. Projects assigned by administrators will appear here.</div>'
+                : '<div class="receipt-empty">No projects yet. Use New to create one.</div>';
+            return;
+        }
+
+        container.innerHTML = projects.map((project) => {
+            const progress = calculateProjectProgress(project.startDate, project.endDate);
+            const allocated = Number(project.budgetAllocated) || 0;
+            const spent = Number(project.totalExpense) || 0;
+            const usedPercent = allocated > 0 ? Math.round((spent / allocated) * 100) : 0;
+            const teamLeadName = project.teamLead?.name || project.teamLead?.email || 'Not assigned';
+            const tasksAssigned = Array.isArray(project.tasks)
+                ? project.tasks.filter((task) => {
+                    const assignee = task.assignee && (task.assignee._id || task.assignee.id || task.assignee);
+                    return String(assignee) === String(state.user.id);
+                }).length
+                : 0;
+
+            return `
+                <article class="info-card enterprise-card project-card-item" data-project-id="${project._id}">
+                    <div class="info-card-head">
+                        <div>
+                            <strong>${project.name || 'Untitled project'}</strong>
+                            <span>${project.category || 'uncategorized'} · ${project.status || 'planning'}</span>
+                        </div>
+                        <span class="status-chip status-${project.status || 'planning'}">${progress}% done</span>
+                    </div>
+                    <div class="info-card-body">
+                        <p>${project.description || (userRole === 'member' ? 'Project details will be shared by your administrators.' : 'No project description added yet.')}</p>
+                        <div class="enterprise-meta-grid">
+                            ${userRole === 'member'
+                                ? `
+                            <div><span>Role</span><strong>${project.memberRole || 'Contributor'}</strong></div>
+                            <div><span>Team Lead</span><strong>${teamLeadName}</strong></div>
+                            <div><span>Deadline</span><strong>${project.endDate ? formatDate(project.endDate) : 'TBA'}</strong></div>
+                            <div><span>Tasks Assigned</span><strong>${tasksAssigned}</strong></div>
+                                `
+                                : `
+                            <div><span>Budget</span><strong>${formatCurrency(allocated)}</strong></div>
+                            <div><span>Spent</span><strong>${formatCurrency(spent)}</strong></div>
+                            <div><span>Remaining</span><strong>${formatCurrency(Math.max(allocated - spent, 0))}</strong></div>
+                            <div><span>Used %</span><strong>${usedPercent}%</strong></div>
+                                `}
+                        </div>
+                        <div style="height: 8px; background: rgba(0,0,0,0.3); border-radius: 4px; margin-top: 12px; overflow: hidden;">
+                            <div style="height: 100%; width: ${usedPercent}%; background: linear-gradient(90deg, #0099ff, #00d4ff); border-radius: 4px;"></div>
+                        </div>
+                    </div>
+                </article>
+            `;
+        }).join('');
+
+        // Add click listeners to project cards
+        document.querySelectorAll('.project-card-item').forEach(card => {
+            card.addEventListener('click', () => {
+                const projectId = card.dataset.projectId;
+                openProjectDetailModal(projectId);
             });
         });
     }
@@ -2762,17 +5301,56 @@ function renderDashboardApp() {
             });
         }
 
+        const openProjectModal = document.getElementById('openProjectModal');
+        if (openProjectModal && userRole === 'admin') {
+            openProjectModal.addEventListener('click', () => focusDashboardForm('projects-section', '#projectName'));
+        }
+
+        const openEventModal = document.getElementById('openEventModal');
+        if (openEventModal && userRole === 'admin') {
+            openEventModal.addEventListener('click', () => focusDashboardForm('events-section', '#eventName'));
+        }
+
+        const openMemberTransferModal = document.getElementById('openMemberTransferModal');
+        if (openMemberTransferModal) {
+            openMemberTransferModal.addEventListener('click', () => focusDashboardForm('member-transactions-section', '#memberTransactionReceiver'));
+        }
+
+        const openReimbursementModal = document.getElementById('openReimbursementModal');
+        if (openReimbursementModal && userRole === 'member') {
+            openReimbursementModal.addEventListener('click', () => focusDashboardForm('reimbursement-section', '#reimbursementItemName'));
+        }
+
+        const downloadRulesPdfButton = document.getElementById('downloadRulesPdfButton');
+        if (downloadRulesPdfButton) {
+            downloadRulesPdfButton.addEventListener('click', () => {
+                const link = document.createElement('a');
+                link.href = 'assets/CLUB SOP.pdf';
+                link.download = 'Texcelerators-Official-SOP.pdf';
+                document.body.appendChild(link);
+                link.click();
+                link.remove();
+            });
+        }
+
+        const printRulesButton = document.getElementById('printRulesButton');
+        if (printRulesButton) {
+            printRulesButton.addEventListener('click', () => window.print());
+        }
+
         if (elements.payNowButton && userRole === 'member') {
             elements.payNowButton.addEventListener('click', () => {
                 state.paymentFlow.qrScanned = false;
                 updatePaymentFlowUI();
-                document.getElementById('payment-qr')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                activateDashboardSection('payments');
+                // then focus the QR area if present
+                setTimeout(() => document.getElementById('payment-qr')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 120);
             });
         }
 
         if (elements.viewDetailsButton && userRole === 'member') {
             elements.viewDetailsButton.addEventListener('click', () => {
-                document.getElementById('transactions')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                activateDashboardSection('transactions');
             });
         }
 
@@ -2798,12 +5376,40 @@ function renderDashboardApp() {
             });
         }
 
+        if (elements.copyUpiButton && userRole === 'member') {
+            elements.copyUpiButton.addEventListener('click', async () => {
+                const upiId = elements.clubUpiId ? elements.clubUpiId.textContent.trim() : '';
+                if (!upiId) return;
+                try {
+                    await navigator.clipboard.writeText(upiId);
+                    showDashboardToast('UPI ID copied.', 'success');
+                } catch (err) {
+                    console.warn('Failed to copy UPI ID', err);
+                }
+            });
+        }
+
+        if (elements.submitReceiptButton && userRole === 'member') {
+            elements.submitReceiptButton.addEventListener('click', () => {
+                const selectedFile = elements.receiptInput && elements.receiptInput.files ? elements.receiptInput.files[0] : null;
+                if (!selectedFile) {
+                    alert('Please upload a receipt before submitting.');
+                    return;
+                }
+                submitReceiptForVerification(selectedFile);
+            });
+        }
+
         if (elements.receiptInput && userRole === 'member') {
             elements.receiptInput.addEventListener('change', () => {
                 const selectedFile = elements.receiptInput.files && elements.receiptInput.files[0];
                 if (!selectedFile) return;
-                submitReceiptForVerification(selectedFile);
-                elements.receiptInput.value = '';
+                const previewInfo = getReceiptPreviewInfo(selectedFile);
+                if (elements.memberReceiptPreview) {
+                    elements.memberReceiptPreview.innerHTML = previewInfo.previewUrl
+                        ? `<img src="${previewInfo.previewUrl}" alt="Receipt preview" class="receipt-thumb-large">`
+                        : `<div class="receipt-file-name">${selectedFile.name}</div>`;
+                }
             });
         }
 
@@ -2816,6 +5422,73 @@ function renderDashboardApp() {
 
         if (elements.adminPaymentForm && userRole === 'admin') {
             elements.adminPaymentForm.addEventListener('submit', addAdminPayment);
+        }
+
+        if (elements.projectForm && userRole === 'admin') {
+            elements.projectForm.addEventListener('submit', createProject);
+        }
+
+        // Project Management Modal Listeners
+        const closeProjectModal = document.getElementById('closeProjectModal');
+        const closeProjectModalBtn = document.getElementById('closeProjectModalBtn');
+        const editProjectBtn = document.getElementById('editProjectBtn');
+        const archiveProjectBtn = document.getElementById('archiveProjectBtn');
+        const deleteProjectBtn = document.getElementById('deleteProjectBtn');
+        const addExpenseToProjectBtn = document.getElementById('addExpenseToProjectBtn');
+        const projectExpenseForm = document.getElementById('projectExpenseForm');
+        const cancelExpenseFormBtn = document.getElementById('cancelExpenseFormBtn');
+
+        if (closeProjectModal) {
+            closeProjectModal.addEventListener('click', closeProjectDetailModal);
+        }
+
+        if (closeProjectModalBtn) {
+            closeProjectModalBtn.addEventListener('click', closeProjectDetailModal);
+        }
+
+        if (editProjectBtn && userRole === 'admin') {
+            editProjectBtn.addEventListener('click', editProject);
+        }
+
+        if (archiveProjectBtn && userRole === 'admin') {
+            archiveProjectBtn.addEventListener('click', archiveProject);
+        }
+
+        if (deleteProjectBtn && userRole === 'admin') {
+            deleteProjectBtn.addEventListener('click', deleteProject);
+        }
+
+        if (addExpenseToProjectBtn && userRole === 'admin') {
+            addExpenseToProjectBtn.addEventListener('click', (e) => {
+                e.currentTarget.style.display = 'none';
+                projectExpenseForm.style.display = 'block';
+                document.getElementById('expenseTitle').focus();
+            });
+        }
+
+        if (cancelExpenseFormBtn) {
+            cancelExpenseFormBtn.addEventListener('click', () => {
+                projectExpenseForm.style.display = 'none';
+                if (addExpenseToProjectBtn) {
+                    addExpenseToProjectBtn.style.display = 'inline-flex';
+                }
+            });
+        }
+
+        if (projectExpenseForm) {
+            projectExpenseForm.addEventListener('submit', addProjectExpense);
+        }
+
+        if (elements.eventForm && userRole === 'admin') {
+            elements.eventForm.addEventListener('submit', createEvent);
+        }
+
+        if (elements.memberTransactionForm) {
+            elements.memberTransactionForm.addEventListener('submit', createMemberTransaction);
+        }
+
+        if (elements.reimbursementForm && userRole === 'member') {
+            elements.reimbursementForm.addEventListener('submit', createReimbursement);
         }
 
         if (elements.addMemberForm && userRole === 'admin') {
@@ -2902,6 +5575,9 @@ function renderDashboardApp() {
         // Apply role-based UI
         showRoleBasedUI();
 
+        // expose the current dashboard state for analytics helpers
+        window.__dashboardState = state;
+
         // Hide member-only buttons for admin
         if (userRole === 'admin') {
             if (elements.payNowButton) elements.payNowButton.style.display = 'none';
@@ -2919,6 +5595,15 @@ function renderDashboardApp() {
         updatePaymentFlowUI();
         syncHeader();
         populateAdminMemberSelect();
+        populateMemberReceiverSelect();
+        const today = new Date().toISOString().slice(0, 10);
+        const tomorrow = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
+        if (elements.adminPaymentDate && !elements.adminPaymentDate.value) elements.adminPaymentDate.value = today;
+        if (elements.expenseDate && !elements.expenseDate.value) elements.expenseDate.value = today;
+        if (elements.reimbursementPurchaseDate && !elements.reimbursementPurchaseDate.value) elements.reimbursementPurchaseDate.value = today;
+        if (elements.projectStartDate && !elements.projectStartDate.value) elements.projectStartDate.value = today;
+        if (elements.eventStartDate && !elements.eventStartDate.value) elements.eventStartDate.value = today;
+        if (elements.eventEndDate && !elements.eventEndDate.value) elements.eventEndDate.value = tomorrow;
         renderMemberPayments();
         renderTransactions();
         renderMembers();
@@ -2927,15 +5612,49 @@ function renderDashboardApp() {
         renderMemberReceiptStatus();
         renderVerificationQueue();
         renderFinance();
+        renderProjects();
+        renderEvents();
+        renderMemberTransactions();
+        renderReimbursements();
+        renderContributionAnalytics();
+        renderAnnouncements();
+        renderMemberProfile();
+        renderRulesPortal();
+        // Build and populate charts from freshest state
+        try {
+            initDashboardCharts();
+            const analyticsSelect = document.getElementById('analyticsRange');
+            const rangeDays = analyticsSelect ? Number(analyticsSelect.value || 30) : 30;
+            buildAnalyticsFromState(rangeDays);
+            if (analyticsSelect) analyticsSelect.addEventListener('change', () => buildAnalyticsFromState(Number(analyticsSelect.value || 30)));
+        } catch (e) { console.warn('Analytics update failed', e); }
         bindSidebarNavigation();
         bindActions();
         setDashboardLoadingState(false);
+        if (dashboardRootEl) {
+            dashboardRootEl.removeAttribute('aria-busy');
+        }
 
-        // Set the first visible section as active
-        const firstVisibleSection = document.querySelector('[data-for-roles]:not([style*="display: none"])');
-        if (firstVisibleSection && firstVisibleSection.hasAttribute('data-dashboard-section')) {
-            document.querySelectorAll('[data-dashboard-section]').forEach(s => s.classList.remove('is-active'));
-            firstVisibleSection.classList.add('is-active');
+        // Set default section based on role and visible sections
+        const visibleSections = Array.from(document.querySelectorAll('[data-dashboard-section]'))
+            .filter((section) => section.style.display !== 'none');
+        const firstVisibleSection = visibleSections[0] || null;
+        if (firstVisibleSection) {
+            document.querySelectorAll('[data-dashboard-section]').forEach(s => { s.classList.remove('is-active'); s.style.display = 'none'; });
+            const defaultSection = userRole === 'member'
+                ? document.getElementById('payments') || firstVisibleSection
+                : firstVisibleSection;
+            defaultSection.classList.add('is-active');
+            defaultSection.style.display = '';
+
+            // activate matching sidebar link if present
+            const sid = defaultSection.getAttribute('id');
+            if (sid) {
+                document.querySelectorAll('[data-sidebar-link]').forEach(l => l.classList.remove('is-active'));
+                const matchingLink = document.querySelector(`[data-sidebar-link][data-target="${sid}"]`);
+                if (matchingLink) matchingLink.classList.add('is-active');
+                updateDashboardWorkspaceState(sid);
+            }
         }
     }
 
@@ -2972,6 +5691,8 @@ function renderDashboardApp() {
             renderMemberReceiptStatus();
             renderVerificationQueue();
             updatePaymentFlowUI();
+            if (elements.receiptInput) elements.receiptInput.value = '';
+            if (elements.memberReceiptPreview) elements.memberReceiptPreview.innerHTML = 'No receipt selected';
             if (elements.paymentFlowMessage) {
                 elements.paymentFlowMessage.textContent = `Payment submitted. Waiting for admin verification.`;
             }
@@ -2988,3 +5709,4 @@ function renderDashboardApp() {
 }
 
 renderDashboardApp();
+

@@ -30,6 +30,10 @@ async function requireAuth(req, res, next) {
     req.user = user;
     return next();
   } catch (err) {
+    if (err && err.name === 'TokenExpiredError') {
+      return res.status(401).json({ message: 'Token expired', code: 'TOKEN_EXPIRED' });
+    }
+
     return res.status(401).json({ message: 'Invalid or expired token' });
   }
 }

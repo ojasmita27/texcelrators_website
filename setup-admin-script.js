@@ -1,12 +1,14 @@
 // First-time admin setup only.
 
 const storedApiBase = localStorage.getItem('API_BASE');
-const API_BASE = storedApiBase === 'http://localhost:3000'
-    ? 'http://localhost:5000'
-    : (storedApiBase || 'http://localhost:5000');
+const currentOrigin = window.location.origin;
+const legacyBases = new Set(['http://localhost:3000', 'http://localhost:5000']);
+const API_BASE = storedApiBase && !legacyBases.has(storedApiBase)
+    ? storedApiBase
+    : currentOrigin;
 
-if (storedApiBase === 'http://localhost:3000') {
-    localStorage.setItem('API_BASE', 'http://localhost:5000');
+if (!storedApiBase || legacyBases.has(storedApiBase)) {
+    localStorage.setItem('API_BASE', currentOrigin);
 }
 
 const form = document.getElementById('setupAdminForm');

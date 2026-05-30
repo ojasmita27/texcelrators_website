@@ -2,6 +2,7 @@ const { Router } = require('express');
 const { asyncHandler } = require('../utils/asyncHandler');
 const { User } = require('../models/User');
 const { requireAuth, requireRole, blockIfMustChangePassword } = require('../middleware/auth');
+const { profileUploader, certificatesUploader } = require('../utils/upload');
 
 const router = Router();
 
@@ -177,4 +178,130 @@ router.post(
   })
 );
 
+// Member self-service profile update
+router.put(
+  '/update-my-profile',
+  requireAuth,
+  requireRole('member'),
+  blockIfMustChangePassword,
+  asyncHandler(async (req, res) => {
+    const {
+      name,
+      phone,
+      skills,
+      certificates
+    } = req.body || {};
+
+    if (typeof name === 'string') {
+      const trimmedName = name.trim();
+      if (!trimmedName) {
+        return res.status(400).json({ message: 'Name cannot be empty' });
+      }
+      req.user.name = trimmedName;
+    }
+
+    if (typeof phone === 'string') {
+      req.user.phone = phone.trim();
+    }
+
+    if (Array.isArray(skills)) {
+      req.user.skills = skills
+        .map((s) => String(s || '').trim())
+        .filter(Boolean)
+        .slice(0, 20);
+    }
+
+    if (Array.isArray(certificates)) {
+      req.user.certificates = certificates
+        .map((c) => String(c || '').trim())
+        .filter(Boolean)
+        .slice(0, 20);
+    }
+
+    await req.user.save();
+    return res.json({
+      message: 'Profile updated successfully',
+      user: req.user.toSafeJSON()
+    });
+  })
+);
+
+// Upload profile picture (member-only)
+router.post(
+  '/upload-profile-pic',
+  requireAuth,
+  requireRole('member'),
+  blockIfMustChangePassword,
+  profileUploader().single('profilePic'),
+  asyncHandler(async (req, res) => {
+    if (!req.file) return res.status(400).json({ message: 'No file uploaded' });
+
+    // Save relative URL to user
+    const fileUrl = `/uploads/profile/${req.file.filename}`;
+    req.user.profilePic = fileUrl;
+    await req.user.save();
+
+    return res.json({ message: 'Profile image uploaded', file: { filename: req.file.filename, url: fileUrl }, user: req.user.toSafeJSON() });
+  })
+);
+
+// Upload certificates (member-only, multiple)
+router.post(
+  '/upload-certificates',
+  requireAuth,
+  requireRole('member'),
+  blockIfMustChangePassword,
+  certificatesUploader().array('certificates', 12),
+  asyncHandler(async (req, res) => {
+    if (!req.files || !req.files.length) return res.status(400).json({ message: 'No files uploaded' });
+
+    const added = [];
+    (req.files || []).forEach((f) => {
+      const url = `/uploads/certificates/${f.filename}`;
+      added.push({ filename: f.filename, url });
+      req.user.certificates = Array.isArray(req.user.certificates) ? req.user.certificates : [];
+      req.user.certificates.push(url);
+    });
+
+    req.user.certificates = Array.from(new Set(req.user.certificates)).slice(0, 20);
+    await req.user.save();
+
+    return res.json({ message: 'Certificates uploaded', files: added, user: req.user.toSafeJSON() });
+  })
+);
+
+// Remove a certificate URL from the user's certificates list
+router.post(
+  '/remove-certificate',
+  requireAuth,
+  requireRole('member'),
+  blockIfMustChangePassword,
+  asyncHandler(async (req, res) => {
+    const { url } = req.body || {};
+    if (!url) return res.status(400).json({ message: 'url is required' });
+
+    req.user.certificates = Array.isArray(req.user.certificates) ? req.user.certificates.filter((c) => c !== url) : [];
+    await req.user.save();
+
+    return res.json({ message: 'Certificate removed', user: req.user.toSafeJSON() });
+  })
+);
+
+// SOP acceptance storage
+router.post(
+  '/accept-sop',
+  requireAuth,
+  requireRole('member'),
+  blockIfMustChangePassword,
+  asyncHandler(async (req, res) => {
+    const { version } = req.body || {};
+    req.user.sopAcceptedAt = new Date();
+    req.user.sopAcceptedVersion = String(version || 'official-sop-v1');
+    await req.user.save();
+
+    return res.json({ message: 'SOP accepted', user: req.user.toSafeJSON() });
+  })
+);
+
 module.exports = { memberRoutes: router };
+

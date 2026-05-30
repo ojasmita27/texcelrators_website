@@ -1,4 +1,4 @@
-require('dotenv').config({ override: true });
+require('dotenv').config();
 
 const path = require('path');
 const express = require('express');
@@ -14,6 +14,13 @@ const { memberRoutes } = require('./routes/member.routes');
 const { paymentRoutes } = require('./routes/payment.routes');
 const { expenseRoutes } = require('./routes/expense.routes');
 const { dashboardRoutes } = require('./routes/dashboard.routes');
+const { collaborationRoutes } = require('./routes/collaboration.routes');
+
+// NEW: Enterprise Financial Features
+const { memberTransactionRoutes } = require('./routes/member-transaction.routes');
+const { reimbursementRoutes } = require('./routes/reimbursement.routes');
+const { projectRoutes } = require('./routes/project.routes');
+const { eventRoutes } = require('./routes/event.routes');
 
 const app = express();
 
@@ -61,6 +68,13 @@ app.use('/members', memberRoutes);
 app.use('/payments', paymentRoutes);
 app.use('/expenses', expenseRoutes);
 app.use('/dashboard', dashboardRoutes);
+app.use('/api/collaboration', collaborationRoutes);
+
+// NEW: Enterprise Financial Features Routes
+app.use('/member-transactions', memberTransactionRoutes);
+app.use('/reimbursements', reimbursementRoutes);
+app.use('/projects', projectRoutes);
+app.use('/events', eventRoutes);
 
 // 404
 app.use((req, res) => {

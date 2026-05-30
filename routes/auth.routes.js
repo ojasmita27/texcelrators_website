@@ -70,6 +70,7 @@ router.post(
     }
 
     if (role && user.role !== role) {
+      return res.status(403).json({ message: 'Role does not match account' });
     }
 
     const ok = await user.comparePassword(passwordToCheck);

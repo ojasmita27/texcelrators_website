@@ -3,15 +3,17 @@
 // ===========================
 
 // Backend API base
-// If you're using Live Server or a different port, update this value.
+// Use the current site origin by default so the login page talks to the same backend that served it.
 const storedApiBase = localStorage.getItem('API_BASE');
-const API_BASE = storedApiBase === 'http://localhost:3000'
-    ? 'http://localhost:5000'
-    : (storedApiBase || 'http://localhost:5000');
+const currentOrigin = window.location.origin;
+const legacyBases = new Set(['http://localhost:3000', 'http://localhost:5000']);
+const API_BASE = storedApiBase && !legacyBases.has(storedApiBase)
+    ? storedApiBase
+    : currentOrigin;
 
-// Auto-migrate old stored value
-if (storedApiBase === 'http://localhost:3000') {
-    localStorage.setItem('API_BASE', 'http://localhost:5000');
+// Auto-migrate old stored values to the active origin.
+if (!storedApiBase || legacyBases.has(storedApiBase)) {
+    localStorage.setItem('API_BASE', currentOrigin);
 }
 
 // Get DOM Elements
@@ -153,6 +155,15 @@ async function apiRequest(path, { method = 'GET', token = null, body = null } = 
     }
 
     return data;
+}
+
+async function validateStoredSession(token) {
+    try {
+        await apiRequest('/dashboard/data', { token });
+        return true;
+    } catch (error) {
+        return false;
+    }
 }
 
 function setLoading(button, isLoading, loadingText = 'Signing in...') {
@@ -384,7 +395,15 @@ window.addEventListener('load', () => {
     // If user chose to stay signed in and a token exists, go to dashboard.
     const token = localStorage.getItem('authToken');
     if (shouldRemember === 'true' && token) {
-        window.location.href = 'dashboard.html';
+        validateStoredSession(token).then((isValid) => {
+            if (isValid) {
+                window.location.href = 'dashboard.html';
+                return;
+            }
+
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('currentUser');
+        });
     }
 });
 
@@ -411,14 +430,6 @@ function addKeyboardNavigation() {
 }
 
 addKeyboardNavigation();
-
-// ===========================
-// CONSOLE WELCOME MESSAGE
-// ===========================
-console.log('%cWelcome to Texcelerators Login', 'font-size: 16px; color: #00d4ff; font-weight: bold;');
-console.log('%cBackend connected:', 'font-size: 12px; color: #43e97b; font-weight: bold;');
-console.log(`%cAPI: ${API_BASE}`, 'font-size: 11px; color: #43e97b;');
-console.log('%cFor support, contact: hello@texcelerators.com', 'font-size: 11px; color: #0099ff;');
 
 // ===========================
 // ERROR HANDLING

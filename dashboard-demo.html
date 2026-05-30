@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Texcelerators Dashboard - Premium Demo</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="dashboard-page">
+    <div class="dashboard-layout" data-dashboard-root>
+        <aside class="dashboard-sidebar compact">
+            <div class="sidebar-top">
+                <a class="dashboard-brand" href="index.html" title="Back to home">
+                    <img src="assets/images/logo.png" alt="Texcelerators Logo">
+                    <div class="brand-text">
+                        <strong>Texcelerators</strong>
+                        <small>Command Center</small>
+                    </div>
+                </a>
+            </div>
+
+            <nav class="sidebar-nav">
+                <a href="#overview" class="is-active" data-sidebar-link><i class="fas fa-chart-pie"></i><span>Overview</span></a>
+                <a href="#transactions" data-sidebar-link><i class="fas fa-list-check"></i><span>Activity</span></a>
+                <a href="#members-section" data-sidebar-link><i class="fas fa-users"></i><span>Members</span></a>
+                <a href="#expenses-section" data-sidebar-link><i class="fas fa-file-invoice-dollar"></i><span>Expenses</span></a>
+                <a href="#admin" data-sidebar-link><i class="fas fa-user-shield"></i><span>Admin</span></a>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="sidebar-profile">
+                    <div class="sidebar-profile-avatar">AD</div>
+                    <div class="sidebar-profile-copy">
+                        <div class="sidebar-profile-name">Admin User</div>
+                        <div class="sidebar-profile-meta"><span class="sidebar-status-chip"><span class="status-dot online"></span>Online</span></div>
+                    </div>
+                </div>
+                <div class="sidebar-system-label"><span>System</span><span>Admin</span></div>
+                <button class="icon-btn" title="Logout"><i class="fas fa-right-from-bracket"></i></button>
+            </div>
+        </aside>
+
+        <main class="dashboard-main">
+            <header class="dashboard-hero glass-panel premium-hero">
+                <div class="hero-left">
+                    <div class="hero-user">
+                        <div class="topbar-avatar avatar-lg" style="background:linear-gradient(135deg, #0099ff, #00d4ff); display:flex; align-items:center; justify-content:center; color:white; font-weight:800; font-size:1.5rem;">AD</div>
+                        <div class="hero-user-meta">
+                            <div class="hero-name">Admin User</div>
+                            <div class="hero-role">Robotics Club Administrator</div>
+                        </div>
+                    </div>
+                    <div class="system-status">
+                        <div class="status-dot online"></div>
+                        <div class="status-text">System operational</div>
+                    </div>
+                </div>
+                <div class="hero-right">
+                    <div class="metrics-grid premium-metrics" id="heroMetrics">
+                        <div class="metric-card premium-metric-card">
+                            <div class="metric-top">
+                                <i class="fas fa-wallet metric-icon" aria-hidden="true"></i>
+                                <div class="metric-label">Total Funds</div>
+                            </div>
+                            <div class="metric-value">₹1,24,500</div>
+                            <div class="metric-trend">
+                                <span class="trend-up"><i class="fas fa-arrow-up" aria-hidden="true"></i> 12.5%</span>
+                            </div>
+                        </div>
+                        <div class="metric-card premium-metric-card">
+                            <div class="metric-top">
+                                <i class="fas fa-chart-line metric-icon" aria-hidden="true"></i>
+                                <div class="metric-label">Expenses</div>
+                            </div>
+                            <div class="metric-value">₹42,300</div>
+                            <div class="metric-trend">
+                                <span class="trend-down"><i class="fas fa-arrow-down" aria-hidden="true"></i> 3.2%</span>
+                            </div>
+                        </div>
+                        <div class="metric-card premium-metric-card">
+                            <div class="metric-top">
+                                <i class="fas fa-users metric-icon" aria-hidden="true"></i>
+                                <div class="metric-label">Active Members</div>
+                            </div>
+                            <div class="metric-value">24</div>
+                            <div class="metric-trend">
+                                <span class="trend-stable"><i class="fas fa-minus" aria-hidden="true"></i> Stable</span>
+                            </div>
+                        </div>
+                        <div class="metric-card premium-metric-card">
+                            <div class="metric-top">
+                                <i class="fas fa-hourglass-half metric-icon" aria-hidden="true"></i>
+                                <div class="metric-label">Pending Verifications</div>
+                            </div>
+                            <div class="metric-value">3</div>
+                            <div class="metric-trend">
+                                <span class="trend-stable"><i class="fas fa-minus" aria-hidden="true"></i> Pending</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <div class="main-grid">
+                <section class="main-left">
+                    <section class="panel glass-panel analytics-panel premium-analytics" id="analytics">
+                        <div class="panel-header premium-header">
+                            <div class="header-left">
+                                <h3><i class="fas fa-chart-line"></i> Analytics Dashboard</h3>
+                            </div>
+                            <div class="panel-actions">
+                                <select class="search-input premium-select">
+                                    <option value="30">Last 30 days</option>
+                                    <option value="90">Last 90 days</option>
+                                    <option value="365">Last 12 months</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="charts-grid premium-charts">
+                            <div class="chart-card premium-chart-card" style="background: linear-gradient(135deg, rgba(0, 99, 255, 0.07), rgba(0, 153, 255, 0.03)); padding: 24px; border-radius: 16px; border: 1.5px solid rgba(0, 212, 255, 0.16); height: 300px; display: flex; align-items: center; justify-content: center; color: var(--text-secondary); font-size: 1.1rem;">
+                                <div style="text-align: center;">
+                                    <i class="fas fa-chart-line" style="font-size: 3rem; margin-bottom: 12px; color: var(--secondary-color); opacity: 0.6;"></i>
+                                    <div>Revenue & Expenses Chart Area</div>
+                                    <div style="font-size: 0.9rem; margin-top: 8px;">(Chart.js renders here in production)</div>
+                                </div>
+                            </div>
+                            <div class="chart-small premium-chart-small">
+                                <div class="chart-card premium-chart-card" style="background: linear-gradient(135deg, rgba(0, 99, 255, 0.07), rgba(0, 153, 255, 0.03)); padding: 24px; border-radius: 16px; border: 1.5px solid rgba(0, 212, 255, 0.16); height: 240px; display: flex; align-items: center; justify-content: center; color: var(--text-secondary);">
+                                    <div style="text-align: center;">
+                                        <div class="chart-label">Member Growth</div>
+                                        <div style="font-size: 0.9rem; margin-top: 8px;">Chart renders here</div>
+                                    </div>
+                                </div>
+                                <div class="chart-card premium-chart-card" style="background: linear-gradient(135deg, rgba(0, 99, 255, 0.07), rgba(0, 153, 255, 0.03)); padding: 24px; border-radius: 16px; border: 1.5px solid rgba(0, 212, 255, 0.16); height: 240px; display: flex; align-items: center; justify-content: center; color: var(--text-secondary);">
+                                    <div style="text-align: center;">
+                                        <div class="chart-label">Verification Status</div>
+                                        <div style="font-size: 0.9rem; margin-top: 8px;">Donut chart renders here</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                </section>
+
+                <aside class="main-right">
+                    <section class="panel glass-panel quick-actions premium-quick-actions">
+                        <div class="panel-header premium-header">
+                            <h3><i class="fas fa-lightning-bolt"></i> Quick Actions</h3>
+                        </div>
+                        <div class="action-grid premium-action-grid">
+                            <button class="action-pill premium-action-btn">
+                                <div class="btn-icon"><i class="fas fa-user-plus"></i></div>
+                                <div class="btn-content">
+                                    <div class="btn-label">Add Member</div>
+                                    <div class="btn-desc">Invite new team</div>
+                                </div>
+                            </button>
+                            <button class="action-pill premium-action-btn">
+                                <div class="btn-icon"><i class="fas fa-credit-card"></i></div>
+                                <div class="btn-content">
+                                    <div class="btn-label">Record Payment</div>
+                                    <div class="btn-desc">Log transaction</div>
+                                </div>
+                            </button>
+                            <button class="action-pill premium-action-btn">
+                                <div class="btn-icon"><i class="fas fa-receipt"></i></div>
+                                <div class="btn-content">
+                                    <div class="btn-label">Record Expense</div>
+                                    <div class="btn-desc">Track spending</div>
+                                </div>
+                            </button>
+                        </div>
+                        <div class="small-metrics premium-small-metrics">
+                            <div class="small-metric premium-small-metric">
+                                <div class="metric-heading"><i class="fas fa-clock"></i> Pending</div>
+                                <strong>3</strong>
+                            </div>
+                            <div class="small-metric premium-small-metric">
+                                <div class="metric-heading"><i class="fas fa-file-pdf"></i> Receipts</div>
+                                <strong>12</strong>
+                            </div>
+                        </div>
+                    </section>
+                </aside>
+            </div>
+
+            <div class="dashboard-row-grid dashboard-row-grid-alt">
+                <section class="panel glass-panel premium-panel" id="members-section">
+                    <div class="panel-header premium-header">
+                        <h3><i class="fas fa-users-gear"></i> Members Management</h3>
+                        <div class="panel-actions">
+                            <input placeholder="Search members" class="search-input" />
+                        </div>
+                    </div>
+                    <div class="members-top">
+                        <form class="card-form compact" style="grid-template-columns: minmax(0, 1.05fr) minmax(0, 1.05fr) minmax(0, 1.05fr) 120px;">
+                            <input type="text" placeholder="Member name" />
+                            <input type="email" placeholder="Member email" />
+                            <input type="text" placeholder="Temp password (optional)" />
+                            <button type="button" class="dashboard-button primary">Add</button>
+                        </form>
+                        <div class="table-card compact">
+                            <table class="transaction-table members-table">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Status</th>
+                                        <th>Paid Amount</th>
+                                        <th>Remaining Balance</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td><div class="member-cell"><span class="member-avatar">A</span><span class="member-name">Aarav Shah</span></div></td>
+                                        <td><span class="status-pill active">Active</span></td>
+                                        <td>₹24,000</td>
+                                        <td>₹1,500</td>
+                                        <td class="member-actions-cell"><button class="dashboard-button">Reset</button><button class="dashboard-button">Deactivate</button></td>
+                                    </tr>
+                                    <tr>
+                                        <td><div class="member-cell"><span class="member-avatar">M</span><span class="member-name">Meera Patel</span></div></td>
+                                        <td><span class="status-pill pending">Pending</span></td>
+                                        <td>₹18,500</td>
+                                        <td>₹7,000</td>
+                                        <td class="member-actions-cell"><button class="dashboard-button">Reset</button><button class="dashboard-button">Reactivate</button></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="panel glass-panel premium-panel" id="transactions">
+                    <div class="panel-header premium-header">
+                        <h3><i class="fas fa-list-check"></i> Activity Feed</h3>
+                        <div class="panel-actions">
+                            <input placeholder="Search transactions" class="search-input" />
+                        </div>
+                    </div>
+                    <div class="activity-list">
+                        <div class="activity-item">
+                            <div><strong>Payment Received</strong><br><small style="color:var(--text-secondary);">Alice paid ₹5,000</small></div>
+                            <div style="text-align:right;"><span style="color:var(--success-color); font-weight:700;">+₹5,000</span><br><small style="color:var(--text-secondary);">2 hours ago</small></div>
+                        </div>
+                        <div class="activity-item">
+                            <div><strong>Expense Added</strong><br><small style="color:var(--text-secondary);">Equipment maintenance</small></div>
+                            <div style="text-align:right;"><span style="color:var(--danger-color); font-weight:700;">-₹2,500</span><br><small style="color:var(--text-secondary);">5 hours ago</small></div>
+                        </div>
+                        <div class="activity-item">
+                            <div><strong>Member Verified</strong><br><small style="color:var(--text-secondary);">Bob's payment confirmed</small></div>
+                            <div style="text-align:right;"><span style="color:var(--success-color); font-weight:700;">✓</span><br><small style="color:var(--text-secondary);">1 day ago</small></div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+            <div class="dashboard-row-grid dashboard-row-grid-alt">
+                <section class="panel glass-panel premium-panel" id="expenses-section">
+                    <div class="panel-header premium-header">
+                        <h3><i class="fas fa-receipt"></i> Expenses Management</h3>
+                    </div>
+                    <form class="card-form compact" style="grid-template-columns: minmax(0, 1.25fr) minmax(0, 0.72fr) minmax(0, 0.78fr) 140px;">
+                        <input type="text" placeholder="Title" />
+                        <input type="number" placeholder="Amount" min="1" />
+                        <input type="date" />
+                        <button type="button" class="dashboard-button primary">Add Expense</button>
+                    </form>
+                    <div class="timeline-list compact" style="margin-top:16px;">
+                        <div class="activity-item"><div><strong>Hardware refresh</strong><br><small style="color:var(--text-secondary);">12 May 2026</small></div><div class="list-amount">₹12,000</div></div>
+                        <div class="activity-item"><div><strong>Event sponsorship</strong><br><small style="color:var(--text-secondary);">09 May 2026</small></div><div class="list-amount">₹8,500</div></div>
+                    </div>
+                    <div class="finance-subpanel">
+                        <div class="panel-header premium-header">
+                            <h4><i class="fas fa-bolt"></i> Recent Activity</h4>
+                        </div>
+                        <div class="timeline-list compact finance-timeline">
+                            <div class="activity-item recent-activity-item recent-success"><div class="activity-leading"><div class="activity-icon"><i class="fas fa-user-plus"></i></div><div><strong>Member joined</strong><span>New robotics member onboarded</span></div></div><div class="activity-trailing"><div class="activity-time">Today</div></div></div>
+                            <div class="activity-item recent-activity-item recent-warning"><div class="activity-leading"><div class="activity-icon"><i class="fas fa-credit-card"></i></div><div><strong>Payment recorded</strong><span>Aarav Shah</span></div></div><div class="activity-trailing"><div class="list-amount is-success">₹5,000</div><div class="activity-time">2 hours ago</div></div></div>
+                            <div class="activity-item recent-activity-item recent-danger"><div class="activity-leading"><div class="activity-icon"><i class="fas fa-receipt"></i></div><div><strong>Expense added</strong><span>Sensor kit</span></div></div><div class="activity-trailing"><div class="list-amount is-danger">₹6,200</div><div class="activity-time">08 May 2026</div></div></div>
+                            <div class="activity-item recent-activity-item recent-success"><div class="activity-leading"><div class="activity-icon"><i class="fas fa-circle-check"></i></div><div><strong>Verification approved</strong><span>Meera Patel</span></div></div><div class="activity-trailing"><div class="list-amount is-success">₹3,200</div><div class="activity-time">1 day ago</div></div></div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="panel glass-panel premium-panel" id="receipt-verification-section">
+                    <div class="panel-header premium-header">
+                        <h3><i class="fas fa-clipboard-check"></i> Verification Queue</h3>
+                    </div>
+                    <div class="verification-list">
+                        <div class="receipt-row">
+                            <div>
+                                <strong>Meera Patel | ₹5,000</strong>
+                                <span>12 May 2026 | receipt-001.pdf</span>
+                            </div>
+                            <div class="receipt-actions">
+                                <button class="dashboard-button primary">Verify</button>
+                                <button class="dashboard-button">Reject</button>
+                            </div>
+                        </div>
+                        <div class="receipt-row">
+                            <div>
+                                <strong>Aarav Shah | ₹3,200</strong>
+                                <span>11 May 2026 | receipt-002.pdf</span>
+                            </div>
+                            <div class="receipt-actions">
+                                <button class="dashboard-button primary">Verify</button>
+                                <button class="dashboard-button">Reject</button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+            <footer class="dashboard-footer">© Texcelerators — Robotics Command Center</footer>
+        </main>
+    </div>
+</body>
+</html>
