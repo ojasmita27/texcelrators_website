@@ -3319,6 +3319,9 @@ function renderDashboardApp() {
         if (!container || userRole !== 'member') return;
 
         const memberRecord = getCurrentMemberRecord() || {};
+        const memberStatus = String(memberRecord.status || (memberRecord.active === false ? 'inactive' : 'active')).toLowerCase();
+        const memberStatusClass = memberStatus === 'active' ? 'active' : 'pending';
+        const memberStatusLabel = memberStatus.charAt(0).toUpperCase() + memberStatus.slice(1);
         const joinDate = memberRecord.joinedAt || state.user.createdAt || state.user.joinDate || null;
         const skills = Array.isArray(memberRecord.skills) && memberRecord.skills.length
             ? memberRecord.skills
@@ -3326,6 +3329,33 @@ function renderDashboardApp() {
         const certs = Array.isArray(memberRecord.certificates) && memberRecord.certificates.length
             ? memberRecord.certificates
             : (Array.isArray(state.user.certificates) ? state.user.certificates : []);
+        const getCertificateName = (certUrl) => {
+            const rawName = String(certUrl || '').split('/').pop() || 'Certificate.pdf';
+            try {
+                return decodeURIComponent(rawName);
+            } catch (_) {
+                return rawName;
+            }
+        };
+
+        const renderCertificateCards = (certificateUrls, isEditMode) => {
+            if (!Array.isArray(certificateUrls) || !certificateUrls.length) {
+                return '<div class="cert-empty-state">No certificates added yet</div>';
+            }
+
+            return certificateUrls.map((certUrl) => `
+                <article class="cert-doc-card" data-url="${certUrl}">
+                    <div class="cert-doc-icon" aria-hidden="true"><i class="fas fa-file-pdf"></i></div>
+                    <div class="cert-doc-meta">
+                        <div class="cert-doc-name" title="${getCertificateName(certUrl)}">${getCertificateName(certUrl)}</div>
+                    </div>
+                    <div class="cert-doc-actions">
+                        <a class="cert-view-btn" href="${certUrl}" target="_blank" rel="noopener">View</a>
+                        ${isEditMode ? `<button class="cert-delete-btn cert-remove" data-url="${certUrl}" type="button" title="Delete certificate">Delete</button>` : ''}
+                    </div>
+                </article>
+            `).join('');
+        };
 
         if (!state.profileEditor.draft) {
             state.profileEditor.draft = getProfileDraftFromState();
@@ -3334,25 +3364,43 @@ function renderDashboardApp() {
         if (!state.profileEditor.isEditing) {
             container.innerHTML = `
                 <div class="profile-shell">
-                    <div class="profile-left-spacer" aria-hidden="true"></div>
-                    <div class="profile-actions-vertical">
-                        <button class="profile-action profile-action-cancel" id="profileEditButton" type="button"><i class="fas fa-pen"></i> Edit</button>
-                    </div>
-                    <div class="member-profile-grid enterprise-columns profile-content">
-                        <section class="enterprise-column member-profile-column">
-                            <h4>Member Details</h4>
-                            <div class="member-profile-row"><span class="member-profile-key">Name</span><strong class="member-profile-value">${state.user.name || '—'}</strong></div>
-                            <div class="member-profile-row"><span class="member-profile-key">Role</span><strong class="member-profile-value">${state.user.role || 'member'}</strong></div>
-                            <div class="member-profile-row"><span class="member-profile-key">Membership ID</span><strong class="member-profile-value">${memberRecord.memberId || memberRecord._id || 'Not assigned'}</strong></div>
-                            <div class="member-profile-row"><span class="member-profile-key">Join Date</span><strong class="member-profile-value">${joinDate ? formatDate(joinDate) : 'Not available'}</strong></div>
-                        </section>
-                        <section class="enterprise-column member-profile-column">
-                            <h4>Contact & Skills</h4>
-                            <div class="member-profile-row"><span class="member-profile-key">Email</span><strong class="member-profile-value">${state.user.email || '—'}</strong></div>
-                            <div class="member-profile-row"><span class="member-profile-key">Phone</span><strong class="member-profile-value">${memberRecord.phone || state.user.phone || 'Not provided'}</strong></div>
-                            <div class="member-profile-row"><span class="member-profile-key">Skills</span><strong class="member-profile-value">${skills.length ? skills.join(', ') : 'No skills added yet'}</strong></div>
-                            <div class="member-profile-row"><span class="member-profile-key">Certificates</span><div class="member-profile-value certs-preview">${certs.length ? certs.map(c => `<div class="cert-item" data-url="${c}"><a href="${c}" target="_blank">${c.split('/').pop()}</a></div>`).join('') : 'No certificates added yet'}</div></div>
-                        </section>
+                    <aside class="profile-left-panel" aria-label="Profile panel">
+                        <div id="profilePicPreview" class="profile-pic-preview profile-avatar-wrap">
+                            ${state.user.profilePic
+                                ? `<img src="${state.user.profilePic}" alt="Profile photo" class="profile-thumb profile-thumb-avatar">`
+                                : `<div class="profile-thumb-placeholder profile-thumb-avatar-placeholder">${getUserInitials(state.user.name)}</div>`}
+                        </div>
+                        <span class="status-pill ${memberStatusClass} profile-member-status">${memberStatusLabel}</span>
+                    </aside>
+                    <div class="profile-content-wrap">
+                        <div class="profile-section-header">
+                            <div>
+                                <h3 class="profile-section-title">Profile</h3>
+                                <p class="profile-section-subtitle">View your member profile and certificate records.</p>
+                            </div>
+                            <button class="profile-edit-action" id="profileEditButton" type="button"><i class="fas fa-pen"></i> Edit Profile</button>
+                        </div>
+                        <div class="member-profile-grid enterprise-columns profile-content">
+                            <section class="enterprise-column member-profile-column">
+                                <h4>Member Details</h4>
+                                <div class="member-profile-row"><span class="member-profile-key">Name</span><strong class="member-profile-value">${state.user.name || '—'}</strong></div>
+                                <div class="member-profile-row"><span class="member-profile-key">Role</span><strong class="member-profile-value">${state.user.role || 'member'}</strong></div>
+                                <div class="member-profile-row"><span class="member-profile-key">Membership ID</span><strong class="member-profile-value">${memberRecord.memberId || memberRecord._id || 'Not assigned'}</strong></div>
+                                <div class="member-profile-row"><span class="member-profile-key">Join Date</span><strong class="member-profile-value">${joinDate ? formatDate(joinDate) : 'Not available'}</strong></div>
+                            </section>
+                            <section class="enterprise-column member-profile-column">
+                                <h4>Contact & Skills</h4>
+                                <div class="member-profile-row"><span class="member-profile-key">Email</span><strong class="member-profile-value">${state.user.email || '—'}</strong></div>
+                                <div class="member-profile-row"><span class="member-profile-key">Phone</span><strong class="member-profile-value">${memberRecord.phone || state.user.phone || 'Not provided'}</strong></div>
+                                <div class="member-profile-row"><span class="member-profile-key">Skills</span><strong class="member-profile-value">${skills.length ? skills.join(', ') : 'No skills added yet'}</strong></div>
+                                <div class="member-profile-row">
+                                    <span class="member-profile-key">Certificates</span>
+                                    <div class="member-profile-value">
+                                        <div class="cert-doc-list cert-doc-readonly">${renderCertificateCards(certs, false)}</div>
+                                    </div>
+                                </div>
+                            </section>
+                        </div>
                     </div>
                 </div>
             `;
@@ -3366,37 +3414,54 @@ function renderDashboardApp() {
 
         container.innerHTML = `
             <div class="profile-shell">
-                <div class="profile-left-spacer" aria-hidden="true"></div>
-                <div class="profile-actions-vertical">
-                    <button class="profile-action" id="profileCancelButton" type="button" ${state.profileEditor.saving ? 'disabled' : ''}>Cancel</button>
-                    <button class="profile-action profile-action-save" id="profileSaveButton" type="button" ${state.profileEditor.saving ? 'disabled' : ''}>${state.profileEditor.saving ? 'Saving...' : 'Save Changes'}</button>
-                </div>
-                <div class="member-profile-grid enterprise-columns profile-content">
-                    <section class="enterprise-column member-profile-column">
-                        <h4>Member Details</h4>
-                        <div class="member-profile-row"><span class="member-profile-key">Name</span><input class="member-profile-input" id="profileEditName" type="text" maxlength="80" required></div>
-                        <div class="member-profile-row"><span class="member-profile-key">Role</span><strong class="member-profile-value">${state.user.role || 'member'}</strong></div>
-                        <div class="member-profile-row"><span class="member-profile-key">Membership ID</span><strong class="member-profile-value">${memberRecord.memberId || memberRecord._id || 'Not assigned'}</strong></div>
-                        <div class="member-profile-row"><span class="member-profile-key">Join Date</span><strong class="member-profile-value">${joinDate ? formatDate(joinDate) : 'Not available'}</strong></div>
-                        <div class="member-profile-row"><span class="member-profile-key">Profile Photo</span>
-                            <div class="member-profile-value">
-                                <div id="profilePicPreview" class="profile-pic-preview">${state.user.profilePic ? `<img src="${state.user.profilePic}" alt="Profile photo" class="profile-thumb">` : '<div class="profile-thumb-placeholder">No photo</div>'}</div>
-                                <input type="file" id="profilePicInput" accept="image/*">
-                            </div>
+                <aside class="profile-left-panel" aria-label="Profile panel">
+                    <div id="profilePicPreview" class="profile-pic-preview profile-avatar-wrap">
+                        ${state.user.profilePic
+                            ? `<img src="${state.user.profilePic}" alt="Profile photo" class="profile-thumb profile-thumb-avatar">`
+                            : `<div class="profile-thumb-placeholder profile-thumb-avatar-placeholder">${getUserInitials(state.user.name)}</div>`}
+                    </div>
+                    <label for="profilePicInput" class="profile-photo-trigger"><i class="fas fa-camera"></i> Change Photo</label>
+                    <input type="file" id="profilePicInput" class="profile-photo-input" accept="image/*">
+                    <span class="status-pill ${memberStatusClass} profile-member-status">${memberStatusLabel}</span>
+                </aside>
+                <div class="profile-content-wrap">
+                    <div class="profile-section-header profile-section-header-edit">
+                        <div>
+                            <h3 class="profile-section-title">Profile</h3>
+                            <p class="profile-section-subtitle">Edit your name, phone, skills, photo, and certificates.</p>
                         </div>
-                    </section>
-                    <section class="enterprise-column member-profile-column">
-                        <h4>Contact & Skills</h4>
-                        <div class="member-profile-row"><span class="member-profile-key">Email</span><strong class="member-profile-value">${state.user.email || '—'}</strong></div>
-                        <div class="member-profile-row"><span class="member-profile-key">Phone</span><input class="member-profile-input" id="profileEditPhone" type="text" maxlength="20"></div>
-                        <div class="member-profile-row"><span class="member-profile-key">Skills</span><textarea class="member-profile-input member-profile-textarea" id="profileEditSkills" rows="2" placeholder="e.g. CAD, Arduino, Embedded C"></textarea></div>
-                        <div class="member-profile-row"><span class="member-profile-key">Certificates</span>
-                            <div class="member-profile-value">
-                                <div id="profileCertificatesPreview" class="certs-preview">${certs.length ? certs.map(c => `<div class="cert-item" data-url="${c}"><a href="${c}" target="_blank">${c.split('/').pop()}</a><button class="cert-remove" data-url="${c}" title="Remove certificate">✕</button></div>`).join('') : 'No certificates added yet'}</div>
-                                <input type="file" id="profileCertificatesInput" accept="image/*,.pdf" multiple>
-                            </div>
+                        <div class="profile-section-actions">
+                            <button class="profile-action profile-action-secondary" id="profileCancelButton" type="button" ${state.profileEditor.saving ? 'disabled' : ''}>Cancel</button>
+                            <button class="profile-action profile-action-save" id="profileSaveButton" type="button" ${state.profileEditor.saving ? 'disabled' : ''}>${state.profileEditor.saving ? 'Saving...' : 'Save Changes'}</button>
                         </div>
-                    </section>
+                    </div>
+                    <div class="member-profile-grid enterprise-columns profile-content">
+                        <section class="enterprise-column member-profile-column">
+                            <h4>Member Details</h4>
+                            <div class="member-profile-row"><span class="member-profile-key">Name</span><input class="member-profile-input" id="profileEditName" type="text" maxlength="80" required></div>
+                            <div class="member-profile-row"><span class="member-profile-key">Role</span><strong class="member-profile-value">${state.user.role || 'member'}</strong></div>
+                            <div class="member-profile-row"><span class="member-profile-key">Membership ID</span><strong class="member-profile-value">${memberRecord.memberId || memberRecord._id || 'Not assigned'}</strong></div>
+                            <div class="member-profile-row"><span class="member-profile-key">Join Date</span><strong class="member-profile-value">${joinDate ? formatDate(joinDate) : 'Not available'}</strong></div>
+                        </section>
+                        <section class="enterprise-column member-profile-column">
+                            <h4>Contact & Skills</h4>
+                            <div class="member-profile-row"><span class="member-profile-key">Email</span><strong class="member-profile-value">${state.user.email || '—'}</strong></div>
+                            <div class="member-profile-row"><span class="member-profile-key">Phone</span><input class="member-profile-input" id="profileEditPhone" type="text" maxlength="20"></div>
+                            <div class="member-profile-row"><span class="member-profile-key">Skills</span><textarea class="member-profile-input member-profile-textarea" id="profileEditSkills" rows="2" placeholder="e.g. CAD, Arduino, Embedded C"></textarea></div>
+                            <div class="member-profile-row"><span class="member-profile-key">Certificates</span>
+                                    <div class="member-profile-value">
+                                        <div id="profileCertificatesExisting" class="cert-doc-list cert-doc-edit">${renderCertificateCards(certs, true)}</div>
+                                        <div class="cert-upload-toolbar">
+                                            <label for="profileCertificatesInput" class="cert-upload-btn"><i class="fas fa-upload"></i> Upload Certificates</label>
+                                            <input type="file" id="profileCertificatesInput" class="profile-cert-input" accept=".pdf,application/pdf" multiple>
+                                        </div>
+                                        <div id="profileCertificatesPending" class="cert-doc-list cert-doc-pending">
+                                            <div class="cert-empty-state">No new certificates selected</div>
+                                        </div>
+                                    </div>
+                            </div>
+                        </section>
+                    </div>
                 </div>
             </div>
         `;
@@ -3438,7 +3503,8 @@ function renderDashboardApp() {
         const profilePicInput = document.getElementById('profilePicInput');
         const profileCertificatesInput = document.getElementById('profileCertificatesInput');
         const profilePicPreview = document.getElementById('profilePicPreview');
-        const certsPreviewRoot = document.getElementById('profileCertificatesPreview');
+        const certsExistingRoot = document.getElementById('profileCertificatesExisting');
+        const certsPendingRoot = document.getElementById('profileCertificatesPending');
 
         if (profilePicInput) {
             profilePicInput.addEventListener('change', () => {
@@ -3456,28 +3522,42 @@ function renderDashboardApp() {
             });
         }
 
+        const editPhotoButton = document.getElementById('profileEditPhotoButton');
+        if (editPhotoButton && profilePicInput) {
+            editPhotoButton.addEventListener('click', () => profilePicInput.click());
+        }
+
         if (profileCertificatesInput) {
             profileCertificatesInput.addEventListener('change', () => {
                 const files = profileCertificatesInput.files ? Array.from(profileCertificatesInput.files) : [];
+                if (!certsPendingRoot) return;
+
                 if (!files.length) {
-                    if (certsPreviewRoot) certsPreviewRoot.innerHTML = 'No certificates selected';
+                    certsPendingRoot.innerHTML = '<div class="cert-empty-state">No new certificates selected</div>';
                     return;
                 }
-                if (certsPreviewRoot) {
-                    certsPreviewRoot.innerHTML = files.map((f) => {
-                        if (f.type && f.type.startsWith('image/')) {
-                            const url = URL.createObjectURL(f);
-                            return `<div class="cert-item"><img src="${url}" class="cert-thumb"><div class="cert-name">${f.name}</div></div>`;
-                        }
-                        return `<div class="cert-item"><div class="cert-file">${f.name}</div></div>`;
-                    }).join('');
-                }
+
+                certsPendingRoot.innerHTML = files.map((f, index) => {
+                    const fileUrl = URL.createObjectURL(f);
+                    return `
+                        <article class="cert-doc-card cert-doc-card-pending" data-index="${index}">
+                            <div class="cert-doc-icon" aria-hidden="true"><i class="fas fa-file-pdf"></i></div>
+                            <div class="cert-doc-meta">
+                                <div class="cert-doc-name" title="${f.name}">${f.name}</div>
+                            </div>
+                            <div class="cert-doc-actions">
+                                <a class="cert-view-btn" href="${fileUrl}" target="_blank" rel="noopener">View</a>
+                                <button class="cert-delete-btn cert-remove-pending" data-index="${index}" type="button" title="Remove selected file">Delete</button>
+                            </div>
+                        </article>
+                    `;
+                }).join('');
             });
         }
 
-        // handle removal of already uploaded certificates (click on remove button)
-        if (certsPreviewRoot) {
-            certsPreviewRoot.addEventListener('click', async (ev) => {
+        // Handle removal of already uploaded certificates
+        if (certsExistingRoot) {
+            certsExistingRoot.addEventListener('click', async (ev) => {
                 const btn = ev.target.closest('.cert-remove');
                 if (!btn) return;
                 const url = btn.dataset.url;
@@ -3495,6 +3575,27 @@ function renderDashboardApp() {
                 } catch (err) {
                     if (!handleAuthFailure(err)) showDashboardToast(err.message || 'Failed to remove certificate', 'error');
                 }
+            });
+        }
+
+        // Handle removal of newly selected (unsaved) certificate files
+        if (certsPendingRoot && profileCertificatesInput) {
+            certsPendingRoot.addEventListener('click', (ev) => {
+                const btn = ev.target.closest('.cert-remove-pending');
+                if (!btn) return;
+
+                const removeIndex = Number(btn.dataset.index);
+                if (!Number.isInteger(removeIndex) || removeIndex < 0) return;
+
+                const currentFiles = profileCertificatesInput.files ? Array.from(profileCertificatesInput.files) : [];
+                if (!currentFiles.length) return;
+
+                const transfer = new DataTransfer();
+                currentFiles.forEach((file, idx) => {
+                    if (idx !== removeIndex) transfer.items.add(file);
+                });
+                profileCertificatesInput.files = transfer.files;
+                profileCertificatesInput.dispatchEvent(new Event('change'));
             });
         }
 
