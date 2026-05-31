@@ -183,6 +183,14 @@
             return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
         }
 
+        function getAvatarMarkup({ name, profilePic, imageClass, placeholderClass, alt }) {
+            if (profilePic) {
+                return `<img src="${profilePic}" alt="${alt || 'Profile photo'}" class="${imageClass}">`;
+            }
+
+            return `<div class="${placeholderClass}">${getUserInitials(name)}</div>`;
+        }
+
         function animateINRCounter(el, target, duration = 900) {
             if (!el) return;
             const start = Number(el.dataset.start) || 0;
@@ -2615,7 +2623,8 @@ function renderDashboardApp() {
         profileEditor: {
             isEditing: false,
             draft: null,
-            saving: false
+            saving: false,
+            clearProfilePic: false
         }
     };
 
@@ -2791,6 +2800,7 @@ function renderDashboardApp() {
         topbarRole: document.getElementById('topbarRole'),
         sidebarProfileName: document.getElementById('sidebarProfileName'),
         sidebarProfileAvatar: document.getElementById('sidebarProfileAvatar'),
+        topbarAvatar: document.getElementById('topbarAvatar'),
         welcomeName: document.getElementById('welcomeName'),
         welcomeRole: document.getElementById('welcomeRole'),
         paymentsContainer: document.getElementById('payments-container'),
@@ -2916,7 +2926,24 @@ function renderDashboardApp() {
         if (elements.topbarName) elements.topbarName.textContent = state.user.name;
         if (elements.topbarRole) elements.topbarRole.textContent = state.user.role;
         if (elements.sidebarProfileName) elements.sidebarProfileName.textContent = state.user.name;
-        if (elements.sidebarProfileAvatar) elements.sidebarProfileAvatar.textContent = getUserInitials(state.user.name);
+        if (elements.sidebarProfileAvatar) {
+            elements.sidebarProfileAvatar.innerHTML = getAvatarMarkup({
+                name: state.user.name,
+                profilePic: state.user.profilePic,
+                imageClass: 'sidebar-profile-avatar-image',
+                placeholderClass: 'sidebar-profile-avatar-placeholder',
+                alt: 'Sidebar profile photo'
+            });
+        }
+        if (elements.topbarAvatar) {
+            elements.topbarAvatar.innerHTML = getAvatarMarkup({
+                name: state.user.name,
+                profilePic: state.user.profilePic,
+                imageClass: 'topbar-avatar-image',
+                placeholderClass: 'topbar-avatar-placeholder',
+                alt: 'Top bar profile photo'
+            });
+        }
         if (elements.welcomeName) elements.welcomeName.textContent = state.user.name;
         if (elements.welcomeRole) elements.welcomeRole.textContent = state.user.role;
     }
@@ -2964,6 +2991,7 @@ function renderDashboardApp() {
         if (!state.profileEditor.isEditing) {
             state.profileEditor.draft = null;
             state.profileEditor.saving = false;
+            state.profileEditor.clearProfilePic = false;
         }
         renderMemberProfile();
     }
@@ -2990,7 +3018,7 @@ function renderDashboardApp() {
         try {
             // 1) Upload profile picture if selected
             let uploadedProfileUser = null;
-            if (profilePicInput && profilePicInput.files && profilePicInput.files.length) {
+            if (!state.profileEditor.clearProfilePic && profilePicInput && profilePicInput.files && profilePicInput.files.length) {
                 const f = profilePicInput.files[0];
                 const fd = new FormData();
                 fd.append('profilePic', f);
@@ -3024,10 +3052,15 @@ function renderDashboardApp() {
                     : parseProfileListInput(certsInput ? certsInput.value : '')
             };
 
+            if (state.profileEditor.clearProfilePic) {
+                payload.profilePic = '';
+            }
+
             // 4) Persist textual changes
             const result = await apiRequest('/members/update-my-profile', { method: 'PUT', body: payload });
 
             if (result && result.user) {
+                const hasProfilePic = Object.prototype.hasOwnProperty.call(result.user, 'profilePic');
                 state.user = {
                     ...state.user,
                     name: result.user.name,
@@ -3035,7 +3068,7 @@ function renderDashboardApp() {
                     phone: result.user.phone || '',
                     skills: Array.isArray(result.user.skills) ? result.user.skills : [],
                     certificates: Array.isArray(result.user.certificates) ? result.user.certificates : [],
-                    profilePic: result.user.profilePic || state.user.profilePic,
+                    profilePic: hasProfilePic ? (result.user.profilePic || '') : state.user.profilePic,
                     createdAt: result.user.createdAt || state.user.createdAt || null,
                     updatedAt: result.user.updatedAt || state.user.updatedAt || null
                 };
@@ -3058,6 +3091,7 @@ function renderDashboardApp() {
             state.profileEditor.isEditing = false;
             state.profileEditor.draft = null;
             state.profileEditor.saving = false;
+            state.profileEditor.clearProfilePic = false;
             renderMemberProfile();
             showDashboardToast('Profile updated successfully.', 'success');
         } catch (err) {
@@ -3366,9 +3400,13 @@ function renderDashboardApp() {
                 <div class="profile-shell">
                     <aside class="profile-left-panel" aria-label="Profile panel">
                         <div id="profilePicPreview" class="profile-pic-preview profile-avatar-wrap">
-                            ${state.user.profilePic
-                                ? `<img src="${state.user.profilePic}" alt="Profile photo" class="profile-thumb profile-thumb-avatar">`
-                                : `<div class="profile-thumb-placeholder profile-thumb-avatar-placeholder">${getUserInitials(state.user.name)}</div>`}
+                            ${getAvatarMarkup({
+                                name: state.user.name,
+                                profilePic: state.profileEditor.clearProfilePic ? '' : state.user.profilePic,
+                                imageClass: 'profile-thumb profile-thumb-avatar',
+                                placeholderClass: 'profile-thumb-placeholder profile-thumb-avatar-placeholder',
+                                alt: 'Profile photo'
+                            })}
                         </div>
                         <span class="status-pill ${memberStatusClass} profile-member-status">${memberStatusLabel}</span>
                     </aside>
@@ -3416,11 +3454,18 @@ function renderDashboardApp() {
             <div class="profile-shell">
                 <aside class="profile-left-panel" aria-label="Profile panel">
                     <div id="profilePicPreview" class="profile-pic-preview profile-avatar-wrap">
-                        ${state.user.profilePic
-                            ? `<img src="${state.user.profilePic}" alt="Profile photo" class="profile-thumb profile-thumb-avatar">`
-                            : `<div class="profile-thumb-placeholder profile-thumb-avatar-placeholder">${getUserInitials(state.user.name)}</div>`}
+                        ${getAvatarMarkup({
+                            name: state.user.name,
+                            profilePic: state.profileEditor.clearProfilePic ? '' : state.user.profilePic,
+                            imageClass: 'profile-thumb profile-thumb-avatar',
+                            placeholderClass: 'profile-thumb-placeholder profile-thumb-avatar-placeholder',
+                            alt: 'Profile photo'
+                        })}
                     </div>
-                    <label for="profilePicInput" class="profile-photo-trigger"><i class="fas fa-camera"></i> Change Photo</label>
+                    <div class="profile-photo-actions">
+                        <label for="profilePicInput" class="profile-photo-trigger"><i class="fas fa-camera"></i> Change Photo</label>
+                        <button class="profile-photo-remove" id="profileRemovePhotoButton" type="button" ${state.profileEditor.saving ? 'disabled' : ''}><i class="fas fa-trash"></i> Remove Photo</button>
+                    </div>
                     <input type="file" id="profilePicInput" class="profile-photo-input" accept="image/*">
                     <span class="status-pill ${memberStatusClass} profile-member-status">${memberStatusLabel}</span>
                 </aside>
@@ -3510,14 +3555,23 @@ function renderDashboardApp() {
             profilePicInput.addEventListener('change', () => {
                 const f = profilePicInput.files && profilePicInput.files[0];
                 if (!f) {
-                    if (profilePicPreview) profilePicPreview.innerHTML = '<div class="profile-thumb-placeholder">No photo</div>';
+                    if (profilePicPreview) {
+                        profilePicPreview.innerHTML = getAvatarMarkup({
+                            name: state.user.name,
+                            profilePic: state.profileEditor.clearProfilePic ? '' : state.user.profilePic,
+                            imageClass: 'profile-thumb profile-thumb-avatar',
+                            placeholderClass: 'profile-thumb-placeholder profile-thumb-avatar-placeholder',
+                            alt: 'Profile photo'
+                        });
+                    }
                     return;
                 }
+                state.profileEditor.clearProfilePic = false;
                 if (f.type && f.type.startsWith('image/')) {
                     const url = URL.createObjectURL(f);
-                    if (profilePicPreview) profilePicPreview.innerHTML = `<img src="${url}" alt="Profile preview" class="profile-thumb">`;
+                    if (profilePicPreview) profilePicPreview.innerHTML = `<img src="${url}" alt="Profile preview" class="profile-thumb profile-thumb-avatar">`;
                 } else {
-                    if (profilePicPreview) profilePicPreview.innerHTML = `<div class="profile-thumb-placeholder">${f.name}</div>`;
+                    if (profilePicPreview) profilePicPreview.innerHTML = `<div class="profile-thumb-placeholder profile-thumb-avatar-placeholder">${f.name}</div>`;
                 }
             });
         }
@@ -3525,6 +3579,23 @@ function renderDashboardApp() {
         const editPhotoButton = document.getElementById('profileEditPhotoButton');
         if (editPhotoButton && profilePicInput) {
             editPhotoButton.addEventListener('click', () => profilePicInput.click());
+        }
+
+        const removePhotoButton = document.getElementById('profileRemovePhotoButton');
+        if (removePhotoButton && profilePicInput) {
+            removePhotoButton.addEventListener('click', () => {
+                state.profileEditor.clearProfilePic = true;
+                profilePicInput.value = '';
+                if (profilePicPreview) {
+                    profilePicPreview.innerHTML = getAvatarMarkup({
+                        name: state.user.name,
+                        profilePic: '',
+                        imageClass: 'profile-thumb profile-thumb-avatar',
+                        placeholderClass: 'profile-thumb-placeholder profile-thumb-avatar-placeholder',
+                        alt: 'Profile photo'
+                    });
+                }
+            });
         }
 
         if (profileCertificatesInput) {
@@ -3620,23 +3691,35 @@ function renderDashboardApp() {
         const isAccepted = Boolean(currentUser.sopAcceptedAt && currentUser.sopAcceptedVersion === SOP_VERSION);
         if (acceptanceCheckbox) acceptanceCheckbox.checked = isAccepted;
 
-        toc.innerHTML = SOP_SECTIONS.map((section) => `
-            <button type="button" class="rules-toc-link" data-section-target="${section.id}">
+        toc.innerHTML = SOP_SECTIONS.map((section, index) => `
+            <button type="button" class="sop-nav-item" data-section-target="${section.id}" data-section-number="${String(index + 1).padStart(2, '0')}">
                 <span>${section.title}</span>
             </button>
         `).join('');
 
-        content.innerHTML = SOP_SECTIONS.map((section) => `
-            <section class="rules-section-card" id="${section.id}" data-rules-section>
-                <button type="button" class="rules-section-header" data-section-toggle="${section.id}">
-                    <span>${section.title}</span>
-                    <i class="fas fa-chevron-down"></i>
-                </button>
+        content.innerHTML = SOP_SECTIONS.map((section, index) => `
+            <article class="sop-card" id="${section.id}" data-rules-section data-section-number="${String(index + 1).padStart(2, '0')}">
+                <header class="rules-section-header">
+                    <h3>${section.title}</h3>
+                </header>
                 <div class="rules-section-body">${buildSopSectionHtml(section)}</div>
-            </section>
+            </article>
         `).join('');
 
         const sectionCards = Array.from(content.querySelectorAll('[data-rules-section]'));
+        const navItems = Array.from(toc.querySelectorAll('[data-section-target]'));
+
+        const setActiveSection = (sectionId) => {
+            navItems.forEach((button) => {
+                const isActive = button.getAttribute('data-section-target') === sectionId;
+                button.classList.toggle('is-active', isActive);
+                button.setAttribute('aria-current', isActive ? 'true' : 'false');
+            });
+        };
+
+        if (sectionCards[0]) {
+            setActiveSection(sectionCards[0].id);
+        }
 
         const updateProgress = () => {
             const viewportTop = window.scrollY + 120;
@@ -3653,21 +3736,32 @@ function renderDashboardApp() {
         toc.querySelectorAll('[data-section-target]').forEach((button) => {
             button.addEventListener('click', () => {
                 const target = document.getElementById(button.getAttribute('data-section-target'));
-                if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                if (target) {
+                    setActiveSection(target.id);
+                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
             });
         });
 
-        content.querySelectorAll('[data-section-toggle]').forEach((button) => {
-            button.addEventListener('click', () => {
-                const card = button.closest('.rules-section-card');
-                if (card) card.classList.toggle('is-collapsed');
-            });
-        });
+        const observer = 'IntersectionObserver' in window
+            ? new IntersectionObserver((entries) => {
+                const visible = entries
+                    .filter((entry) => entry.isIntersecting)
+                    .sort((a, b) => b.intersectionRatio - a.intersectionRatio);
 
-        const expandAllBtn = document.getElementById('expandAllRulesButton');
-        const collapseAllBtn = document.getElementById('collapseAllRulesButton');
-        if (expandAllBtn) expandAllBtn.addEventListener('click', () => sectionCards.forEach((card) => card.classList.remove('is-collapsed')));
-        if (collapseAllBtn) collapseAllBtn.addEventListener('click', () => sectionCards.forEach((card) => card.classList.add('is-collapsed')));
+                if (visible[0] && visible[0].target && visible[0].target.id) {
+                    setActiveSection(visible[0].target.id);
+                }
+            }, {
+                root: null,
+                rootMargin: '-20% 0px -60% 0px',
+                threshold: [0.2, 0.4, 0.6, 0.8]
+            })
+            : null;
+
+        if (observer) {
+            sectionCards.forEach((card) => observer.observe(card));
+        }
 
         if (searchInput) {
             searchInput.addEventListener('input', () => {
@@ -3676,6 +3770,11 @@ function renderDashboardApp() {
                     const match = !query || card.textContent.toLowerCase().includes(query);
                     card.style.display = match ? '' : 'none';
                 });
+
+                const firstVisible = sectionCards.find((card) => card.style.display !== 'none');
+                if (firstVisible) {
+                    setActiveSection(firstVisible.id);
+                }
             });
         }
 

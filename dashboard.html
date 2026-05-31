@@ -513,45 +513,43 @@
                     <div id="contribution-analytics-container" class="analytics-container premium-analytics"></div>
                 </section>
 
-                <section class="panel glass-panel premium-panel" id="rules-section" data-dashboard-section data-for-roles="member">
-                    <div class="panel-header premium-header rules-header">
+                <section class="panel glass-panel premium-panel sop-page" id="rules-section" data-dashboard-section data-for-roles="member">
+                    <link rel="stylesheet" href="assets/css/sop.css">
+                    <div class="panel-header premium-header">
                         <div>
                             <h3><i class="fas fa-scale-balanced"></i> Rules & Regulations</h3>
-                            <p class="rules-subtitle">Official Texcelrators SOP. Read-only. Searchable. Printable. Members can only acknowledge acceptance.</p>
+                            <p id="rulesSopMeta">Official Texcelrators SOP</p>
                         </div>
-                        <div class="rules-header-actions">
+                        <div>
                             <button class="dashboard-button" id="downloadRulesPdfButton" type="button">Download Official PDF</button>
                             <button class="dashboard-button" id="printRulesButton" type="button">Print SOP</button>
                         </div>
                     </div>
-                    <div class="rules-portal-shell">
-                        <aside class="rules-sidebar">
-                            <div class="rules-toc-card">
-                                <div class="rules-toc-top">
-                                    <strong>Table of Contents</strong>
-                                    <span id="rulesProgressText">0% read</span>
+                    <div class="sop-shell">
+                        <aside class="sop-sidebar">
+                            <div>
+                                <div class="sop-sidebar-head">
+                                    <strong class="sop-sidebar-title">Table of Contents</strong>
+                                    <span id="rulesProgressText" class="sop-sidebar-progress">0% read</span>
                                 </div>
-                                <input id="rulesSearchInput" class="search-input rules-search" type="search" placeholder="Search SOP">
-                                <div class="rules-toc-actions">
-                                    <button type="button" class="dashboard-button rules-outline-btn" id="expandAllRulesButton">Expand All</button>
-                                    <button type="button" class="dashboard-button rules-outline-btn" id="collapseAllRulesButton">Collapse All</button>
-                                </div>
-                                <nav id="rulesToc" class="rules-toc" aria-label="SOP sections"></nav>
+                                <input id="rulesSearchInput" class="sop-search" type="search" placeholder="Search SOP">
+                                <nav id="rulesToc" aria-label="SOP sections"></nav>
                             </div>
                         </aside>
-                        <div class="rules-content-wrap">
-                            <div class="rules-progress-bar"><div id="rulesProgressBar"></div></div>
-                            <div id="rulesContent" class="rules-content"></div>
-                            <div class="rules-acceptance-card">
-                                <label class="rules-acceptance-label">
+                        <div class="sop-content">
+                            <div class="sop-progress"><div id="rulesProgressBar"></div></div>
+                            <div id="rulesContent"></div>
+                            <div id="rulesAcceptanceCard" class="sop-card sop-acceptance">
+                                <label>
                                     <input type="checkbox" id="sopAcceptanceCheckbox">
                                     <span>I have read and understood the Texcelrators SOP</span>
                                 </label>
-                                <p class="rules-acceptance-note">Your acknowledgement is stored against your member profile.</p>
+                                <p>Your acknowledgement is stored against your member profile.</p>
                                 <button type="button" class="dashboard-button primary" id="saveSopAcceptanceButton">Save Acknowledgement</button>
                             </div>
                         </div>
                     </div>
+                    <script src="assets/js/sop.js"></script>
                 </section>
 
                 <section class="panel glass-panel premium-panel" id="profile-section" data-dashboard-section data-for-roles="member">

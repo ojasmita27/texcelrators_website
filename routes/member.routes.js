@@ -189,7 +189,8 @@ router.put(
       name,
       phone,
       skills,
-      certificates
+      certificates,
+      profilePic
     } = req.body || {};
 
     if (typeof name === 'string') {
@@ -216,6 +217,10 @@ router.put(
         .map((c) => String(c || '').trim())
         .filter(Boolean)
         .slice(0, 20);
+    }
+
+    if (typeof profilePic === 'string') {
+      req.user.profilePic = profilePic.trim();
     }
 
     await req.user.save();

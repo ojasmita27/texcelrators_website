@@ -1,0 +1,271 @@
+/* SOP Documentation Portal - fully scoped styles */
+
+.sop-page {
+    --sop-bg: rgba(7, 20, 48, 0.78);
+    --sop-bg-soft: rgba(11, 30, 68, 0.58);
+    --sop-border: rgba(102, 186, 255, 0.28);
+    --sop-border-strong: rgba(102, 186, 255, 0.55);
+    --sop-text: #e8f5ff;
+    --sop-muted: #9ec7e7;
+    --sop-accent: #2fa9ff;
+    --sop-accent-soft: rgba(47, 169, 255, 0.22);
+    --sop-shadow: 0 16px 34px rgba(3, 13, 28, 0.44);
+    color: var(--sop-text);
+}
+
+.sop-page .sop-shell {
+    display: grid;
+    grid-template-columns: minmax(220px, 300px) minmax(0, 1fr);
+    gap: 24px;
+    align-items: start;
+}
+
+.sop-page .sop-sidebar {
+    position: sticky;
+    top: 18px;
+    align-self: start;
+    border: 1px solid var(--sop-border);
+    background:
+        linear-gradient(165deg, rgba(17, 42, 88, 0.82), rgba(8, 24, 54, 0.82)),
+        radial-gradient(circle at top right, rgba(88, 176, 255, 0.24), transparent 60%);
+    border-radius: 18px;
+    box-shadow: var(--sop-shadow);
+    padding: 16px;
+    backdrop-filter: blur(8px);
+}
+
+.sop-page .sop-sidebar-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+.sop-page .sop-sidebar-title {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    color: var(--sop-text);
+}
+
+.sop-page .sop-sidebar-progress {
+    margin: 0;
+    font-size: 0.83rem;
+    color: var(--sop-muted);
+}
+
+.sop-page .sop-search {
+    width: 100%;
+    border: 1px solid rgba(122, 196, 255, 0.34);
+    background: rgba(3, 16, 36, 0.62);
+    color: var(--sop-text);
+    border-radius: 12px;
+    padding: 10px 12px;
+    font-size: 0.93rem;
+    outline: none;
+    transition: border-color 160ms ease, box-shadow 180ms ease;
+    margin-bottom: 12px;
+}
+
+.sop-page .sop-search::placeholder {
+    color: rgba(184, 220, 244, 0.72);
+}
+
+.sop-page .sop-search:focus {
+    border-color: var(--sop-border-strong);
+    box-shadow: 0 0 0 3px rgba(47, 169, 255, 0.22);
+}
+
+.sop-page #rulesToc {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-height: min(60vh, 560px);
+    overflow: auto;
+    padding-right: 4px;
+}
+
+.sop-page #rulesToc::-webkit-scrollbar {
+    width: 8px;
+}
+
+.sop-page #rulesToc::-webkit-scrollbar-thumb {
+    background: rgba(111, 179, 230, 0.35);
+    border-radius: 10px;
+}
+
+.sop-page .sop-nav-item {
+    border: 1px solid transparent;
+    background: rgba(10, 30, 66, 0.54);
+    color: var(--sop-muted);
+    border-radius: 12px;
+    padding: 10px 12px;
+    text-align: left;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    cursor: pointer;
+    transition: transform 160ms ease, border-color 160ms ease, background-color 160ms ease, color 160ms ease, box-shadow 180ms ease;
+}
+
+.sop-page .sop-nav-item:hover {
+    transform: translateX(3px);
+    border-color: rgba(112, 188, 255, 0.48);
+    background: rgba(17, 44, 91, 0.88);
+    color: var(--sop-text);
+}
+
+.sop-page .sop-nav-item.is-active,
+.sop-page .sop-nav-item[aria-current="true"] {
+    background: linear-gradient(140deg, rgba(33, 120, 199, 0.95), rgba(20, 86, 162, 0.95));
+    border-color: rgba(135, 210, 255, 0.78);
+    color: #f5fbff;
+    box-shadow: 0 10px 26px rgba(20, 90, 170, 0.42);
+}
+
+.sop-page .sop-nav-icon {
+    width: 22px;
+    text-align: center;
+    color: inherit;
+    opacity: 0.98;
+    flex-shrink: 0;
+}
+
+.sop-page .sop-nav-label {
+    flex: 1;
+    font-size: 0.92rem;
+    line-height: 1.3;
+}
+
+.sop-page .sop-content {
+    min-width: 0;
+}
+
+.sop-page .sop-progress {
+    width: 100%;
+    height: 10px;
+    border-radius: 999px;
+    border: 1px solid rgba(120, 198, 255, 0.28);
+    background: rgba(2, 13, 30, 0.66);
+    overflow: hidden;
+    margin-bottom: 18px;
+}
+
+.sop-page #rulesProgressBar {
+    width: 0;
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, #2ea5ff, #69dcff);
+    box-shadow: 0 0 18px rgba(80, 186, 255, 0.56);
+    transition: width 220ms ease;
+}
+
+.sop-page #rulesContent {
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+}
+
+.sop-page .sop-card {
+    border: 1px solid var(--sop-border);
+    border-radius: 18px;
+    background:
+        linear-gradient(170deg, rgba(8, 25, 57, 0.94), rgba(7, 19, 44, 0.92)),
+        radial-gradient(circle at top right, rgba(94, 182, 255, 0.2), transparent 62%);
+    box-shadow: var(--sop-shadow);
+    padding: 20px 22px;
+    scroll-margin-top: 90px;
+    transition: transform 180ms ease, border-color 180ms ease, box-shadow 220ms ease;
+}
+
+.sop-page .sop-card:hover {
+    transform: translateY(-2px);
+    border-color: rgba(125, 204, 255, 0.62);
+    box-shadow: 0 18px 36px rgba(8, 20, 42, 0.56);
+}
+
+.sop-page .sop-card-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+.sop-page .sop-card-icon {
+    width: 26px;
+    text-align: center;
+    color: #77d3ff;
+    font-size: 1.03rem;
+}
+
+.sop-page .sop-card-title {
+    margin: 0;
+    font-size: 1.22rem;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    color: #f2faff;
+}
+
+.sop-page .sop-card-body {
+    color: #cfe9fb;
+    font-size: 0.98rem;
+    line-height: 1.72;
+}
+
+.sop-page .sop-card-body p {
+    margin: 0;
+}
+
+.sop-page .sop-card-body ul {
+    margin: 0;
+    padding-left: 1.25rem;
+    display: grid;
+    gap: 8px;
+}
+
+.sop-page .sop-card-body li::marker {
+    color: #75ceff;
+}
+
+.sop-page .sop-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.sop-page .sop-acceptance {
+    margin-top: 16px;
+}
+
+@media (max-width: 1024px) {
+    .sop-page .sop-shell {
+        grid-template-columns: 1fr;
+    }
+
+    .sop-page .sop-sidebar {
+        position: static;
+    }
+
+    .sop-page #rulesToc {
+        max-height: 280px;
+    }
+}
+
+@media (max-width: 640px) {
+    .sop-page .sop-card {
+        padding: 16px;
+        border-radius: 14px;
+    }
+
+    .sop-page .sop-card-title {
+        font-size: 1.07rem;
+    }
+
+    .sop-page .sop-card-body {
+        font-size: 0.94rem;
+        line-height: 1.62;
+    }
+}

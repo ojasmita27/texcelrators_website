@@ -1,0 +1,36 @@
+<section class="panel glass-panel premium-panel sop-page" id="rules-section" data-dashboard-section data-for-roles="member">
+    <div class="panel-header premium-header">
+        <div>
+            <h3><i class="fas fa-scale-balanced"></i> Rules & Regulations</h3>
+            <p id="rulesSopMeta">Official Texcelrators SOP</p>
+        </div>
+        <div>
+            <button class="dashboard-button" id="downloadRulesPdfButton" type="button">Download Official PDF</button>
+            <button class="dashboard-button" id="printRulesButton" type="button">Print SOP</button>
+        </div>
+    </div>
+    <div>
+        <aside class="rules-sidebar sop-sidebar">
+            <div>
+                <div>
+                    <strong>Table of Contents</strong>
+                    <span id="rulesProgressText">0% read</span>
+                </div>
+                <input id="rulesSearchInput" class="sop-search" type="search" placeholder="Search SOP">
+                <nav id="rulesToc" aria-label="SOP sections"></nav>
+            </div>
+        </aside>
+        <div>
+            <div class="sop-progress"><div id="rulesProgressBar"></div></div>
+            <div id="rulesContent"></div>
+            <div id="rulesAcceptanceCard">
+                <label>
+                    <input type="checkbox" id="sopAcceptanceCheckbox">
+                    <span>I have read and understood the Texcelrators SOP</span>
+                </label>
+                <p>Your acknowledgement is stored against your member profile.</p>
+                <button type="button" class="dashboard-button primary" id="saveSopAcceptanceButton">Save Acknowledgement</button>
+            </div>
+        </div>
+    </div>
+</section>

@@ -847,6 +847,42 @@ body > * {
     box-shadow: 0 12px 30px rgba(0, 137, 255, 0.26), 0 0 18px rgba(0, 212, 255, 0.24);
 }
 
+.profile-photo-actions {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.profile-photo-remove {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-width: 168px;
+    padding: 10px 14px;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 107, 107, 0.36);
+    background: linear-gradient(180deg, rgba(255, 107, 107, 0.16), rgba(121, 23, 36, 0.34));
+    color: #ffdfe0;
+    font-size: 0.88rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 180ms ease, box-shadow 220ms ease, border-color 220ms ease, opacity 180ms ease;
+}
+
+.profile-photo-remove:hover:not(:disabled) {
+    transform: translateY(-1px);
+    border-color: rgba(255, 146, 146, 0.88);
+    box-shadow: 0 12px 30px rgba(255, 107, 107, 0.16), 0 0 18px rgba(255, 107, 107, 0.12);
+}
+
+.profile-photo-remove:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
 .profile-member-status {
     min-width: 132px;
     justify-content: center;
@@ -977,6 +1013,295 @@ body > * {
 .btn:disabled {
     opacity: 0.5;
     cursor: not-allowed;
+}
+
+/* ===========================
+   SOP / RULES & REGULATIONS PORTAL
+=========================== */
+
+.sop-page {
+    scroll-behavior: smooth;
+}
+
+.sop-page .rules-portal-shell {
+    display: grid;
+    grid-template-columns: minmax(260px, 300px) minmax(0, 1fr);
+    gap: 1.25rem;
+    align-items: start;
+}
+
+.sop-page .sop-sidebar {
+    position: sticky;
+    top: 1.25rem;
+    align-self: start;
+    padding: 1rem;
+    border-radius: 20px;
+    border: 1px solid rgba(0, 212, 255, 0.14);
+    background: linear-gradient(180deg, rgba(8, 22, 62, 0.92), rgba(6, 18, 49, 0.88));
+    box-shadow: 0 22px 48px rgba(0, 0, 0, 0.24), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    backdrop-filter: blur(16px);
+}
+
+.sop-page .sop-content {
+    display: grid;
+    gap: 1rem;
+    min-width: 0;
+}
+
+.sop-page .rules-toc-card {
+    display: grid;
+    gap: 1rem;
+}
+
+.sop-page .rules-toc-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    color: rgba(229, 243, 255, 0.82);
+    font-size: 0.82rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-weight: 700;
+}
+
+.sop-page .rules-search {
+    width: 100%;
+    appearance: none;
+    -webkit-appearance: none;
+    border: 1px solid rgba(0, 212, 255, 0.18);
+    border-radius: 14px;
+    padding: 0.95rem 1rem;
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--text-primary);
+    font-size: 0.95rem;
+    outline: none;
+}
+
+.sop-page .rules-search::placeholder {
+    color: rgba(255, 255, 255, 0.36);
+}
+
+.sop-page .rules-search:focus {
+    border-color: rgba(0, 212, 255, 0.42);
+    box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.12);
+}
+
+.sop-page .rules-toc {
+    display: grid;
+    gap: 0.55rem;
+}
+
+.sop-page .sop-nav-item {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: 100%;
+    min-height: 3.15rem;
+    padding: 0.95rem 0.95rem 0.95rem 3.35rem;
+    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    background: rgba(255, 255, 255, 0.02);
+    color: rgba(230, 244, 255, 0.88);
+    text-align: left;
+    cursor: pointer;
+    transition: transform 180ms ease, border-color 180ms ease, background 180ms ease, box-shadow 180ms ease;
+}
+
+.sop-page .sop-nav-item::before {
+    content: attr(data-section-number);
+    position: absolute;
+    left: 0.9rem;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 2rem;
+    height: 2rem;
+    display: grid;
+    place-items: center;
+    border-radius: 999px;
+    background: linear-gradient(135deg, rgba(0, 153, 255, 0.18), rgba(0, 212, 255, 0.1));
+    border: 1px solid rgba(0, 212, 255, 0.22);
+    color: #dff8ff;
+    font-size: 0.76rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+}
+
+.sop-page .sop-nav-item:hover {
+    transform: translateX(2px);
+    border-color: rgba(0, 212, 255, 0.24);
+    background: rgba(0, 153, 255, 0.08);
+    box-shadow: 0 10px 24px rgba(0, 153, 255, 0.1);
+}
+
+.sop-page .sop-nav-item.is-active {
+    border-color: rgba(0, 212, 255, 0.44);
+    background: linear-gradient(135deg, rgba(0, 153, 255, 0.18), rgba(0, 212, 255, 0.08));
+    color: #ffffff;
+    box-shadow: 0 12px 28px rgba(0, 153, 255, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.sop-page .sop-nav-item.is-active::before {
+    background: linear-gradient(135deg, #00d4ff, #0099ff);
+    color: #042034;
+}
+
+.sop-page .rules-progress-bar {
+    margin-bottom: 0.95rem;
+    width: 100%;
+    height: 8px;
+    border-radius: 999px;
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.sop-page .rules-progress-bar > div {
+    height: 100%;
+    width: 0;
+    border-radius: inherit;
+    background: linear-gradient(90deg, #00d4ff, #0099ff);
+    box-shadow: 0 0 18px rgba(0, 212, 255, 0.3);
+}
+
+.sop-page .sop-card {
+    position: relative;
+    overflow: hidden;
+    padding: 1.25rem 1.25rem 1.2rem 4.15rem;
+    border-radius: 22px;
+    border: 1px solid rgba(0, 212, 255, 0.14);
+    background:
+        radial-gradient(circle at top right, rgba(0, 212, 255, 0.08), transparent 30%),
+        linear-gradient(180deg, rgba(9, 25, 68, 0.92), rgba(6, 18, 49, 0.9));
+    box-shadow: 0 18px 42px rgba(0, 0, 0, 0.24), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    backdrop-filter: blur(14px);
+    scroll-margin-top: 1.3rem;
+}
+
+.sop-page .sop-card::before {
+    content: attr(data-section-number);
+    position: absolute;
+    left: 1rem;
+    top: 1.05rem;
+    width: 2.15rem;
+    height: 2.15rem;
+    display: grid;
+    place-items: center;
+    border-radius: 999px;
+    background: linear-gradient(135deg, rgba(0, 153, 255, 0.2), rgba(0, 212, 255, 0.12));
+    border: 1px solid rgba(0, 212, 255, 0.22);
+    color: #dff8ff;
+    font-size: 0.78rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+}
+
+.sop-page .sop-card > header {
+    margin-bottom: 0.95rem;
+}
+
+.sop-page .sop-card > header h3 {
+    margin: 0;
+    color: #f8fcff;
+    font-size: 1.08rem;
+    line-height: 1.35;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+}
+
+.sop-page .sop-card .rules-section-body {
+    color: rgba(223, 237, 250, 0.88);
+    font-size: 0.96rem;
+    line-height: 1.8;
+}
+
+.sop-page .sop-card .rules-section-body p {
+    margin: 0;
+}
+
+.sop-page .sop-card .rules-section-body ul {
+    margin: 0;
+    padding-left: 1.15rem;
+    display: grid;
+    gap: 0.55rem;
+}
+
+.sop-page .sop-card .rules-section-body li {
+    padding-left: 0.1rem;
+}
+
+.sop-page .rules-acceptance-card {
+    margin-top: 1rem;
+    padding: 1rem 1.1rem;
+    border-radius: 18px;
+    border: 1px solid rgba(0, 212, 255, 0.14);
+    background: linear-gradient(180deg, rgba(8, 22, 62, 0.88), rgba(6, 18, 49, 0.86));
+    box-shadow: 0 16px 34px rgba(0, 0, 0, 0.18);
+}
+
+.sop-page .rules-acceptance-label {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    color: #f5fbff;
+    font-weight: 700;
+}
+
+.sop-page .rules-acceptance-label input {
+    width: 18px;
+    height: 18px;
+    accent-color: #00d4ff;
+}
+
+.sop-page .rules-acceptance-note {
+    margin: 0.65rem 0 0;
+    color: rgba(214, 234, 255, 0.78);
+    font-size: 0.88rem;
+}
+
+.sop-page .rules-acceptance-card .dashboard-button {
+    margin-top: 0.9rem;
+}
+
+@media (max-width: 1180px) {
+    .sop-page .rules-portal-shell {
+        grid-template-columns: minmax(240px, 280px) minmax(0, 1fr);
+    }
+}
+
+@media (max-width: 920px) {
+    .sop-page .rules-portal-shell {
+        grid-template-columns: 1fr;
+    }
+
+    .sop-page .sop-sidebar {
+        position: relative;
+        top: 0;
+    }
+
+    .sop-page .sop-card {
+        padding-left: 3.95rem;
+    }
+}
+
+@media (max-width: 640px) {
+    .sop-page .sop-sidebar,
+    .sop-page .sop-card,
+    .sop-page .rules-acceptance-card {
+        border-radius: 16px;
+    }
+
+    .sop-page .sop-nav-item {
+        padding-left: 3.1rem;
+    }
+
+    .sop-page .sop-card {
+        padding: 1rem 1rem 1rem 3.6rem;
+    }
+
+    .sop-page .sop-card::before,
+    .sop-page .sop-nav-item::before {
+        left: 0.8rem;
+    }
 }
 
 .btn-primary {
@@ -1422,6 +1747,20 @@ body > * {
     border:1px solid rgba(0,212,255,0.14);
     color:#fff;
     font-weight:800;
+    overflow:hidden;
+}
+.sidebar-profile-avatar-image {
+    width:100%;
+    height:100%;
+    object-fit:cover;
+    display:block;
+    border-radius:inherit;
+}
+.sidebar-profile-avatar-placeholder {
+    width:100%;
+    height:100%;
+    display:grid;
+    place-items:center;
 }
 .sidebar-profile-copy { display:flex; flex-direction:column; gap:2px; min-width:0; }
 .sidebar-profile-name { font-size:0.95rem; font-weight:700; color:var(--text-primary); }
