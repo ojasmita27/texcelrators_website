@@ -514,42 +514,52 @@
                 </section>
 
                 <section class="panel glass-panel premium-panel sop-page" id="rules-section" data-dashboard-section data-for-roles="member">
-                    <link rel="stylesheet" href="assets/css/sop.css">
+                    <link rel="stylesheet" href="assets/css/sop-card.css">
                     <div class="panel-header premium-header">
                         <div>
                             <h3><i class="fas fa-scale-balanced"></i> Rules & Regulations</h3>
                             <p id="rulesSopMeta">Official Texcelrators SOP</p>
                         </div>
-                        <div>
-                            <button class="dashboard-button" id="downloadRulesPdfButton" type="button">Download Official PDF</button>
-                            <button class="dashboard-button" id="printRulesButton" type="button">Print SOP</button>
-                        </div>
                     </div>
-                    <div class="sop-shell">
-                        <aside class="sop-sidebar">
-                            <div>
-                                <div class="sop-sidebar-head">
-                                    <strong class="sop-sidebar-title">Table of Contents</strong>
-                                    <span id="rulesProgressText" class="sop-sidebar-progress">0% read</span>
+
+                    <div class="rules-card-wrap">
+                        <article class="sop-card-modern">
+                            <div class="sop-card-icon">
+                                <i class="fas fa-file-pdf"></i>
+                            </div>
+                            <div class="sop-card-content">
+                                <div class="sop-card-title">
+                                    <h4>Official Texcelrators SOP</h4>
                                 </div>
-                                <input id="rulesSearchInput" class="sop-search" type="search" placeholder="Search SOP">
-                                <nav id="rulesToc" aria-label="SOP sections"></nav>
+                                <div class="sop-card-meta">
+                                    <span class="sop-version">Version: official-sop-v1</span>
+                                    <span class="sop-updated">Last updated: <span id="sopLastUpdated">2026-05-31</span></span>
+                                </div>
+                                <div class="sop-card-actions">
+                                    <button class="dashboard-button" id="viewRulesPdfButton" type="button">View PDF</button>
+                                    <button class="dashboard-button" id="downloadRulesPdfButton" type="button">Download PDF</button>
+                                </div>
+                                <div class="sop-card-ack">
+                                    <label class="ack-label">
+                                        <input type="checkbox" id="sopAcceptanceCheckbox">
+                                        <span>I acknowledge I've read the SOP</span>
+                                    </label>
+                                    <button type="button" class="dashboard-button primary" id="saveSopAcceptanceButton">Save Acknowledgement</button>
+                                </div>
                             </div>
-                        </aside>
-                        <div class="sop-content">
-                            <div class="sop-progress"><div id="rulesProgressBar"></div></div>
-                            <div id="rulesContent"></div>
-                            <div id="rulesAcceptanceCard" class="sop-card sop-acceptance">
-                                <label>
-                                    <input type="checkbox" id="sopAcceptanceCheckbox">
-                                    <span>I have read and understood the Texcelrators SOP</span>
-                                </label>
-                                <p>Your acknowledgement is stored against your member profile.</p>
-                                <button type="button" class="dashboard-button primary" id="saveSopAcceptanceButton">Save Acknowledgement</button>
-                            </div>
-                        </div>
+                        </article>
                     </div>
-                    <script src="assets/js/sop.js"></script>
+
+                    <script>
+                        // Minimal binding for View PDF — download handled by existing global script.js
+                        (function(){
+                            const viewBtn = document.getElementById('viewRulesPdfButton');
+                            if (!viewBtn) return;
+                            viewBtn.addEventListener('click', () => {
+                                window.open('assets/CLUB SOP.pdf', '_blank');
+                            });
+                        })();
+                    </script>
                 </section>
 
                 <section class="panel glass-panel premium-panel" id="profile-section" data-dashboard-section data-for-roles="member">
