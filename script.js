@@ -544,7 +544,7 @@
                 const n = Number(v) || 0;
                 el.dataset.start = 0;
                 if (['activeMembersCard', 'pendingVerificationsCard'].includes(el.id)) {
-                    el.textContent = String(n || EMPTY_VALUE);
+                    el.textContent = String(n);
                 } else {
                     animateINRCounter(el, n, 900);
                 }
@@ -2766,19 +2766,27 @@ function renderDashboardApp() {
         }
 
         if (userRole === 'member') {
-            // Ensure member record exists for fee rendering
-            state.members = [{
-                id: String(state.user.id),
-                name: state.user.name,
-                status: 'active',
-                active: true,
-                paid: state.memberFee.paidAmount,
-                remaining: state.memberFee.remainingAmount,
-                phone: state.user.phone || '',
-                skills: Array.isArray(state.user.skills) ? state.user.skills : [],
-                certificates: Array.isArray(state.user.certificates) ? state.user.certificates : [],
-                joinedAt: state.user.createdAt || null
-            }];
+            const incomingMembers = Array.isArray(data.members) ? data.members : [];
+            state.members = incomingMembers.length
+                ? incomingMembers.map((member) => ({
+                    id: String(member.id),
+                    name: member.name,
+                    status: member.status || (member.active ? 'active' : 'inactive'),
+                    active: member.status ? member.status === 'active' : member.active !== false,
+                    joinedAt: member.createdAt || null
+                }))
+                : [{
+                    id: String(state.user.id),
+                    name: state.user.name,
+                    status: 'active',
+                    active: true,
+                    joinedAt: state.user.createdAt || null
+                }];
+
+            const summary = data.summary || {};
+            state.finance.totalIncome = Number(summary.paymentsApprovedTotal) || 0;
+            state.finance.totalExpenses = Number(summary.expensesTotal) || 0;
+            state.finance.totalFunds = Number(summary.balance) || 0;
         }
     }
 
@@ -4514,6 +4522,30 @@ function renderDashboardApp() {
         if (elements.pendingVerificationsSmall) elements.pendingVerificationsSmall.textContent = pendingVerifications ? String(pendingVerifications) : '—';
         if (elements.recentReceiptsCount) elements.recentReceiptsCount.textContent = recentReceipts ? String(recentReceipts) : '—';
 
+        const clubSummaryFundsCard = document.getElementById('clubSummaryFundsCard');
+        const clubSummaryMembersCard = document.getElementById('clubSummaryMembersCard');
+        const recentClubMembersList = document.getElementById('recentClubMembersList');
+        const totalMembers = Array.isArray(state.members) ? state.members.length : 0;
+        const recentMembers = Array.isArray(state.members) ? state.members.slice(0, 5) : [];
+
+        if (clubSummaryFundsCard) clubSummaryFundsCard.textContent = formatCurrency(Number(state.finance.totalFunds) || 0);
+        if (clubSummaryMembersCard) clubSummaryMembersCard.textContent = String(totalMembers || 0);
+        if (recentClubMembersList) {
+            recentClubMembersList.innerHTML = recentMembers.length
+                ? recentMembers.map((member) => `
+                    <div class="activity-item" style="padding:8px 6px;">
+                        <div style="display:flex;gap:10px;align-items:center;">
+                            <div class="activity-icon" aria-hidden="true"><i class="fas fa-user"></i></div>
+                            <div style="line-height:1.05;">
+                                <strong style="display:block;">${(member && member.name) ? member.name : 'Member'}</strong>
+                                <small class="dashboard-subtle" style="font-size:0.85rem; color:var(--text-secondary);">${(member && (member.status === 'active' || member.active)) ? 'Active' : ''}</small>
+                            </div>
+                        </div>
+                    </div>
+                `).join('')
+                : '';
+        }
+
         if (elements.incomeBar) elements.incomeBar.style.width = `${Math.max(35, (state.finance.totalIncome / 70000) * 100)}%`;
         if (elements.expenseBar) elements.expenseBar.style.width = `${Math.max(20, (state.finance.totalExpenses / 25000) * 100)}%`;
         if (elements.netBar) elements.netBar.style.width = `${Math.max(25, (state.finance.totalFunds / 60000) * 100)}%`;
@@ -5034,6 +5066,8 @@ function renderDashboardApp() {
 
                 targetSection.classList.add('is-active');
                 targetSection.style.display = '';
+                // show any sections that are linked to this target (e.g., club summary shown with analytics)
+                showLinkedSections(targetId);
                 updateDashboardWorkspaceState(targetId);
             });
         });
@@ -5048,6 +5082,15 @@ function renderDashboardApp() {
         dashboardRootEl.classList.toggle('is-member', isMember);
         dashboardRootEl.classList.toggle('member-overview-active', isMember && isOverview);
         dashboardRootEl.setAttribute('data-active-section', activeSectionId || '');
+    }
+
+    function showLinkedSections(activeSectionId) {
+        if (!activeSectionId) return;
+        const selector = `[data-dashboard-section][data-dashboard-show-with="${activeSectionId}"]`;
+        document.querySelectorAll(selector).forEach((s) => {
+            s.classList.add('is-active');
+            s.style.display = '';
+        });
     }
 
     function activateDashboardSection(targetId) {
@@ -5065,6 +5108,8 @@ function renderDashboardApp() {
 
         targetSection.classList.add('is-active');
         targetSection.style.display = '';
+        // show any linked sections
+        showLinkedSections(targetId);
         updateDashboardWorkspaceState(targetId);
     }
 
@@ -5860,6 +5905,8 @@ function renderDashboardApp() {
                 document.querySelectorAll('[data-sidebar-link]').forEach(l => l.classList.remove('is-active'));
                 const matchingLink = document.querySelector(`[data-sidebar-link][data-target="${sid}"]`);
                 if (matchingLink) matchingLink.classList.add('is-active');
+                // show any linked sections for the default section (e.g., club summary with analytics)
+                showLinkedSections(sid);
                 updateDashboardWorkspaceState(sid);
             }
         }

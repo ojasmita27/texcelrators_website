@@ -180,6 +180,7 @@ router.get(
     }
 
     // Member view: own payments + all expenses (read-only)
+    const members = await User.find({ role: 'member' }).sort({ createdAt: -1 }).limit(500);
     const myPayments = await Payment.find({ member: req.user._id })
       .sort({ submittedAt: -1 })
       .limit(200);
@@ -189,15 +190,31 @@ router.get(
       { $group: { _id: null, total: { $sum: '$amount' } } }
     ]);
 
+    const totalApprovedPayments = await Payment.aggregate([
+      { $match: { status: 'approved' } },
+      { $group: { _id: null, total: { $sum: '$amount' } } }
+    ]);
+
+    const totalExpenses = await Expense.aggregate([
+      { $group: { _id: null, total: { $sum: '$amount' } } }
+    ]);
+
+    const paymentsTotal = totalApprovedPayments[0]?.total || 0;
+    const expensesTotal = totalExpenses[0]?.total || 0;
+
     return res.json({
       user: req.user.toSafeJSON(),
       settings: {
         memberTotalFee
       },
+      members: members.map((m) => m.toSafeJSON()),
       payments: myPayments,
       expenses,
       summary: {
-        myApprovedPaymentsTotal: approvedSum[0]?.total || 0
+        myApprovedPaymentsTotal: approvedSum[0]?.total || 0,
+        paymentsApprovedTotal: paymentsTotal,
+        expensesTotal,
+        balance: paymentsTotal - expensesTotal
       }
     });
   })
