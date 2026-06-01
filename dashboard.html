@@ -7,6 +7,28 @@
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="project-management-styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style id="club-summary-overrides">
+    /* Compact Club Summary overrides - scoped to club summary section */
+    #club-summary-section .panel-header { padding: 10px 14px; }
+    #club-summary-section .metrics-grid { display: flex; gap: 12px; align-items: stretch; }
+    #club-summary-section .premium-metric-card { padding: 10px 12px; box-sizing: border-box; display:flex; flex-direction:column; justify-content:center; }
+    #club-summary-section .metric-top { display:flex; gap:10px; align-items:center; margin-bottom:6px; }
+    #club-summary-section .metric-label { font-size:0.85rem; text-transform:none; color:var(--text-secondary); }
+    #club-summary-section strong { font-size:1.45rem; line-height:1.05; }
+    #club-summary-section .premium-metric-card { min-height:96px; }
+    #club-summary-section .activity-list { max-height:120px; overflow:auto; padding-top:6px; }
+    #club-summary-section .activity-item { padding:6px 4px; }
+    /* Ensure equal heights */
+    #club-summary-section .metrics-grid > .metric-card { display:flex; flex-direction:column; justify-content:center; }
+    /* Reduce spacing below club summary so analytics sits close */
+    #club-summary-section { margin-bottom:8px; }
+    section#analytics { margin-top:6px; }
+    /* Responsive collapse to single column on narrow screens */
+    @media (max-width:880px) {
+        #club-summary-section .metrics-grid { flex-direction:column; }
+        #club-summary-section .metric-card { width:100%; }
+    }
+    </style>
 </head>
 <body class="dashboard-page">
     <div class="dashboard-layout" data-dashboard-root>
@@ -68,51 +90,38 @@
                         <div class="status-text">System operational</div>
                     </div>
                 </div>
-                <div class="hero-right">
-                    <div class="metrics-grid premium-metrics" id="heroMetrics">
-                        <div class="metric-card premium-metric-card">
-                            <div class="metric-top">
-                                <i class="fas fa-wallet metric-icon" aria-hidden="true"></i>
-                                <div class="metric-label">Total Funds</div>
-                            </div>
-                            <div class="metric-value" id="totalFundsCard">0</div>
-                            <div class="metric-trend">
-                                <span class="trend-up"><i class="fas fa-arrow-up" aria-hidden="true"></i></span>
-                            </div>
+            </header>
+
+            <section class="panel glass-panel premium-panel full-width-section" id="club-summary-section" data-for-roles="member" data-dashboard-section data-dashboard-show-with="analytics">
+                <div class="panel-header premium-header">
+                    <h3><i class="fas fa-chart-pie"></i> Club Summary</h3>
+                </div>
+                <div class="metrics-grid premium-metrics" id="clubSummaryGrid">
+                    <div class="metric-card premium-metric-card" style="flex:1;">
+                        <div class="metric-top">
+                            <i class="fas fa-wallet metric-icon" aria-hidden="true"></i>
+                            <div class="metric-label">Total Club Funds</div>
                         </div>
-                        <div class="metric-card premium-metric-card">
-                            <div class="metric-top">
-                                <i class="fas fa-chart-line metric-icon" aria-hidden="true"></i>
-                                <div class="metric-label">Expenses</div>
-                            </div>
-                            <div class="metric-value" id="totalExpensesCard">0</div>
-                            <div class="metric-trend">
-                                <span class="trend-down"><i class="fas fa-arrow-down" aria-hidden="true"></i></span>
-                            </div>
+                        <strong id="clubSummaryFundsCard" aria-live="polite"></strong>
+                    </div>
+
+                    <div class="metric-card premium-metric-card" style="flex:1;">
+                        <div class="metric-top">
+                            <i class="fas fa-users metric-icon" aria-hidden="true"></i>
+                            <div class="metric-label">Total Members</div>
                         </div>
-                        <div class="metric-card premium-metric-card">
-                            <div class="metric-top">
-                                <i class="fas fa-users metric-icon" aria-hidden="true"></i>
-                                <div class="metric-label">Active Members</div>
-                            </div>
-                            <div class="metric-value" id="activeMembersCard">—</div>
-                            <div class="metric-trend">
-                                <span class="trend-stable"><i class="fas fa-minus" aria-hidden="true"></i></span>
-                            </div>
+                        <strong id="clubSummaryMembersCard" aria-live="polite"></strong>
+                    </div>
+
+                    <div class="metric-card premium-metric-card" style="flex:1;">
+                        <div class="metric-top">
+                            <i class="fas fa-user-clock metric-icon" aria-hidden="true"></i>
+                            <div class="metric-label">Recent Members</div>
                         </div>
-                        <div class="metric-card premium-metric-card">
-                            <div class="metric-top">
-                                <i class="fas fa-hourglass-half metric-icon" aria-hidden="true"></i>
-                                <div class="metric-label">Pending Verifications</div>
-                            </div>
-                            <div class="metric-value" id="pendingVerificationsCard">—</div>
-                            <div class="metric-trend">
-                                <span class="trend-stable"><i class="fas fa-minus" aria-hidden="true"></i></span>
-                            </div>
-                        </div>
+                        <div id="recentClubMembersList" class="activity-list" aria-live="polite"></div>
                     </div>
                 </div>
-            </header>
+            </section>
 
             <!-- ANALYTICS MODULE (Large chart + supporting visuals) -->
             <section class="panel glass-panel analytics-panel premium-analytics" id="analytics" data-dashboard-section>
