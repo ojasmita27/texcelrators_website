@@ -2584,6 +2584,13 @@ function renderDashboardApp() {
                 section.style.display = 'none';
             }
         });
+
+        const analyticsGrid = document.querySelector('#analytics .charts-grid.premium-charts');
+        const memberChartColumn = analyticsGrid ? analyticsGrid.querySelector('.chart-small.premium-chart-small') : null;
+        if (analyticsGrid && memberChartColumn && userRole === 'member') {
+            analyticsGrid.style.gridTemplateColumns = '1fr';
+            memberChartColumn.style.display = 'none';
+        }
     }
 
     const state = {
