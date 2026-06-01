@@ -4253,12 +4253,14 @@ function renderDashboardApp() {
 
         elements.memberPaymentHistoryBody.innerHTML = paymentRows.map((payment) => {
             const status = payment.status || 'pending';
+            const normalizedStatus = String(status).toLowerCase();
+            const canDownloadReceipt = normalizedStatus === 'verified' || normalizedStatus === 'approved';
             const receiptCell = payment.receiptPreview && payment.receiptType === 'image'
                 ? `<img src="${payment.receiptPreview}" alt="Receipt" class="receipt-thumb">`
                 : `<span class="receipt-file-name">${payment.receiptName || 'NA'}</span>`;
-            const downloadLink = payment.receiptPreview
+            const downloadLink = canDownloadReceipt && payment.receiptPreview
                 ? `<a href="${payment.receiptPreview}" class="dashboard-button" download>Download</a>`
-                : '<span class="receipt-file-name">NA</span>';
+                : '';
 
             return `
                 <tr>
