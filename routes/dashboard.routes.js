@@ -22,6 +22,28 @@ const { requireAuth, blockIfMustChangePassword } = require('../middleware/auth')
 
 const router = Router();
 
+const paymentSelect = [
+  'member',
+  'amount',
+  'method',
+  'receiptPath',
+  'receiptOriginalName',
+  'receiptNumber',
+  'receiptPdfPath',
+  'receiptPdfName',
+  'receiptGeneratedAt',
+  'receiptGeneratedBy',
+  'status',
+  'notes',
+  'rejectedReason',
+  'submittedAt',
+  'submittedBy',
+  'verifiedAt',
+  'verifiedBy',
+  'createdAt',
+  'updatedAt'
+].join(' ');
+
 function parseIntSetting(value, fallback) {
   const n = Number.parseInt(String(value || ''), 10);
   return Number.isFinite(n) ? n : fallback;
@@ -40,6 +62,7 @@ router.get(
       const members = await User.find({ role: 'member' }).sort({ createdAt: -1 }).limit(500);
 
       const recentPayments = await Payment.find()
+        .select(paymentSelect)
         .populate('member', 'name email role active')
         .sort({ submittedAt: -1 })
         .limit(300);
@@ -182,6 +205,7 @@ router.get(
     // Member view: own payments + all expenses (read-only)
     const members = await User.find({ role: 'member' }).sort({ createdAt: -1 }).limit(500);
     const myPayments = await Payment.find({ member: req.user._id })
+      .select(paymentSelect)
       .sort({ submittedAt: -1 })
       .limit(200);
 

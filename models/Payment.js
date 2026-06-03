@@ -10,6 +10,13 @@ const PaymentSchema = new mongoose.Schema(
     receiptPath: { type: String, default: null },
     receiptOriginalName: { type: String, default: null },
 
+    // Generated official receipt PDF
+    receiptNumber: { type: String, default: null, unique: true, sparse: true },
+    receiptPdfPath: { type: String, default: null },
+    receiptPdfName: { type: String, default: null },
+    receiptGeneratedAt: { type: Date, default: null },
+    receiptGeneratedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+
     status: {
       type: String,
       enum: ['pending', 'approved', 'rejected'],
@@ -36,6 +43,7 @@ const PaymentSchema = new mongoose.Schema(
 PaymentSchema.index({ member: 1, submittedAt: -1 });
 PaymentSchema.index({ status: 1, submittedAt: -1 });
 
+PaymentSchema.index({ receiptNumber: 1 }, { unique: true, sparse: true });
 const Payment = mongoose.model('Payment', PaymentSchema);
 
 module.exports = { Payment };

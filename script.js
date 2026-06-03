@@ -1857,14 +1857,20 @@ function renderTeamSpotlight() {
                 </div>
             </div>
             <div class="mentor-spotlight-content">
-                <p class="mentor-kicker">Technical Guidance</p>
+                <p class="mentor-kicker">Founder's Message</p>
                 <h3>${mentor.name}</h3>
                 <p class="mentor-role">${mentor.role}</p>
-                <p class="mentor-bio">${mentor.bio}</p>
-                <div class="team-spotlight-metrics" id="teamMetrics"></div>
+                <div class="founder-message-copy">
+                    <p>Welcome to Texcelerators Robotics Club.</p>
+                    <p>What started as a small vision to bring together passionate innovators has now grown into a community of creators, problem-solvers, and future engineers. Texcelerators was founded with the aim of encouraging students to explore robotics, technology, and innovation beyond the classroom.</p>
+                    <p>At Texcelerators, we believe that learning happens through experimentation, teamwork, and real-world challenges. From building robots to participating in national-level competitions, every project strengthens our technical knowledge, leadership, and creativity.</p>
+                    <p>I am proud to see the club continuously growing with dedicated members who carry forward the same passion and determination. Our achievements are not just trophies and rankings, but the skills, confidence, and experiences we gain together as a team.</p>
+                    <p>To every member and visitor, I encourage you to stay curious, keep innovating, and never hesitate to turn ideas into reality.</p>
+                </div>
                 <blockquote class="mentor-quote">
-                    Precision, mentorship, and disciplined execution are what turn a team into a robotics organization.
+                    Together, we build. Together, we innovate.
                 </blockquote>
+                <p class="founder-signature">— Ashutosh Maske<br>Founder, Texcelerators Robotics Club</p>
             </div>
         </article>
     `;
@@ -2640,6 +2646,14 @@ function renderDashboardApp() {
         return status;
     }
 
+    function formatPaymentApprovalLabel(status) {
+        const normalized = String(status || 'pending').toLowerCase();
+        if (normalized === 'verified') return 'Approved';
+        if (normalized === 'pending') return 'Pending';
+        if (normalized === 'rejected') return 'Rejected';
+        return normalized.charAt(0).toUpperCase() + normalized.slice(1);
+    }
+
     function isImagePath(p) {
         return typeof p === 'string' && /\.(jpg|jpeg|png|webp)$/i.test(p);
     }
@@ -2648,6 +2662,8 @@ function renderDashboardApp() {
         const memberId = (p.member && (p.member._id || p.member.id)) ? String(p.member._id || p.member.id) : String(p.member);
         const receiptPath = p.receiptPath || '';
         const receiptPreview = receiptPath && isImagePath(receiptPath) ? `${API_BASE}${receiptPath}` : '';
+        const receiptPdfPath = p.receiptPdfPath || '';
+        const receiptPdfUrl = receiptPdfPath ? `${API_BASE}${receiptPdfPath}` : '';
 
         return {
             id: String(p._id || p.id),
@@ -2655,9 +2671,16 @@ function renderDashboardApp() {
             amount: Number(p.amount) || 0,
             date: (p.submittedAt ? new Date(p.submittedAt) : new Date()).toISOString().slice(0, 10),
             status: normalizePaymentStatus(p.status),
+            approvalStatus: normalizePaymentStatus(p.status),
+            receiptNumber: p.receiptNumber || '',
             receiptName: p.receiptOriginalName || (receiptPath ? receiptPath.split('/').slice(-1)[0] : 'NA'),
             receiptPreview,
-            receiptType: receiptPreview ? 'image' : 'file'
+            receiptType: receiptPreview ? 'image' : 'file',
+            receiptPdfPath,
+            receiptPdfName: p.receiptPdfName || '',
+            receiptPdfUrl,
+            receiptGeneratedAt: p.receiptGeneratedAt || '',
+            receiptDownloadUrl: receiptPdfUrl || (receiptPath ? `${API_BASE}${receiptPath}` : '')
         };
     }
 
@@ -4255,18 +4278,19 @@ function renderDashboardApp() {
             const status = payment.status || 'pending';
             const normalizedStatus = String(status).toLowerCase();
             const canDownloadReceipt = normalizedStatus === 'verified' || normalizedStatus === 'approved';
-            const receiptCell = payment.receiptPreview && payment.receiptType === 'image'
-                ? `<img src="${payment.receiptPreview}" alt="Receipt" class="receipt-thumb">`
-                : `<span class="receipt-file-name">${payment.receiptName || 'NA'}</span>`;
-            const downloadLink = canDownloadReceipt && payment.receiptPreview
-                ? `<a href="${payment.receiptPreview}" class="dashboard-button" download>Download</a>`
+            const approvalLabel = formatPaymentApprovalLabel(status);
+            const receiptCell = payment.receiptNumber
+                ? `<div class="receipt-stack"><span class="receipt-file-name">${payment.receiptNumber}</span><div class="receipt-subtext">${payment.receiptPdfName || payment.receiptName || 'Official receipt'}</div></div>`
+                : `<div class="receipt-stack"><span class="receipt-file-name">Pending</span><div class="receipt-subtext">Receipt number will appear after approval</div></div>`;
+            const downloadLink = canDownloadReceipt && payment.receiptDownloadUrl
+                ? `<a href="${payment.receiptDownloadUrl}" class="dashboard-button" download>Download Receipt</a>`
                 : '';
 
             return `
                 <tr>
                     <td>${formatDate(payment.date)}</td>
                     <td>${formatCurrency(payment.amount)}</td>
-                    <td><span class="status-chip status-${status}">${status}</span></td>
+                    <td><span class="status-chip status-${normalizedStatus}">${approvalLabel}</span></td>
                     <td><div class="receipt-cell">${receiptCell}</div></td>
                     <td>${downloadLink}</td>
                 </tr>

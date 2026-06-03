@@ -4,9 +4,94 @@ const { receiptUploader } = require('../utils/upload');
 const { Payment } = require('../models/Payment');
 const { User } = require('../models/User');
 const { requireAuth, requireRole, blockIfMustChangePassword } = require('../middleware/auth');
+const { buildReceiptNumber, generateReceiptPdf } = require('../utils/pdfGenerator');
+const fs = require('fs/promises');
+const path = require('path');
 
 const router = Router();
 const upload = receiptUploader();
+const generatedReceiptDir = path.join(process.cwd(), 'uploads', 'receipts', 'generated');
+
+function normalizePaymentMember(member) {
+  if (!member) return null;
+  if (typeof member === 'object') return member;
+  return null;
+}
+
+function getPersonLabel(person, fallback = 'N/A') {
+  if (!person) return fallback;
+  if (typeof person === 'string') return person || fallback;
+  return person.name || person.email || fallback;
+}
+
+async function getNextReceiptSequence(year) {
+  const prefix = `TXC-${year}-`;
+  const count = await Payment.countDocuments({ receiptNumber: new RegExp(`^${prefix}`) });
+  return count + 1;
+}
+
+async function removeGeneratedPdf(filePath) {
+  if (!filePath) return;
+  try {
+    await fs.unlink(filePath);
+  } catch (err) {
+    if (!err || err.code === 'ENOENT') return;
+    throw err;
+  }
+}
+
+async function generateReceiptForApprovedPayment(payment, approver) {
+  const approvedAt = payment.verifiedAt || new Date();
+  const generatedAt = new Date();
+  const paymentMember = normalizePaymentMember(payment.member);
+  const memberName = getPersonLabel(paymentMember, 'Member');
+  const approverName = getPersonLabel(approver, 'Admin');
+
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const receiptYear = generatedAt.getFullYear();
+    const sequence = await getNextReceiptSequence(receiptYear);
+    const receiptNumber = buildReceiptNumber(receiptYear, sequence);
+
+    const generatedPdf = await generateReceiptPdf({
+      outputDir: generatedReceiptDir,
+      receiptNumber,
+      memberName,
+      amount: payment.amount,
+      paymentMethod: payment.method,
+      submissionDate: payment.submittedAt || payment.createdAt || approvedAt,
+      status: 'Approved',
+      approvedByName: approverName,
+      approvalDateTime: approvedAt,
+      receiptGeneratedAt: generatedAt,
+      paymentNotes: payment.notes || ''
+    });
+
+    payment.status = 'approved';
+    payment.verifiedBy = approver._id;
+    payment.verifiedAt = approvedAt;
+    payment.rejectedReason = '';
+    payment.receiptNumber = receiptNumber;
+    payment.receiptPdfPath = generatedPdf.publicPath;
+    payment.receiptPdfName = generatedPdf.fileName;
+    payment.receiptGeneratedAt = generatedAt;
+    payment.receiptGeneratedBy = approver._id;
+
+    try {
+      await payment.save();
+      return payment;
+    } catch (err) {
+      await removeGeneratedPdf(generatedPdf.absolutePath);
+
+      if (err && err.code === 11000 && String(err.message || '').includes('receiptNumber')) {
+        continue;
+      }
+
+      throw err;
+    }
+  }
+
+  throw new Error('Unable to generate a unique receipt number');
+}
 
 // Required route: /add-payment
 // - Member: submits payment with receipt (pending)
@@ -39,7 +124,7 @@ router.post(
         return res.status(404).json({ message: 'Member not found' });
       }
 
-      const payment = await Payment.create({
+      const payment = new Payment({
         member: member._id,
         amount,
         method: 'manual',
@@ -50,7 +135,10 @@ router.post(
         verifiedAt: new Date()
       });
 
-      return res.status(201).json({ message: 'Manual payment added', payment });
+      payment.member = member;
+      const savedPayment = await generateReceiptForApprovedPayment(payment, req.user);
+
+      return res.status(201).json({ message: 'Manual payment added', payment: savedPayment });
     }
 
     // Member flow
@@ -102,6 +190,11 @@ router.post(
       payment.verifiedBy = req.user._id;
       payment.verifiedAt = new Date();
       payment.rejectedReason = '';
+
+      await payment.populate('member', 'name email');
+      const savedPayment = await generateReceiptForApprovedPayment(payment, req.user);
+
+      return res.json({ message: 'Payment updated', payment: savedPayment });
     } else if (action === 'reject') {
       payment.status = 'rejected';
       payment.verifiedBy = req.user._id;
