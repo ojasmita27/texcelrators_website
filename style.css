@@ -5111,7 +5111,7 @@ body.robot-modal-open {
 .mentor-spotlight-card {
     height: 100%;
     display: grid;
-    grid-template-columns: minmax(240px, 0.8fr) minmax(0, 1.2fr);
+    grid-template-columns: minmax(0, 42%) minmax(0, 58%);
     gap: 0;
     overflow: hidden;
     border-radius: 26px;
@@ -5133,20 +5133,25 @@ body.robot-modal-open {
 
 .mentor-spotlight-visual {
     position: relative;
-    min-height: 340px;
+    min-height: unset;
+    height: 100%;
     overflow: hidden;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 0.85rem;
+    align-self: center;
+    padding: 1rem 0.85rem;
 }
 
 .mentor-portrait-frame {
     position: relative;
     inset: auto;
     width: 100%;
-    height: 100%;
-    max-height: 340px;
+    max-width: 280px;
+    height: auto;
+    max-height: 235px;
+    aspect-ratio: 3 / 4;
+    margin: 0 auto;
     overflow: hidden;
     border-radius: 22px;
     border: 1px solid rgba(129, 240, 255, 0.18);
@@ -5176,19 +5181,28 @@ body.robot-modal-open {
     pointer-events: none;
 }
 
-.mentor-spotlight-visual img,
-.team-person-media img {
+.mentor-portrait-frame img {
     width: 100%;
     height: 100%;
-    object-fit: contain;
+    object-fit: cover;
+    object-position: center center !important;
     display: block;
     transform: scale(1.001);
     transition: transform 650ms cubic-bezier(.2,.9,.2,1), filter 650ms cubic-bezier(.2,.9,.2,1);
+}
+
+.team-person-media img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
     object-position: center center;
+    display: block;
+    transform: scale(1);
+    transition: transform 650ms cubic-bezier(.2,.9,.2,1), filter 650ms cubic-bezier(.2,.9,.2,1);
 }
 
 .mentor-spotlight-content {
-    padding: 2rem 2.4rem 2rem 1.8rem;
+    padding: 2rem 2.6rem 2rem 1.6rem;
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -5273,7 +5287,7 @@ body.robot-modal-open {
     color: #e1f4ff;
     font-size: 0.98rem;
     line-height: 1.75;
-    max-width: 58ch;
+    max-width: none;
     position: relative;
     background: linear-gradient(180deg, rgba(0, 212, 255, 0.08), rgba(255,255,255,0.02));
 }
@@ -5443,6 +5457,9 @@ body.robot-modal-open {
 
 .team-person-card {
     position: relative;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
     overflow: hidden;
     border-radius: 22px;
     background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));
@@ -5472,12 +5489,14 @@ body.robot-modal-open {
 }
 
 .team-person-card:hover img {
-    transform: scale(1.05);
+    transform: scale(1.02);
     filter: saturate(1.05) contrast(1.03);
 }
 
 .team-person-media {
     position: relative;
+    width: 100%;
+    flex-shrink: 0;
     aspect-ratio: 4 / 3;
     overflow: hidden;
     background: linear-gradient(180deg, rgba(0,212,255,0.06), rgba(0,0,0,0.24));
@@ -5486,6 +5505,7 @@ body.robot-modal-open {
 .team-person-content {
     position: relative;
     z-index: 1;
+    flex: 1 1 auto;
     padding: 1rem 1rem 1.1rem;
     display: flex;
     flex-direction: column;
@@ -5551,7 +5571,8 @@ body.robot-modal-open {
     }
 
     .mentor-spotlight-visual {
-        min-height: 320px;
+        min-height: unset;
+        height: auto;
     }
 
     .team-spotlight-metrics {
@@ -5603,12 +5624,13 @@ body.robot-modal-open {
     }
 
     .mentor-spotlight-visual {
-        min-height: 300px;
+        min-height: unset;
+        height: auto;
         padding: 0.65rem;
     }
 
     .mentor-portrait-frame {
-        max-height: 300px;
+        max-height: 210px;
     }
 
     .founder-message-copy {

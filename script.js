@@ -1931,7 +1931,7 @@ function renderTeamSections() {
                     ${group.members.map(member => `
                         <article class="team-person-card" data-reveal data-team-category="${group.title}">
                             <div class="team-person-media">
-                                <img loading="lazy" src="${member.image}" alt="${member.name}" style="object-position:${member.focus || 'center 18%'};">
+                                <img loading="lazy" src="${member.image}" alt="${member.name}" onerror="this.onerror=null;this.src='${TEAM_PLACEHOLDER_IMAGE}'">
                             </div>
                             <div class="team-person-content">
                                 <span class="team-person-tag">${group.title}</span>
