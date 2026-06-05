@@ -97,9 +97,15 @@ function buildContentLines(data) {
 
   addWrappedLine(`Receipt Number: ${data.receiptNumber}`, { font: 'F2', size: 12, maxChars: 60 });
   addWrappedLine(`Member Name: ${data.memberName}`, { maxChars: 60 });
-  addWrappedLine(`Amount: INR ${formatAmount(data.amount)}`, { maxChars: 60 });
+  if (data.memberEmail) {
+    addWrappedLine(`Member Email: ${data.memberEmail}`, { maxChars: 60 });
+  }
+  if (data.membershipId) {
+    addWrappedLine(`Membership ID: ${data.membershipId}`, { maxChars: 60 });
+  }
+  addWrappedLine(`Amount Paid: INR ${formatAmount(data.amount)}`, { maxChars: 60 });
   addWrappedLine(`Payment Method: ${normalizeText(data.paymentMethod)}`, { maxChars: 60 });
-  addWrappedLine(`Submission Date: ${formatDateTime(data.submissionDate)}`, { maxChars: 60 });
+  addWrappedLine(`Submission Date & Time: ${formatDateTime(data.submissionDate)}`, { maxChars: 60 });
   addWrappedLine(`Status: ${normalizeText(data.status || 'Approved')}`, { maxChars: 60 });
   addWrappedLine(`Approved By: ${data.approvedByName || 'N/A'}`, { maxChars: 60 });
   addWrappedLine(`Approval Date & Time: ${formatDateTime(data.approvalDateTime)}`, { maxChars: 60 });
@@ -113,7 +119,7 @@ function buildContentLines(data) {
 
   addLine('', { size: 8, leading: 10 });
   addLine('------------------------------------------------------------', { font: 'F1', size: 11, leading: 14 });
-  addWrappedLine('This receipt is computer-generated and valid without a physical signature.', { maxChars: 72 });
+  addWrappedLine('Computer Generated Official Receipt', { maxChars: 72 });
 
   return lines;
 }
@@ -173,6 +179,8 @@ async function generateReceiptPdf({
   outputDir,
   receiptNumber,
   memberName,
+  memberEmail,
+  membershipId,
   amount,
   paymentMethod,
   submissionDate,
@@ -191,6 +199,8 @@ async function generateReceiptPdf({
   const contentLines = buildContentLines({
     receiptNumber,
     memberName,
+    memberEmail,
+    membershipId,
     amount,
     paymentMethod,
     submissionDate,
