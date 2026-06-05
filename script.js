@@ -1187,15 +1187,24 @@ function createMetricCard(label, value, accent = '') {
     return card;
 }
 
-function createInstallmentItem(title, amount, status, isPaid) {
+function createInstallmentItem(installment) {
+    const title = installment && installment.title ? installment.title : 'Installment';
+    const amount = Number(installment && installment.amount) || 0;
+    const installmentPaid = Number(installment && installment.installmentPaid) || 0;
+    const installmentRemaining = Number(installment && installment.installmentRemaining) || 0;
+    const installmentStatus = installment && installment.installmentStatus
+        ? installment.installmentStatus
+        : (installment && installment.status ? installment.status : 'DUE');
+    const isCompleted = installmentStatus === 'COMPLETED';
+
     const item = document.createElement('div');
-    item.className = `installment-item ${isPaid ? 'is-paid' : 'is-due'}`;
+    item.className = `installment-item ${isCompleted ? 'is-paid' : 'is-due'}`;
     item.innerHTML = `
         <div>
             <strong>${title}</strong>
-            <span>${formatCurrency(amount)}</span>
+            <span>${formatCurrency(amount)} · Paid ${formatCurrency(installmentPaid)} · Remaining ${formatCurrency(installmentRemaining)}</span>
         </div>
-        <span class="status-pill">${status}</span>
+        <span class="status-pill">${installmentStatus}</span>
     `;
     return item;
 }
@@ -2756,6 +2765,7 @@ function renderDashboardApp() {
             receiptPdfName: p.receiptPdfName || '',
             receiptPdfUrl,
             receiptGeneratedAt: p.receiptGeneratedAt || '',
+            receiptViewUrl: receiptPath ? `${API_BASE}${receiptPath}` : '',
             receiptDownloadUrl: normalizedStatus === 'approved' && receiptPdfUrl
                 ? receiptPdfUrl
                 : (normalizedStatus === 'approved' && receiptPath ? `${API_BASE}${receiptPath}` : '')
@@ -3011,7 +3021,11 @@ function renderDashboardApp() {
         }
 
         if (elements.paidButton) {
-            elements.paidButton.disabled = !hasRemaining || !state.paymentFlow.qrScanned;
+            elements.paidButton.disabled = !hasRemaining;
+        }
+
+        if (elements.submitReceiptButton) {
+            elements.submitReceiptButton.disabled = !hasRemaining;
         }
 
         if (!elements.paymentFlowMessage) return;
@@ -3211,20 +3225,45 @@ function renderDashboardApp() {
     }
 
     function getInstallmentsFromPaidAmount(paidAmount, totalFee) {
-        const safeTotal = Number.isFinite(Number(totalFee)) ? Math.max(0, Number(totalFee)) : 0;
+        const safeTotal = getSafeNumber(totalFee, 0);
+        const approvedPaid = getSafeNumber(paidAmount, 0);
         const firstAmount = Math.min(5000, safeTotal);
         const secondAmount = Math.min(5000, Math.max(0, safeTotal - firstAmount));
         const thirdAmount = Math.max(0, safeTotal - firstAmount - secondAmount);
 
-        const firstPaid = firstAmount > 0 && paidAmount >= firstAmount;
-        const secondPaid = secondAmount > 0 && paidAmount >= (firstAmount + secondAmount);
-        const thirdPaid = thirdAmount > 0 && paidAmount >= safeTotal;
-
-        return [
-            { title: 'First installment', amount: firstAmount, status: firstPaid ? 'Paid' : 'Due', paid: firstPaid },
-            { title: 'Second installment', amount: secondAmount, status: secondPaid ? 'Paid' : 'Due', paid: secondPaid },
-            { title: 'Second year fee', amount: thirdAmount, status: thirdPaid ? 'Paid' : 'Due', paid: thirdPaid }
+        const installmentDefs = [
+            { title: 'First installment', amount: firstAmount },
+            { title: 'Second installment', amount: secondAmount },
+            { title: 'Second year fee', amount: thirdAmount }
         ];
+
+        let remainingApprovedPool = approvedPaid;
+
+        return installmentDefs
+            .filter((installment) => installment.amount > 0)
+            .map((installment) => {
+                const installmentAmount = getSafeNumber(installment.amount, 0);
+                const installmentPaid = Math.min(remainingApprovedPool, installmentAmount);
+                remainingApprovedPool = Math.max(0, remainingApprovedPool - installmentPaid);
+                const installmentRemaining = Math.max(0, installmentAmount - installmentPaid);
+
+                let installmentStatus = 'DUE';
+                if (installmentPaid >= installmentAmount && installmentAmount > 0) {
+                    installmentStatus = 'COMPLETED';
+                } else if (installmentPaid > 0) {
+                    installmentStatus = 'PARTIALLY PAID';
+                }
+
+                return {
+                    title: installment.title,
+                    amount: installmentAmount,
+                    installmentPaid,
+                    installmentRemaining,
+                    installmentStatus,
+                    status: installmentStatus,
+                    paid: installmentStatus === 'COMPLETED'
+                };
+            });
     }
 
     function refreshCurrentMemberFeeState() {
@@ -4235,7 +4274,7 @@ function renderDashboardApp() {
         if (elements.installmentsContainer) {
             elements.installmentsContainer.innerHTML = '';
             state.installments.forEach((installment) => {
-                elements.installmentsContainer.appendChild(createInstallmentItem(installment.title, installment.amount, installment.status, installment.paid));
+                elements.installmentsContainer.appendChild(createInstallmentItem(installment));
             });
         }
 
@@ -4381,13 +4420,12 @@ function renderDashboardApp() {
         const paymentRows = state.payments.map((payment) => {
             const paymentUser = state.users.find((user) => user.id === payment.userId);
             return {
+                id: payment.id,
                 member: paymentUser ? paymentUser.name : 'Unknown Member',
                 amount: payment.amount,
                 date: payment.date,
                 status: payment.status,
-                receiptName: payment.receiptName,
-                receiptPreview: payment.receiptPreview,
-                receiptType: payment.receiptType
+                payment
             };
         });
 
@@ -4416,10 +4454,7 @@ function renderDashboardApp() {
                             <td><span class="status-chip status-${normalizePaymentStatus(transaction.status)}">${formatPaymentApprovalLabel(transaction.status)}</span></td>
                             <td>
                                 <div class="receipt-cell">
-                                    ${transaction.receiptPreview && transaction.receiptType === 'image'
-                                        ? `<img src="${transaction.receiptPreview}" alt="Receipt" class="receipt-thumb">`
-                                        : `<span class="receipt-file-name">${transaction.receiptName || 'NA'}</span>`
-                                    }
+                                    ${renderPaymentReceiptCell(transaction.payment)}
                                 </div>
                             </td>
                         </tr>
@@ -4459,40 +4494,142 @@ function renderDashboardApp() {
         `).join('');
     }
 
-    function renderMemberReceiptStatus() {
-        renderReimbursements();
+    function mergePaymentIntoState(apiPayment) {
+        if (!apiPayment) return;
+        const mapped = mapApiPayment(apiPayment);
+        const index = state.payments.findIndex((payment) => String(payment.id) === String(mapped.id));
+        if (index >= 0) {
+            state.payments[index] = mapped;
+        } else {
+            state.payments.unshift(mapped);
+        }
+    }
+
+    function viewPaymentReceipt(paymentId) {
+        const payment = state.payments.find((entry) => String(entry.id) === String(paymentId));
+        if (!payment) {
+            alert('Payment not found.');
+            return;
+        }
+
+        const viewUrl = payment.receiptViewUrl
+            || payment.receiptPreview
+            || payment.receiptPdfUrl
+            || payment.receiptDownloadUrl;
+
+        if (!viewUrl) {
+            alert('No receipt file available for this payment.');
+            return;
+        }
+
+        window.open(viewUrl, '_blank', 'noopener,noreferrer');
+    }
+
+    function renderPaymentReceiptCell(payment) {
+        const normalizedStatus = normalizePaymentStatus(payment.status);
+        const receiptNumber = payment.receiptNumber || '';
+        const receiptFileName = payment.receiptPdfName || payment.receiptName || '';
+
+        if (isPaymentApproved(normalizedStatus)) {
+            if (receiptNumber) {
+                const downloadUrl = payment.receiptDownloadUrl || payment.receiptPdfUrl || '';
+                const downloadFileName = payment.receiptPdfName || `${receiptNumber}.pdf`;
+                const downloadLink = downloadUrl
+                    ? `<a href="${downloadUrl}" class="dashboard-button" download="${downloadFileName}" target="_blank" rel="noopener noreferrer">Download Receipt</a>`
+                    : '';
+                return `
+                    <div class="receipt-stack">
+                        <span class="status-chip status-approved">Approved</span>
+                        <span class="receipt-file-name">${receiptNumber}</span>
+                        <div class="receipt-subtext">${receiptFileName || 'Official receipt PDF'}</div>
+                        ${downloadLink}
+                    </div>
+                `;
+            }
+
+            return `<span class="receipt-file-name">Approved · receipt pending generation</span>`;
+        }
+
+        if (payment.receiptPreview && payment.receiptType === 'image') {
+            return `<img src="${payment.receiptPreview}" alt="Receipt" class="receipt-thumb">`;
+        }
+
+        if (receiptFileName && receiptFileName !== 'NA') {
+            return `<span class="receipt-file-name">${receiptFileName}</span>`;
+        }
+
+        return `<span class="receipt-file-name">Uploaded receipt</span>`;
     }
 
     function renderVerificationQueue() {
         if (!elements.receiptVerificationContainer || userRole !== 'admin') return;
-        const pendingPayments = state.payments.filter((payment) => payment.status === 'pending');
 
-        if (pendingPayments.length === 0) {
+        const pendingPayments = state.payments.filter((payment) => normalizePaymentStatus(payment.status) === 'pending');
+        const approvedPayments = state.payments
+            .filter((payment) => isPaymentApproved(payment.status))
+            .sort((a, b) => {
+                const aTime = a.approvedAt ? new Date(a.approvedAt).getTime() : 0;
+                const bTime = b.approvedAt ? new Date(b.approvedAt).getTime() : 0;
+                return bTime - aTime;
+            });
+
+        if (!pendingPayments.length && !approvedPayments.length) {
             elements.receiptVerificationContainer.innerHTML = `
                 <div class="verification-empty">
                     <div class="verification-empty-icon"><i class="fas fa-shield-check"></i></div>
-                    <strong>No pending verifications</strong>
-                    <span>Everything is up to date</span>
+                    <strong>No payment records yet</strong>
+                    <span>Member payment submissions will appear here</span>
                 </div>
             `;
             return;
         }
 
-        elements.receiptVerificationContainer.innerHTML = pendingPayments.map((payment) => {
+        const pendingRows = pendingPayments.map((payment) => {
             const member = state.users.find((user) => user.id === payment.userId);
+            const receiptLabel = payment.receiptName && payment.receiptName !== 'NA'
+                ? payment.receiptName
+                : 'Uploaded receipt';
+
             return `
                 <div class="receipt-row receipt-admin-row">
                     <div>
                         <strong>${member ? member.name : 'Unknown Member'} | ${formatCurrency(payment.amount)}</strong>
-                        <span>${formatDate(payment.date)} | ${payment.receiptName || 'NA'}</span>
+                        <span>${formatDate(payment.submittedAt || payment.date)} | ${receiptLabel}</span>
                     </div>
                     <div class="receipt-actions">
-                        <button type="button" class="dashboard-button primary verify-payment-btn" data-payment-id="${payment.id}">Verify</button>
+                        <button type="button" class="dashboard-button view-payment-receipt-btn" data-payment-id="${payment.id}">View Receipt</button>
+                        <button type="button" class="dashboard-button primary verify-payment-btn" data-payment-id="${payment.id}">Approve</button>
                         <button type="button" class="dashboard-button reject-payment-btn" data-payment-id="${payment.id}">Reject</button>
                     </div>
                 </div>
             `;
         }).join('');
+
+        const approvedRows = approvedPayments.map((payment) => {
+            const member = state.users.find((user) => user.id === payment.userId);
+            const receiptNumber = payment.receiptNumber || 'Pending receipt number';
+            const receiptFileName = payment.receiptPdfName || payment.receiptName || 'Official receipt PDF';
+            const downloadUrl = payment.receiptDownloadUrl || payment.receiptPdfUrl || '';
+            const downloadFileName = payment.receiptPdfName || (payment.receiptNumber ? `${payment.receiptNumber}.pdf` : 'receipt.pdf');
+            const downloadLink = downloadUrl
+                ? `<a href="${downloadUrl}" class="dashboard-button" download="${downloadFileName}" target="_blank" rel="noopener noreferrer">Download Receipt</a>`
+                : '';
+
+            return `
+                <div class="receipt-row receipt-admin-row">
+                    <div>
+                        <strong>${member ? member.name : 'Unknown Member'} | ${formatCurrency(payment.amount)}</strong>
+                        <span>${formatDate(payment.approvedAt || payment.date)} | ${receiptNumber} | ${receiptFileName}</span>
+                    </div>
+                    <div class="receipt-actions">
+                        <span class="status-chip status-approved">Approved</span>
+                        ${downloadLink}
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        elements.receiptVerificationContainer.innerHTML = `${pendingRows}${approvedRows}`;
     }
 
     function renderMembers() {
@@ -4704,7 +4841,10 @@ function renderDashboardApp() {
         return apiRequest('/payments/verify', {
             method: 'POST',
             body: { paymentId, action: 'approve' }
-        }).then(async () => {
+        }).then(async (result) => {
+            if (result && result.payment) {
+                mergePaymentIntoState(result.payment);
+            }
             await refreshDashboardFromApi();
             refreshCurrentMemberFeeState();
             populateAdminMemberSelect();
@@ -5884,8 +6024,13 @@ function renderDashboardApp() {
 
         if (elements.receiptVerificationContainer && userRole === 'admin') {
             elements.receiptVerificationContainer.addEventListener('click', (event) => {
+                const viewButton = event.target.closest('.view-payment-receipt-btn');
                 const verifyButton = event.target.closest('.verify-payment-btn');
                 const rejectButton = event.target.closest('.reject-payment-btn');
+
+                if (viewButton) {
+                    viewPaymentReceipt(viewButton.getAttribute('data-payment-id'));
+                }
 
                 if (verifyButton) {
                     verifyPayment(verifyButton.getAttribute('data-payment-id'));
