@@ -1728,6 +1728,8 @@ function setupAchievementModalHandlers() {
 }
 
 // ====== TEAM SHOWCASE (PREMIUM) ======
+const TEAM_PLACEHOLDER_IMAGE = 'assets/images/images/Team/Behind The Scenes/coming.jpg';
+
 const TEAM_DATA = [
     {
         key: 'mentor',
@@ -1749,10 +1751,11 @@ const TEAM_DATA = [
         title: 'Designing Team',
         subtitle: 'Industrial design and CAD',
         members: [
-            { name: 'Pranay Gourkar', role: 'Web Developer & Designer', image: 'assets/images/images/Team/Designing/Pranay_Gourkar.jpg', focus: 'center 16%' },
             { name: 'Arnav Borikar', role: 'CAD Designer', image: 'assets/images/images/Team/Designing/Arnav.jpg', focus: 'center 20%' },
-            { name: 'Harshit Pahune', role: 'CAD Designer', image: 'assets/images/images/Team/Designing/Harshit.jpeg', focus: 'center 18%' },
-            { name: 'Mayur Dhomne', role: 'RC Boats Designer', image: 'assets/images/images/Team/Designing/Mayur_Dhomne.jpg', focus: 'center 18%' }
+            { name: 'Janhavi Mahakale', role: 'CAD Designer', image: 'assets/images/images/Team/Designing/Janhavi Mahakale .jpg', focus: 'center 18%' },
+            { name: 'Sayali Karwade', role: 'CAD Designer', image: TEAM_PLACEHOLDER_IMAGE, focus: 'center 18%' },
+            { name: 'Sanidhya Dorle', role: 'CAD Designer', image: 'assets/images/images/Team/Designing/Sanidhya Dorle .jpg', focus: 'center 18%' },
+            { name: 'Rushikesh Mandewekar', role: 'CAD Designer', image: TEAM_PLACEHOLDER_IMAGE, focus: 'center 18%' }
         ]
     },
     {
@@ -1760,10 +1763,11 @@ const TEAM_DATA = [
         title: 'Technical Team',
         subtitle: 'Build, wiring, and systems',
         members: [
-            { name: 'Viraj Gaherwar', role: 'Technical Crew', image: 'assets/images/images/Team/Technical/Viraj_Gaherwar.jpg', focus: 'center 16%' },
-            { name: 'Nishant Mujaria', role: 'Technical Crew', image: 'assets/images/images/Team/Technical/Nishant_Mujaria.jpg', focus: 'center 15%' },
+            { name: 'Aman Sheikh', role: 'Technical Crew', image: 'assets/images/images/Team/Technical/Aman Sheikh.jpg', focus: 'center 16%' },
+            { name: 'Jay Moudekar', role: 'Technical Crew', image: 'assets/images/images/Team/Technical/Jay_Moundekar.jpg', focus: 'center 16%' },
             { name: 'Palak Khonde', role: 'Technical Crew', image: 'assets/images/images/Team/Technical/Palak_Khonde.jpg', focus: 'center 16%' },
-            { name: 'Jay Moundekar', role: 'Technical Crew', image: 'assets/images/images/Team/Technical/Jay_Moundekar.jpg', focus: 'center 16%' }
+            { name: 'Rimjhim Kare', role: 'Technical Crew', image: 'assets/images/images/Team/Technical/Rimjhim Kare.jpg', focus: 'center 16%' },
+            { name: 'Viraj Gaherwar', role: 'Technical Crew', image: 'assets/images/images/Team/Technical/Viraj_Gaherwar.jpg', focus: 'center 16%' }
         ]
     },
     {
@@ -1772,18 +1776,21 @@ const TEAM_DATA = [
         subtitle: 'Structure and mechanical execution',
         members: [
             { name: 'Kaushal Bodakhe', role: 'Structural Fabricator', image: 'assets/images/images/Team/fabricator/Kaushal.jpg', focus: 'center 18%' },
+            { name: 'Aryan Mahule', role: 'Structural Fabricator', image: 'assets/images/images/Team/fabricator/Aryan.jpg', focus: 'center 18%' },
             { name: 'Utkarsh Dhore', role: 'Structural Fabricator', image: 'assets/images/images/Team/fabricator/Utkarsh_Dhore.jpg', focus: 'center 18%' },
-            { name: 'Joel Jacob Varghese', role: 'Structural Fabricator', image: 'assets/images/images/Team/fabricator/Joel.jpg', focus: 'center 18%' },
-            { name: 'Aryan Mahule', role: 'Structural Fabricator', image: 'assets/images/images/Team/fabricator/Aryan.jpg', focus: 'center 18%' }
+            { name: 'Hardik Chane', role: 'Structural Fabricator', image: 'assets/images/images/Team/fabricator/Hardik Channe.jpg', focus: 'center 18%' },
+            { name: 'Krishna Mune', role: 'Structural Fabricator', image: 'assets/images/images/Team/fabricator/WhatsApp Image 2025-08-25 at 22.41.24_5331655d.jpg', focus: 'center 18%' }
         ]
     },
     {
         key: 'management',
-        title: 'Management Team',
+        title: 'Management & Finance Team',
         subtitle: 'Operations and finance',
         members: [
-            { name: 'Devanshu Ekhar', role: 'Finance Management', image: 'assets/images/images/Team/Management/Devanshu_Ekhar.jpg', focus: 'center 18%' },
-            { name: 'Hannah Elsa Abraham', role: 'Team Management', image: 'assets/images/images/Team/Management/Hannah.jpg', focus: 'center 18%' }
+            { name: 'Devanshu Ekhar', role: 'Management & Finance Lead', image: 'assets/images/images/Team/Management/Devanshu_Ekhar.jpg', focus: 'center 18%' },
+            { name: 'Ojasmita Kumbhare', role: 'Management & Finance', image: 'assets/images/images/Team/Management/Ojasmita Kumbhare.jpg', focus: 'center 18%' },
+            { name: 'Avni Bagga', role: 'Management & Finance', image: 'assets/images/images/Team/Management/Avni Tejendrasingh Bagga.jpg', focus: 'center 18%' },
+            { name: 'Riddhi Tekade', role: 'Management & Finance', image: 'assets/images/images/Team/Management/Riddhi Sudhir Tekade.jpg', focus: 'center 18%' }
         ]
     },
     {
@@ -1791,9 +1798,9 @@ const TEAM_DATA = [
         title: 'Media Team',
         subtitle: 'Storytelling and content',
         members: [
-            { name: 'Om Gawande', role: 'Media Crew', image: 'assets/images/images/Team/Media/Om.jpg', focus: 'center 18%' },
             { name: 'Dhananjay Landge', role: 'Media Crew', image: 'assets/images/images/Team/Media/Dhananjay_Landge.jpg', focus: 'center 18%' },
-            { name: 'Krishna Khodke', role: 'Media Crew', image: 'assets/images/images/Team/Media/Krishna.jpg', focus: 'center 18%' }
+            { name: 'Sakshi Paraye', role: 'Media Crew', image: TEAM_PLACEHOLDER_IMAGE, focus: 'center 18%' },
+            { name: 'Neelam Hingal', role: 'Media Crew', image: 'assets/images/images/Team/Media/Neelam Hingal.jpg', focus: 'center 18%' }
         ]
     },
     {
@@ -1801,10 +1808,25 @@ const TEAM_DATA = [
         title: 'Maintenance Team',
         subtitle: 'Continuity and upkeep',
         members: [
-            { name: 'Lanngam Kabui', role: 'Maintenance Crew', image: 'assets/images/images/Team/Maintenance/Lanngam.jpg', focus: 'center 18%' },
-            { name: 'Anwesh Sonkusare', role: 'Maintenance Crew', image: 'assets/images/images/Team/Maintenance/Answesh_Sonkusare.jpg', focus: 'center 18%' },
+            { name: 'Langam Kabui', role: 'Maintenance Crew', image: 'assets/images/images/Team/Maintenance/Lanngam.jpg', focus: 'center 18%' },
+            { name: 'Anvesh Sonkusare', role: 'Maintenance Crew', image: 'assets/images/images/Team/Maintenance/Answesh_Sonkusare.jpg', focus: 'center 18%' },
             { name: 'Manasvi Wagh', role: 'Maintenance Crew', image: 'assets/images/images/Team/Maintenance/Manaswi.jpg', focus: 'center 18%' },
-            { name: 'Jay Aaglave', role: 'Maintenance Crew', image: 'assets/images/images/Team/Maintenance/Jay_Aaglave.jpg', focus: 'center 18%' }
+            { name: 'Jay Aaglave', role: 'Maintenance Crew', image: 'assets/images/images/Team/Maintenance/Jay_Aaglave.jpg', focus: 'center 18%' },
+            { name: 'Sanika Bhade', role: 'Maintenance Crew', image: 'assets/images/images/Team/Maintenance/Sanika Bhade (1).jpg', focus: 'center 18%' },
+            { name: 'Hitesha Salve', role: 'Maintenance Crew', image: TEAM_PLACEHOLDER_IMAGE, focus: 'center 18%' }
+        ]
+    },
+    {
+        key: 'alumni',
+        title: 'Alumni Team',
+        subtitle: 'Former members and legacy builders',
+        members: [
+            { name: 'Hannah Elsa Abraham', role: 'Alumni', image: 'assets/images/images/Team/Alumini/Hannah.jpg', focus: 'center 18%' },
+            { name: 'Harshit Pahune', role: 'Alumni', image: 'assets/images/images/Team/Alumini/Harshit.jpeg', focus: 'center 18%' },
+            { name: 'Joel Varghese', role: 'Alumni', image: 'assets/images/images/Team/Alumini/Joel.jpg', focus: 'center 18%' },
+            { name: 'Krishna Khodke', role: 'Alumni', image: 'assets/images/images/Team/Alumini/Krishna.jpg', focus: 'center 18%' },
+            { name: 'Mayur Dhomne', role: 'Alumni', image: 'assets/images/images/Team/Alumini/Mayur_Dhomne.jpg', focus: 'center 18%' },
+            { name: 'Nishant Mujaria', role: 'Alumni', image: 'assets/images/images/Team/Alumini/Nishant_Mujaria.jpg', focus: 'center 15%' }
         ]
     }
 ];
