@@ -2634,7 +2634,8 @@ function renderDashboardApp() {
             paidAmount: 0,
             remainingAmount: 0,
             nextDueAmount: 0,
-            progress: 0
+            progress: 0,
+            approvedPaymentsTotal: 0
         },
         installments: [],
         payments: [],
@@ -2679,11 +2680,22 @@ function renderDashboardApp() {
             .reduce((sum, payment) => sum + (Number(payment.amount) || 0), 0);
     }
 
+    function getSafeNumber(value, fallback = 0) {
+        const parsed = Number(value);
+        return Number.isFinite(parsed) ? parsed : fallback;
+    }
+
+    function isMemberRole() {
+        return String(userRole || '').toLowerCase() === 'member';
+    }
+
     function computeMemberFeeState(totalFee, paidAmount) {
-        const total = Math.max(0, Number(totalFee) || 0);
-        const paid = Math.max(0, Number(paidAmount) || 0);
+        const total = Math.max(0, getSafeNumber(totalFee, 0));
+        const paid = Math.max(0, getSafeNumber(paidAmount, 0));
         const remaining = Math.max(0, total - paid);
-        const progress = total > 0 ? Math.min(100, Math.round((paid / total) * 100)) : 0;
+        const progress = total > 0
+            ? Math.min(100, Math.round((paid / total) * 100))
+            : 0;
 
         return {
             paidAmount: paid,
@@ -2691,6 +2703,18 @@ function renderDashboardApp() {
             nextDueAmount: remaining > 5000 ? 5000 : remaining,
             progress: Number.isFinite(progress) ? progress : 0
         };
+    }
+
+    function applyMemberFeeSummary(totalFee, paidAmount) {
+        const total = Math.max(0, getSafeNumber(totalFee, 0));
+        const feeState = computeMemberFeeState(total, paidAmount);
+
+        state.memberFee.totalFee = total;
+        state.memberFee.paidAmount = feeState.paidAmount;
+        state.memberFee.remainingAmount = feeState.remainingAmount;
+        state.memberFee.nextDueAmount = feeState.nextDueAmount;
+        state.memberFee.progress = feeState.progress;
+        state.installments = getInstallmentsFromPaidAmount(feeState.paidAmount, total);
     }
 
     function formatPaymentApprovalLabel(status) {
@@ -2749,8 +2773,10 @@ function renderDashboardApp() {
     async function refreshDashboardFromApi() {
         const data = await apiRequest('/dashboard/data');
 
-        if (data && data.settings && Number.isFinite(Number(data.settings.memberTotalFee))) {
-            state.memberFee.totalFee = Math.max(0, Number(data.settings.memberTotalFee));
+        const summary = data.summary || {};
+        const settingsTotalFee = getSafeNumber(data.settings && data.settings.memberTotalFee, 0);
+        if (settingsTotalFee > 0) {
+            state.memberFee.totalFee = settingsTotalFee;
         } else if (!state.memberFee.totalFee) {
             state.memberFee.totalFee = 13500;
         }
@@ -2779,8 +2805,6 @@ function renderDashboardApp() {
             events: [],
             contributionStats: {}
         };
-
-        const summary = data.summary || {};
 
         if (userRole === 'admin') {
             const members = Array.isArray(data.members) ? data.members : [];
@@ -2830,17 +2854,8 @@ function renderDashboardApp() {
             const payments = Array.isArray(data.payments) ? data.payments : [];
             state.payments = payments.map(mapApiPayment);
 
-            const approvedTotal = Number(summary.myApprovedPaymentsTotal);
-            const paidAmount = Number.isFinite(approvedTotal)
-                ? approvedTotal
-                : getApprovedPaymentsTotal(state.payments);
-            const feeState = computeMemberFeeState(state.memberFee.totalFee, paidAmount);
-
-            state.memberFee.paidAmount = feeState.paidAmount;
-            state.memberFee.remainingAmount = feeState.remainingAmount;
-            state.memberFee.nextDueAmount = feeState.nextDueAmount;
-            state.memberFee.progress = feeState.progress;
-            state.installments = getInstallmentsFromPaidAmount(feeState.paidAmount, state.memberFee.totalFee);
+            state.memberFee.approvedPaymentsTotal = getSafeNumber(summary.myApprovedPaymentsTotal, 0);
+            applyMemberFeeSummary(state.memberFee.totalFee, state.memberFee.approvedPaymentsTotal);
         }
 
         if (userRole === 'member') {
@@ -3213,35 +3228,17 @@ function renderDashboardApp() {
     }
 
     function refreshCurrentMemberFeeState() {
-        if (userRole === 'member') {
-            const feeState = computeMemberFeeState(
-                state.memberFee.totalFee,
-                getApprovedPaymentsTotal(state.payments)
-            );
-            state.memberFee.paidAmount = feeState.paidAmount;
-            state.memberFee.remainingAmount = feeState.remainingAmount;
-            state.memberFee.nextDueAmount = feeState.nextDueAmount;
-            state.memberFee.progress = feeState.progress;
-            state.installments = getInstallmentsFromPaidAmount(feeState.paidAmount, state.memberFee.totalFee);
+        if (!isMemberRole()) {
             return;
         }
 
-        const memberRecord = getCurrentMemberRecord();
-        if (!memberRecord) {
-            return;
-        }
+        const totalFee = getSafeNumber(state.memberFee.totalFee, 0);
+        const paidAmount = getSafeNumber(
+            state.memberFee.approvedPaymentsTotal,
+            getApprovedPaymentsTotal(state.payments)
+        );
 
-        const paid = Number(memberRecord.paid) || 0;
-        const remaining = Number.isFinite(Number(memberRecord.remaining))
-            ? Math.max(0, Number(memberRecord.remaining))
-            : Math.max(0, state.memberFee.totalFee - paid);
-        const feeState = computeMemberFeeState(state.memberFee.totalFee, paid);
-
-        state.memberFee.paidAmount = feeState.paidAmount;
-        state.memberFee.remainingAmount = remaining;
-        state.memberFee.nextDueAmount = remaining > 5000 ? 5000 : remaining;
-        state.memberFee.progress = feeState.progress;
-        state.installments = getInstallmentsFromPaidAmount(paid, state.memberFee.totalFee);
+        applyMemberFeeSummary(totalFee, paidAmount);
     }
 
     function getReceiptPreviewInfo(file) {
