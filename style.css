@@ -8057,7 +8057,8 @@ html::before {
     letter-spacing: 0.3px;
 }
 
-.status-verified {
+.status-verified,
+.status-approved {
     background: rgba(67, 233, 123, 0.15);
     color: #43e97b;
 }

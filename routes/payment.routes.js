@@ -45,6 +45,10 @@ async function generateReceiptForApprovedPayment(payment, approver) {
   const generatedAt = new Date();
   const paymentMember = normalizePaymentMember(payment.member);
   const memberName = getPersonLabel(paymentMember, 'Member');
+  const memberEmail = paymentMember && paymentMember.email ? paymentMember.email : 'N/A';
+  const membershipId = paymentMember && (paymentMember._id || paymentMember.id)
+    ? String(paymentMember._id || paymentMember.id)
+    : 'N/A';
   const approverName = getPersonLabel(approver, 'Admin');
 
   for (let attempt = 0; attempt < 3; attempt += 1) {
@@ -56,6 +60,8 @@ async function generateReceiptForApprovedPayment(payment, approver) {
       outputDir: generatedReceiptDir,
       receiptNumber,
       memberName,
+      memberEmail,
+      membershipId,
       amount: payment.amount,
       paymentMethod: payment.method,
       submissionDate: payment.submittedAt || payment.createdAt || approvedAt,

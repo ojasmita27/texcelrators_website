@@ -320,7 +320,7 @@
                 if (donutCtx) {
                     dashboardCharts.verificationDonut = new Chart(donutCtx.getContext('2d'), {
                         type: 'doughnut',
-                        data: { labels: ['Verified', 'Pending', 'Rejected'], datasets: [{ data: [0,0,0], backgroundColor: ['#43e97b','#ffc43d','#ff6b6b'] }] },
+                        data: { labels: ['Approved', 'Pending', 'Rejected'], datasets: [{ data: [0,0,0], backgroundColor: ['#43e97b','#ffc43d','#ff6b6b'] }] },
                                 options: {
                                     responsive: true,
                                     maintainAspectRatio: false,
@@ -363,10 +363,10 @@
             c.update();
         }
 
-        function updateVerificationDonut(verified, pending, rejected) {
+        function updateVerificationDonut(approved, pending, rejected) {
             const c = dashboardCharts.verificationDonut;
             if (!c) return;
-            c.data.datasets[0].data = [verified, pending, rejected];
+            c.data.datasets[0].data = [approved, pending, rejected];
             c.update();
         }
 
@@ -415,7 +415,7 @@
                 const dt = new Date(p.date);
                 const key = dateKey(dt);
                 if (!slotMap.has(key)) return;
-                if (p.status === 'verified') slotMap.get(key).income += Number(p.amount) || 0;
+                if (String(p.status || '').toLowerCase() === 'approved') slotMap.get(key).income += Number(p.amount) || 0;
             });
 
             // Aggregate expenses
@@ -441,14 +441,14 @@
             const memberData = labels.map(l => Math.round((slotMap.get(l) || {}).members || 0));
 
             // Verification donut: counts across payments
-            const verified = (dashboardState.payments || []).filter(p => p.status === 'verified').length;
+            const approved = (dashboardState.payments || []).filter(p => String(p.status || '').toLowerCase() === 'approved').length;
             const pending = (dashboardState.payments || []).filter(p => p.status === 'pending').length;
             const rejected = (dashboardState.payments || []).filter(p => p.status === 'rejected').length;
 
             // Update charts
             updateIncomeExpenseChart(labels, incomeData, expenseData);
             updateMemberGrowthChart(labels, memberData);
-            updateVerificationDonut(verified, pending, rejected);
+            updateVerificationDonut(approved, pending, rejected);
 
             // Update small stat cards where applicable
             const totalFundsEl = document.getElementById('totalFundsCard');
@@ -2664,13 +2664,38 @@ function renderDashboardApp() {
     };
 
     function normalizePaymentStatus(status) {
-        if (status === 'approved') return 'verified';
-        return status;
+        const normalized = String(status || 'pending').toLowerCase();
+        if (normalized === 'verified') return 'approved';
+        return normalized;
+    }
+
+    function isPaymentApproved(status) {
+        return normalizePaymentStatus(status) === 'approved';
+    }
+
+    function getApprovedPaymentsTotal(payments) {
+        return (Array.isArray(payments) ? payments : [])
+            .filter((payment) => isPaymentApproved(payment.status))
+            .reduce((sum, payment) => sum + (Number(payment.amount) || 0), 0);
+    }
+
+    function computeMemberFeeState(totalFee, paidAmount) {
+        const total = Math.max(0, Number(totalFee) || 0);
+        const paid = Math.max(0, Number(paidAmount) || 0);
+        const remaining = Math.max(0, total - paid);
+        const progress = total > 0 ? Math.min(100, Math.round((paid / total) * 100)) : 0;
+
+        return {
+            paidAmount: paid,
+            remainingAmount: remaining,
+            nextDueAmount: remaining > 5000 ? 5000 : remaining,
+            progress: Number.isFinite(progress) ? progress : 0
+        };
     }
 
     function formatPaymentApprovalLabel(status) {
-        const normalized = String(status || 'pending').toLowerCase();
-        if (normalized === 'verified') return 'Approved';
+        const normalized = normalizePaymentStatus(status);
+        if (normalized === 'approved') return 'Approved';
         if (normalized === 'pending') return 'Pending';
         if (normalized === 'rejected') return 'Rejected';
         return normalized.charAt(0).toUpperCase() + normalized.slice(1);
@@ -2686,14 +2711,19 @@ function renderDashboardApp() {
         const receiptPreview = receiptPath && isImagePath(receiptPath) ? `${API_BASE}${receiptPath}` : '';
         const receiptPdfPath = p.receiptPdfPath || '';
         const receiptPdfUrl = receiptPdfPath ? `${API_BASE}${receiptPdfPath}` : '';
+        const submittedAt = p.submittedAt || p.createdAt || null;
+        const approvedAt = p.verifiedAt || null;
+        const normalizedStatus = normalizePaymentStatus(p.status);
 
         return {
             id: String(p._id || p.id),
             userId: memberId,
             amount: Number(p.amount) || 0,
-            date: (p.submittedAt ? new Date(p.submittedAt) : new Date()).toISOString().slice(0, 10),
-            status: normalizePaymentStatus(p.status),
-            approvalStatus: normalizePaymentStatus(p.status),
+            date: (submittedAt ? new Date(submittedAt) : new Date()).toISOString().slice(0, 10),
+            submittedAt,
+            approvedAt,
+            status: normalizedStatus,
+            approvalStatus: normalizedStatus,
             receiptNumber: p.receiptNumber || '',
             receiptName: p.receiptOriginalName || (receiptPath ? receiptPath.split('/').slice(-1)[0] : 'NA'),
             receiptPreview,
@@ -2702,7 +2732,9 @@ function renderDashboardApp() {
             receiptPdfName: p.receiptPdfName || '',
             receiptPdfUrl,
             receiptGeneratedAt: p.receiptGeneratedAt || '',
-            receiptDownloadUrl: receiptPdfUrl || (receiptPath ? `${API_BASE}${receiptPath}` : '')
+            receiptDownloadUrl: normalizedStatus === 'approved' && receiptPdfUrl
+                ? receiptPdfUrl
+                : (normalizedStatus === 'approved' && receiptPath ? `${API_BASE}${receiptPath}` : '')
         };
     }
 
@@ -2748,6 +2780,8 @@ function renderDashboardApp() {
             contributionStats: {}
         };
 
+        const summary = data.summary || {};
+
         if (userRole === 'admin') {
             const members = Array.isArray(data.members) ? data.members : [];
             state.users = [
@@ -2768,7 +2802,7 @@ function renderDashboardApp() {
             // Build member balances based on approved payments
             const paidByMember = new Map();
             state.payments.forEach((p) => {
-                if (p.status !== 'verified') return;
+                if (!isPaymentApproved(p.status)) return;
                 const prev = paidByMember.get(p.userId) || 0;
                 paidByMember.set(p.userId, prev + p.amount);
             });
@@ -2787,7 +2821,6 @@ function renderDashboardApp() {
                 };
             });
 
-            const summary = data.summary || {};
             state.finance.totalIncome = Number(summary.paymentsApprovedTotal) || 0;
             state.finance.totalExpenses = Number(summary.expensesTotal) || 0;
             state.finance.totalFunds = Number(summary.balance) || 0;
@@ -2797,17 +2830,17 @@ function renderDashboardApp() {
             const payments = Array.isArray(data.payments) ? data.payments : [];
             state.payments = payments.map(mapApiPayment);
 
-            const approvedTotal = state.payments
-                .filter((p) => p.status === 'verified')
-                .reduce((sum, p) => sum + p.amount, 0);
+            const approvedTotal = Number(summary.myApprovedPaymentsTotal);
+            const paidAmount = Number.isFinite(approvedTotal)
+                ? approvedTotal
+                : getApprovedPaymentsTotal(state.payments);
+            const feeState = computeMemberFeeState(state.memberFee.totalFee, paidAmount);
 
-            state.memberFee.paidAmount = approvedTotal;
-            state.memberFee.remainingAmount = Math.max(0, state.memberFee.totalFee - approvedTotal);
-            state.memberFee.nextDueAmount = state.memberFee.remainingAmount > 5000 ? 5000 : state.memberFee.remainingAmount;
-            state.memberFee.progress = state.memberFee.totalFee
-                ? Math.round((approvedTotal / state.memberFee.totalFee) * 100)
-                : 0;
-            state.installments = getInstallmentsFromPaidAmount(approvedTotal, state.memberFee.totalFee);
+            state.memberFee.paidAmount = feeState.paidAmount;
+            state.memberFee.remainingAmount = feeState.remainingAmount;
+            state.memberFee.nextDueAmount = feeState.nextDueAmount;
+            state.memberFee.progress = feeState.progress;
+            state.installments = getInstallmentsFromPaidAmount(feeState.paidAmount, state.memberFee.totalFee);
         }
 
         if (userRole === 'member') {
@@ -2828,7 +2861,6 @@ function renderDashboardApp() {
                     joinedAt: state.user.createdAt || null
                 }];
 
-            const summary = data.summary || {};
             state.finance.totalIncome = Number(summary.paymentsApprovedTotal) || 0;
             state.finance.totalExpenses = Number(summary.expensesTotal) || 0;
             state.finance.totalFunds = Number(summary.balance) || 0;
@@ -3181,18 +3213,35 @@ function renderDashboardApp() {
     }
 
     function refreshCurrentMemberFeeState() {
+        if (userRole === 'member') {
+            const feeState = computeMemberFeeState(
+                state.memberFee.totalFee,
+                getApprovedPaymentsTotal(state.payments)
+            );
+            state.memberFee.paidAmount = feeState.paidAmount;
+            state.memberFee.remainingAmount = feeState.remainingAmount;
+            state.memberFee.nextDueAmount = feeState.nextDueAmount;
+            state.memberFee.progress = feeState.progress;
+            state.installments = getInstallmentsFromPaidAmount(feeState.paidAmount, state.memberFee.totalFee);
+            return;
+        }
+
         const memberRecord = getCurrentMemberRecord();
         if (!memberRecord) {
             return;
         }
 
-        state.memberFee.paidAmount = memberRecord.paid;
-        state.memberFee.remainingAmount = memberRecord.remaining;
-        state.memberFee.nextDueAmount = memberRecord.remaining > 5000 ? 5000 : memberRecord.remaining;
-        state.memberFee.progress = state.memberFee.totalFee
-            ? Math.round((memberRecord.paid / state.memberFee.totalFee) * 100)
-            : 0;
-        state.installments = getInstallmentsFromPaidAmount(memberRecord.paid, state.memberFee.totalFee);
+        const paid = Number(memberRecord.paid) || 0;
+        const remaining = Number.isFinite(Number(memberRecord.remaining))
+            ? Math.max(0, Number(memberRecord.remaining))
+            : Math.max(0, state.memberFee.totalFee - paid);
+        const feeState = computeMemberFeeState(state.memberFee.totalFee, paid);
+
+        state.memberFee.paidAmount = feeState.paidAmount;
+        state.memberFee.remainingAmount = remaining;
+        state.memberFee.nextDueAmount = remaining > 5000 ? 5000 : remaining;
+        state.memberFee.progress = feeState.progress;
+        state.installments = getInstallmentsFromPaidAmount(paid, state.memberFee.totalFee);
     }
 
     function getReceiptPreviewInfo(file) {
@@ -4180,7 +4229,7 @@ function renderDashboardApp() {
                 { label: 'Total Fee', value: formatCurrency(state.memberFee.totalFee), accent: 'accent-blue' },
                 { label: 'Paid Amount', value: formatCurrency(state.memberFee.paidAmount), accent: 'accent-teal' },
                 { label: 'Remaining Amount', value: formatCurrency(state.memberFee.remainingAmount), accent: 'accent-gold' },
-                { label: 'Progress', value: `${state.memberFee.progress}%`, accent: 'accent-green' }
+                { label: 'Progress', value: `${Number.isFinite(state.memberFee.progress) ? state.memberFee.progress : 0}%`, accent: 'accent-green' }
             ].forEach((metric) => {
                 elements.paymentsContainer.appendChild(createMetricCard(metric.label, metric.value, metric.accent));
             });
@@ -4207,7 +4256,8 @@ function renderDashboardApp() {
 
         const progressFill = document.getElementById('paymentProgress');
         if (progressFill) {
-            progressFill.style.width = `${state.memberFee.progress}%`;
+            const progressValue = Number.isFinite(state.memberFee.progress) ? state.memberFee.progress : 0;
+            progressFill.style.width = `${Math.min(100, Math.max(0, progressValue))}%`;
         }
 
         if (elements.qrCode) {
@@ -4282,11 +4332,12 @@ function renderDashboardApp() {
         if (!elements.memberPaymentHistoryBody) return;
 
         const paymentRows = state.payments
-            .filter((payment) => {
-                const paymentUser = state.users.find((user) => user.id === payment.userId);
-                return paymentUser && paymentUser.name === state.user.name;
-            })
-            .sort((a, b) => String(b.date).localeCompare(String(a.date)));
+            .filter((payment) => String(payment.userId) === String(state.user.id))
+            .sort((a, b) => {
+                const aTime = a.submittedAt ? new Date(a.submittedAt).getTime() : 0;
+                const bTime = b.submittedAt ? new Date(b.submittedAt).getTime() : 0;
+                return bTime - aTime;
+            });
 
         if (!paymentRows.length) {
             elements.memberPaymentHistoryBody.innerHTML = '';
@@ -4297,20 +4348,27 @@ function renderDashboardApp() {
         if (elements.memberPaymentHistoryEmpty) elements.memberPaymentHistoryEmpty.style.display = 'none';
 
         elements.memberPaymentHistoryBody.innerHTML = paymentRows.map((payment) => {
-            const status = payment.status || 'pending';
-            const normalizedStatus = String(status).toLowerCase();
-            const canDownloadReceipt = normalizedStatus === 'verified' || normalizedStatus === 'approved';
-            const approvalLabel = formatPaymentApprovalLabel(status);
+            const normalizedStatus = normalizePaymentStatus(payment.status);
+            const canDownloadReceipt = isPaymentApproved(normalizedStatus) && Boolean(payment.receiptDownloadUrl);
+            const approvalLabel = formatPaymentApprovalLabel(normalizedStatus);
+            const submittedLabel = payment.submittedAt ? formatDate(payment.submittedAt) : formatDate(payment.date);
+            const approvedLabel = payment.approvedAt ? formatDate(payment.approvedAt) : '—';
             const receiptCell = payment.receiptNumber
                 ? `<div class="receipt-stack"><span class="receipt-file-name">${payment.receiptNumber}</span><div class="receipt-subtext">${payment.receiptPdfName || payment.receiptName || 'Official receipt'}</div></div>`
                 : `<div class="receipt-stack"><span class="receipt-file-name">Pending</span><div class="receipt-subtext">Receipt number will appear after approval</div></div>`;
-            const downloadLink = canDownloadReceipt && payment.receiptDownloadUrl
-                ? `<a href="${payment.receiptDownloadUrl}" class="dashboard-button" download>Download Receipt</a>`
+            const downloadFileName = payment.receiptPdfName || (payment.receiptNumber ? `${payment.receiptNumber}.pdf` : 'receipt.pdf');
+            const downloadLink = canDownloadReceipt
+                ? `<a href="${payment.receiptDownloadUrl}" class="dashboard-button" download="${downloadFileName}" target="_blank" rel="noopener noreferrer">Download Receipt</a>`
                 : '';
 
             return `
                 <tr>
-                    <td>${formatDate(payment.date)}</td>
+                    <td>
+                        <div class="receipt-stack">
+                            <span class="receipt-file-name">${submittedLabel}</span>
+                            <div class="receipt-subtext">Approved: ${approvedLabel}</div>
+                        </div>
+                    </td>
                     <td>${formatCurrency(payment.amount)}</td>
                     <td><span class="status-chip status-${normalizedStatus}">${approvalLabel}</span></td>
                     <td><div class="receipt-cell">${receiptCell}</div></td>
@@ -4358,7 +4416,7 @@ function renderDashboardApp() {
                             <td>${transaction.member}</td>
                             <td>${formatCurrency(transaction.amount)}</td>
                             <td>${formatDate(transaction.date)}</td>
-                            <td><span class="status-chip status-${transaction.status}">${transaction.status}</span></td>
+                            <td><span class="status-chip status-${normalizePaymentStatus(transaction.status)}">${formatPaymentApprovalLabel(transaction.status)}</span></td>
                             <td>
                                 <div class="receipt-cell">
                                     ${transaction.receiptPreview && transaction.receiptType === 'image'
@@ -4507,7 +4565,7 @@ function renderDashboardApp() {
                 meta: paymentUser ? paymentUser.name : 'Member payment',
                 amount: payment.amount,
                 date: payment.date,
-                tone: payment.status === 'verified' ? 'success' : 'warning'
+                tone: isPaymentApproved(payment.status) ? 'success' : 'warning'
             });
         });
 
@@ -4522,13 +4580,13 @@ function renderDashboardApp() {
             });
         });
 
-        const verifiedPayments = state.payments.filter((payment) => payment.status === 'verified').slice(0, 1);
-        verifiedPayments.forEach((payment) => {
+        const approvedPayments = state.payments.filter((payment) => isPaymentApproved(payment.status)).slice(0, 1);
+        approvedPayments.forEach((payment) => {
             const paymentUser = state.users.find((user) => user.id === payment.userId);
             recentActivity.push({
                 icon: 'fa-circle-check',
                 title: 'Verification approved',
-                meta: paymentUser ? paymentUser.name : 'Payment verified',
+                meta: paymentUser ? paymentUser.name : 'Payment approved',
                 amount: payment.amount,
                 date: payment.date,
                 tone: 'success'
@@ -4599,7 +4657,7 @@ function renderDashboardApp() {
         if (elements.netBar) elements.netBar.style.width = `${Math.max(25, (state.finance.totalFunds / 60000) * 100)}%`;
     }
 
-    function submitReceiptForVerification(file) {
+    async function submitReceiptForVerification(file) {
         if (state.memberFee.remainingAmount <= 0) {
             alert('This member has no remaining balance.');
             return;
@@ -4610,38 +4668,39 @@ function renderDashboardApp() {
             return;
         }
 
-        const paymentAmount = state.memberFee.nextDueAmount;
-        const paymentDate = new Date().toISOString().slice(0, 10);
-        const memberId = getCurrentMemberId();
-
-        if (!memberId) {
-            alert('Unable to find member profile for this account.');
+        if (!state.paymentFlow.qrScanned) {
+            alert('Please scan the QR and click "I Have Scanned QR" first.');
             return;
         }
 
-        const previewInfo = getReceiptPreviewInfo(file);
+        const paymentAmount = state.memberFee.nextDueAmount;
+        const form = new FormData();
+        form.append('amount', String(paymentAmount));
+        form.append('notes', 'Receipt payment');
+        form.append('receipt', file);
 
-        state.payments.unshift({
-            id: `p${Date.now()}`,
-            userId: memberId,
-            amount: paymentAmount,
-            date: paymentDate,
-            status: 'pending',
-            receiptName: file.name,
-            receiptPreview: previewInfo.previewUrl,
-            receiptType: previewInfo.receiptType
-        });
-
-        state.paymentFlow.qrScanned = false;
-
-        renderTransactions();
-        renderMemberReceiptStatus();
-        renderVerificationQueue();
-        updatePaymentFlowUI();
-        if (elements.paymentFlowMessage) {
-            elements.paymentFlowMessage.textContent = `Payment request submitted with receipt (${file.name}). Waiting for admin verification.`;
+        try {
+            await apiRequest('/payments/add', { method: 'POST', body: form, isForm: true });
+            state.paymentFlow.qrScanned = false;
+            await refreshDashboardFromApi();
+            refreshCurrentMemberFeeState();
+            renderMemberPayments();
+            renderTransactions();
+            renderMemberReceiptStatus();
+            renderVerificationQueue();
+            updatePaymentFlowUI();
+            if (elements.receiptInput) elements.receiptInput.value = '';
+            if (elements.memberReceiptPreview) elements.memberReceiptPreview.innerHTML = 'No receipt selected';
+            if (elements.paymentFlowMessage) {
+                elements.paymentFlowMessage.textContent = 'Payment submitted. Waiting for admin verification.';
+            }
+            alert('Receipt uploaded successfully. Payment is pending admin verification.');
+        } catch (err) {
+            console.error('Submit payment failed:', err);
+            if (!handleAuthFailure(err)) {
+                alert(err.message || 'Failed to submit payment');
+            }
         }
-        alert('Receipt uploaded successfully. Payment submission confirmed and pending admin verification.');
     }
 
     function verifyPayment(paymentId) {
@@ -4666,7 +4725,7 @@ function renderDashboardApp() {
             renderMemberReceiptStatus();
             renderVerificationQueue();
             renderFinance();
-            showDashboardToast('Payment verified successfully.', 'success');
+            showDashboardToast('Payment approved successfully.', 'success');
         }).catch((err) => {
             console.error('Verify payment failed:', err);
             if (!handleAuthFailure(err)) {
@@ -5956,53 +6015,6 @@ function renderDashboardApp() {
                 // show any linked sections for the default section (e.g., club summary with analytics)
                 showLinkedSections(sid);
                 updateDashboardWorkspaceState(sid);
-            }
-        }
-    }
-
-    // Override member receipt submit to call backend
-    async function submitReceiptForVerification(file) {
-        if (state.memberFee.remainingAmount <= 0) {
-            alert('This member has no remaining balance.');
-            return;
-        }
-
-        if (!file) {
-            alert('Please attach your payment receipt before submitting.');
-            return;
-        }
-
-        if (!state.paymentFlow.qrScanned) {
-            alert('Please scan the QR and click "I Have Scanned QR" first.');
-            return;
-        }
-
-        const paymentAmount = state.memberFee.nextDueAmount;
-        const form = new FormData();
-        form.append('amount', String(paymentAmount));
-        form.append('notes', 'Receipt payment');
-        form.append('receipt', file);
-
-        try {
-            await apiRequest('/payments/add', { method: 'POST', body: form, isForm: true });
-            state.paymentFlow.qrScanned = false;
-            await refreshDashboardFromApi();
-            refreshCurrentMemberFeeState();
-            renderMemberPayments();
-            renderTransactions();
-            renderMemberReceiptStatus();
-            renderVerificationQueue();
-            updatePaymentFlowUI();
-            if (elements.receiptInput) elements.receiptInput.value = '';
-            if (elements.memberReceiptPreview) elements.memberReceiptPreview.innerHTML = 'No receipt selected';
-            if (elements.paymentFlowMessage) {
-                elements.paymentFlowMessage.textContent = `Payment submitted. Waiting for admin verification.`;
-            }
-            alert('Receipt uploaded successfully. Payment is pending admin verification.');
-        } catch (err) {
-            console.error('Submit payment failed:', err);
-            if (!handleAuthFailure(err)) {
-                alert(err.message || 'Failed to submit payment');
             }
         }
     }
