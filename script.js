@@ -2570,6 +2570,56 @@ function renderDashboardApp() {
         return false;
     }
 
+    const REPORT_DOWNLOAD_NAMES = {
+        members: 'texcelerators-members.xlsx',
+        payments: 'texcelerators-payments.xlsx',
+        reimbursements: 'texcelerators-reimbursements.xlsx',
+        'expense-claims': 'texcelerators-expense-claims.xlsx',
+        'club-expenses': 'texcelerators-club-expenses.xlsx',
+        projects: 'texcelerators-projects.xlsx',
+        events: 'texcelerators-events.xlsx',
+        full: 'texcelerators-full-club-report.xlsx'
+    };
+
+    async function downloadReport(reportType) {
+        const token = localStorage.getItem('authToken');
+        const filename = REPORT_DOWNLOAD_NAMES[reportType] || `texcelerators-${reportType}.xlsx`;
+
+        try {
+            const res = await fetch(`${API_BASE}/reports/export/${reportType}`, {
+                method: 'GET',
+                headers: token ? { Authorization: `Bearer ${token}` } : {}
+            });
+
+            if (!res.ok) {
+                let message = 'Failed to export report';
+                try {
+                    const data = await res.json();
+                    message = data.message || message;
+                } catch (_) {
+                    // ignore parse errors
+                }
+                throw new Error(message);
+            }
+
+            const blob = await res.blob();
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            URL.revokeObjectURL(url);
+            showDashboardToast(`${filename} downloaded.`, 'success');
+        } catch (err) {
+            console.error('Report export failed:', err);
+            if (!handleAuthFailure(err)) {
+                alert(err.message || 'Failed to export report');
+            }
+        }
+    }
+
     // ===========================
     // LOAD USER DATA FROM LOCALSTORAGE
     // ===========================
@@ -2778,7 +2828,9 @@ function renderDashboardApp() {
 
     function mapApiExpense(e) {
         return {
+            id: String(e._id || e.id || ''),
             title: e.title,
+            category: e.category || '',
             amount: Number(e.amount) || 0,
             date: (e.date ? new Date(e.date) : new Date()).toISOString().slice(0, 10)
         };
@@ -3337,7 +3389,15 @@ function renderDashboardApp() {
             return;
         }
 
-        container.innerHTML = events.map((event) => `
+        container.innerHTML = events.map((event) => {
+            const eventId = String(event._id || event.id || '');
+            const adminActions = isAdminRole() && eventId
+                ? `<div class="receipt-actions" style="margin-top:12px;">
+                        <button type="button" class="dashboard-button delete-event-btn" data-event-id="${eventId}">Delete</button>
+                   </div>`
+                : '';
+
+            return `
             <article class="info-card enterprise-card event-card-item">
                 <div class="info-card-head">
                     <div>
@@ -3354,9 +3414,11 @@ function renderDashboardApp() {
                         <div><span>Fee</span><strong>${formatCurrency(Number(event.registrationFee) || 0)}</strong></div>
                         <div><span>Location</span><strong>${event.location || 'TBA'}</strong></div>
                     </div>
+                    ${adminActions}
                 </div>
             </article>
-        `).join('');
+        `;
+        }).join('');
     }
 
     function renderMemberTransactions() {
@@ -3392,11 +3454,37 @@ function renderDashboardApp() {
         }).join('');
     }
 
+    function getReimbursementId(claim) {
+        return String(claim && (claim._id || claim.id) ? (claim._id || claim.id) : '');
+    }
+
+    function getReimbursementReceiptUrl(claim) {
+        const receiptPath = claim && claim.receipt && claim.receipt.path ? claim.receipt.path : '';
+        return receiptPath ? `${API_BASE}${receiptPath}` : '';
+    }
+
+    function formatReimbursementStatus(status) {
+        const normalized = String(status || 'submitted').toLowerCase();
+        if (normalized === 'reimbursed') return 'Paid';
+        if (normalized === 'under_review') return 'Submitted';
+        if (normalized === 'submitted') return 'Submitted';
+        if (normalized === 'approved') return 'Approved';
+        if (normalized === 'rejected') return 'Rejected';
+        return normalized.charAt(0).toUpperCase() + normalized.slice(1);
+    }
+
+    function getReimbursementStatusClass(status) {
+        const normalized = String(status || 'submitted').toLowerCase();
+        if (normalized === 'approved' || normalized === 'reimbursed') return 'status-approved';
+        if (normalized === 'rejected') return 'status-rejected';
+        return 'status-pending';
+    }
+
     function renderReimbursements() {
         if (!elements.memberReceiptStatus) return;
 
         const reimbursements = Array.isArray(state.enterprise && state.enterprise.reimbursements) ? state.enterprise.reimbursements : [];
-        const visibleReimbursements = userRole === 'member'
+        const visibleReimbursements = isMemberRole()
             ? reimbursements.filter((claim) => {
                 const memberId = claim.member && (claim.member._id || claim.member.id) ? String(claim.member._id || claim.member.id) : String(claim.member || '');
                 return memberId === String(state.user.id);
@@ -3404,7 +3492,7 @@ function renderDashboardApp() {
             : reimbursements;
 
         if (visibleReimbursements.length === 0) {
-            elements.memberReceiptStatus.innerHTML = userRole === 'member'
+            elements.memberReceiptStatus.innerHTML = isMemberRole()
                 ? '<div class="receipt-empty">No expense claims submitted yet.</div>'
                 : '<div class="receipt-empty">No reimbursement claims yet.</div>';
             return;
@@ -3413,13 +3501,39 @@ function renderDashboardApp() {
         elements.memberReceiptStatus.innerHTML = visibleReimbursements.map((claim) => {
             const claimant = claim.member && claim.member.name ? claim.member.name : 'Member';
             const projectName = claim.linkedProject && claim.linkedProject.name ? claim.linkedProject.name : '';
+            const statusLabel = formatReimbursementStatus(claim.status);
+            const statusClass = getReimbursementStatusClass(claim.status);
+            const reimbursementId = getReimbursementId(claim);
+            const receiptName = claim.receipt && claim.receipt.originalName ? claim.receipt.originalName : 'Receipt';
+            const adminNotes = claim.adminNotes ? `Notes: ${claim.adminNotes}` : '';
+            const normalizedStatus = String(claim.status || 'submitted').toLowerCase();
+            const canModerate = ['submitted', 'under_review'].includes(normalizedStatus);
+            const canMarkPaid = normalizedStatus === 'approved';
+            const viewReceiptButton = getReimbursementReceiptUrl(claim)
+                ? `<button type="button" class="dashboard-button view-reimbursement-receipt-btn" data-reimbursement-id="${reimbursementId}">View Receipt</button>`
+                : '';
+
+            const adminActions = isAdminRole()
+                ? `
+                    ${viewReceiptButton}
+                    ${canModerate ? `<button type="button" class="dashboard-button primary approve-reimbursement-btn" data-reimbursement-id="${reimbursementId}">Approve</button>` : ''}
+                    ${canModerate ? `<button type="button" class="dashboard-button reject-reimbursement-btn" data-reimbursement-id="${reimbursementId}">Reject</button>` : ''}
+                    ${canMarkPaid ? `<button type="button" class="dashboard-button mark-paid-reimbursement-btn" data-reimbursement-id="${reimbursementId}">Mark Paid</button>` : ''}
+                    <button type="button" class="dashboard-button delete-reimbursement-btn" data-reimbursement-id="${reimbursementId}">Delete</button>
+                `
+                : (viewReceiptButton ? viewReceiptButton : '');
+
             return `
                 <div class="receipt-row reimbursement-row">
                     <div>
                         <strong>${claim.itemName || 'Reimbursement'} · ${formatCurrency(Number(claim.totalAmount) || 0)}</strong>
-                        <span>${claimant}${projectName ? ` | ${projectName}` : ''} | ${formatDate(claim.purchaseDate || claim.createdAt || new Date())}</span>
+                        <span>${claimant}${projectName ? ` | ${projectName}` : ''} | ${formatDate(claim.purchaseDate || claim.createdAt || new Date())} | ${receiptName}</span>
+                        ${adminNotes ? `<span>${adminNotes}</span>` : ''}
                     </div>
-                    <span class="status-chip status-${claim.status || 'submitted'}">${claim.status || 'submitted'}</span>
+                    <div class="receipt-actions">
+                        <span class="status-chip ${statusClass}">${statusLabel}</span>
+                        ${adminActions}
+                    </div>
                 </div>
             `;
         }).join('');
@@ -4492,7 +4606,9 @@ function renderDashboardApp() {
                 <td>${formatDate(expense.date)}</td>
                 <td><span class="status-chip status-active">Recorded</span></td>
                 <td class="expense-actions">
-                    <button type="button" class="dashboard-button">View</button>
+                    ${isAdminRole() && expense.id
+                        ? `<button type="button" class="dashboard-button delete-club-expense-btn" data-expense-id="${expense.id}">Delete</button>`
+                        : '<button type="button" class="dashboard-button">View</button>'}
                 </td>
             </tr>
         `).join('');
@@ -5178,6 +5294,101 @@ function renderDashboardApp() {
         }
     }
 
+    function viewReimbursementReceipt(reimbursementId) {
+        const claim = (state.enterprise.reimbursements || []).find((entry) => getReimbursementId(entry) === String(reimbursementId));
+        if (!claim) {
+            alert('Reimbursement not found.');
+            return;
+        }
+
+        const viewUrl = getReimbursementReceiptUrl(claim);
+        if (!viewUrl) {
+            alert('No receipt file available for this claim.');
+            return;
+        }
+
+        window.open(viewUrl, '_blank', 'noopener,noreferrer');
+    }
+
+    async function approveReimbursementClaim(reimbursementId) {
+        const adminNotes = prompt('Admin notes (optional):') || '';
+        try {
+            await apiRequest(`/reimbursements/${reimbursementId}/approve`, {
+                method: 'POST',
+                body: { adminNotes }
+            });
+            await refreshDashboardFromApi();
+            renderReimbursements();
+            renderMemberReceiptStatus();
+            showDashboardToast('Reimbursement approved.', 'success');
+        } catch (err) {
+            console.error('Approve reimbursement failed:', err);
+            if (!handleAuthFailure(err)) {
+                alert(err.message || 'Failed to approve reimbursement');
+            }
+        }
+    }
+
+    async function rejectReimbursementClaim(reimbursementId) {
+        const reason = prompt('Rejection reason:');
+        if (!reason || !reason.trim()) {
+            return;
+        }
+
+        try {
+            await apiRequest(`/reimbursements/${reimbursementId}/reject`, {
+                method: 'POST',
+                body: { reason: reason.trim() }
+            });
+            await refreshDashboardFromApi();
+            renderReimbursements();
+            renderMemberReceiptStatus();
+            showDashboardToast('Reimbursement rejected.', 'success');
+        } catch (err) {
+            console.error('Reject reimbursement failed:', err);
+            if (!handleAuthFailure(err)) {
+                alert(err.message || 'Failed to reject reimbursement');
+            }
+        }
+    }
+
+    async function markReimbursementPaid(reimbursementId) {
+        try {
+            await apiRequest(`/reimbursements/${reimbursementId}/process-reimbursement`, {
+                method: 'POST',
+                body: { reimbursedVia: 'club_fund' }
+            });
+            await refreshDashboardFromApi();
+            renderReimbursements();
+            renderMemberReceiptStatus();
+            showDashboardToast('Reimbursement marked as paid.', 'success');
+        } catch (err) {
+            console.error('Mark reimbursement paid failed:', err);
+            if (!handleAuthFailure(err)) {
+                alert(err.message || 'Failed to mark reimbursement as paid');
+            }
+        }
+    }
+
+    async function deleteReimbursementClaim(reimbursementId) {
+        if (!confirm('Delete this reimbursement claim permanently?')) {
+            return;
+        }
+
+        try {
+            await apiRequest(`/reimbursements/${reimbursementId}`, { method: 'DELETE' });
+            await refreshDashboardFromApi();
+            renderReimbursements();
+            renderMemberReceiptStatus();
+            showDashboardToast('Reimbursement deleted.', 'success');
+        } catch (err) {
+            console.error('Delete reimbursement failed:', err);
+            if (!handleAuthFailure(err)) {
+                alert(err.message || 'Failed to delete reimbursement');
+            }
+        }
+    }
+
     async function createReimbursement(event) {
         event.preventDefault();
 
@@ -5505,10 +5716,9 @@ function renderDashboardApp() {
             return;
         }
 
+        const normalizedTeamIds = teamMemberIds.map((member) => String(member._id || member.id || member));
         const members = state.members || [];
-        const teamMembers = members.filter(m => 
-            teamMemberIds.includes(m._id) || teamMemberIds.includes(m._id?.toString())
-        );
+        const teamMembers = members.filter((member) => normalizedTeamIds.includes(String(member.id)));
 
         if (teamMembers.length === 0) {
             container.innerHTML = '<p class="empty-state-text">No team members assigned.</p>';
@@ -5616,13 +5826,44 @@ function renderDashboardApp() {
         }
     }
 
-    async function deleteProjectExpense(expenseId) {
+    async function deleteClubExpense(expenseId) {
+        if (!expenseId) return;
+        if (!confirm('Delete this club expense permanently?')) return;
+
         try {
-            // Note: You may need to add a DELETE endpoint for expenses
-            // For now, this is a placeholder - the backend would handle this
-            alert('Expense deletion endpoint needed on backend');
+            await apiRequest(`/expenses/${expenseId}`, { method: 'DELETE' });
+            await refreshDashboardFromApi();
+            renderMemberExpenses();
+            renderExpenses();
+            renderFinance();
+            showDashboardToast('Expense deleted.', 'success');
         } catch (err) {
             console.error('Delete expense failed:', err);
+            if (!handleAuthFailure(err)) {
+                alert(err.message || 'Failed to delete expense');
+            }
+        }
+    }
+
+    async function deleteProjectExpense(expenseId) {
+        return deleteClubExpense(expenseId);
+    }
+
+    async function deleteEventRecord(eventId) {
+        if (!eventId) return;
+        if (!confirm('Delete this event permanently?')) return;
+
+        try {
+            await apiRequest(`/events/${eventId}`, { method: 'DELETE' });
+            await refreshDashboardFromApi();
+            renderEvents();
+            renderAnnouncements();
+            showDashboardToast('Event deleted.', 'success');
+        } catch (err) {
+            console.error('Delete event failed:', err);
+            if (!handleAuthFailure(err)) {
+                alert(err.message || 'Failed to delete event');
+            }
         }
     }
 
@@ -5694,20 +5935,13 @@ function renderDashboardApp() {
         if (!confirm('Permanently delete this project? This cannot be undone.')) return;
 
         try {
-            // Note: You may need to add a DELETE endpoint for projects on the backend
-            // For now, this marks it as archived instead
-            await apiRequest(`/projects/${currentProjectId}`, {
-                method: 'PUT',
-                body: {
-                    status: 'archived'
-                }
-            });
+            await apiRequest(`/projects/${currentProjectId}`, { method: 'DELETE' });
 
             await refreshDashboardFromApi();
             renderProjects();
             closeProjectDetailModal();
 
-            showDashboardToast('Project archived (delete endpoint needed on backend)', 'success');
+            showDashboardToast('Project deleted.', 'success');
         } catch (err) {
             console.error('Delete project failed:', err);
             if (!handleAuthFailure(err)) {
@@ -5721,8 +5955,13 @@ function renderDashboardApp() {
         if (!container) return;
 
         const allProjects = Array.isArray(state.enterprise && state.enterprise.projects) ? state.enterprise.projects : [];
-        const projects = userRole === 'member'
+        const projects = isMemberRole()
             ? allProjects.filter((project) => {
+                const teamLeadId = project.teamLead && (project.teamLead._id || project.teamLead.id || project.teamLead);
+                if (String(teamLeadId) === String(state.user.id)) {
+                    return true;
+                }
+
                 const teamMembers = Array.isArray(project.teamMembers) ? project.teamMembers : [];
                 return teamMembers.some((member) => {
                     const memberId = member && (member._id || member.id || member);
@@ -6052,6 +6291,32 @@ function renderDashboardApp() {
             elements.expenseForm.addEventListener('submit', addExpense);
         }
 
+        if (elements.expenseTableBody && isAdminRole()) {
+            elements.expenseTableBody.addEventListener('click', (event) => {
+                const deleteButton = event.target.closest('.delete-club-expense-btn');
+                if (!deleteButton) return;
+                deleteClubExpense(deleteButton.getAttribute('data-expense-id'));
+            });
+        }
+
+        const eventsContainer = document.getElementById('events-container');
+        if (eventsContainer && isAdminRole()) {
+            eventsContainer.addEventListener('click', (event) => {
+                const deleteButton = event.target.closest('.delete-event-btn');
+                if (!deleteButton) return;
+                deleteEventRecord(deleteButton.getAttribute('data-event-id'));
+            });
+        }
+
+        const reportsExportGrid = document.getElementById('reports-export-grid');
+        if (reportsExportGrid && isAdminRole()) {
+            reportsExportGrid.addEventListener('click', (event) => {
+                const exportButton = event.target.closest('[data-report-export]');
+                if (!exportButton) return;
+                downloadReport(exportButton.getAttribute('data-report-export'));
+            });
+        }
+
         if (elements.receiptVerificationContainer && isAdminRole()) {
             elements.receiptVerificationContainer.addEventListener('click', (event) => {
                 const viewButton = event.target.closest('.view-payment-receipt-btn');
@@ -6068,6 +6333,36 @@ function renderDashboardApp() {
 
                 if (rejectButton) {
                     rejectPayment(rejectButton.getAttribute('data-payment-id'));
+                }
+            });
+        }
+
+        if (elements.memberReceiptStatus) {
+            elements.memberReceiptStatus.addEventListener('click', (event) => {
+                const viewButton = event.target.closest('.view-reimbursement-receipt-btn');
+                const approveButton = event.target.closest('.approve-reimbursement-btn');
+                const rejectButton = event.target.closest('.reject-reimbursement-btn');
+                const paidButton = event.target.closest('.mark-paid-reimbursement-btn');
+                const deleteButton = event.target.closest('.delete-reimbursement-btn');
+
+                if (viewButton) {
+                    viewReimbursementReceipt(viewButton.getAttribute('data-reimbursement-id'));
+                }
+
+                if (approveButton && isAdminRole()) {
+                    approveReimbursementClaim(approveButton.getAttribute('data-reimbursement-id'));
+                }
+
+                if (rejectButton && isAdminRole()) {
+                    rejectReimbursementClaim(rejectButton.getAttribute('data-reimbursement-id'));
+                }
+
+                if (paidButton && isAdminRole()) {
+                    markReimbursementPaid(paidButton.getAttribute('data-reimbursement-id'));
+                }
+
+                if (deleteButton && isAdminRole()) {
+                    deleteReimbursementClaim(deleteButton.getAttribute('data-reimbursement-id'));
                 }
             });
         }

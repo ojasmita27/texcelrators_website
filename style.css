@@ -10468,6 +10468,13 @@ html::before {
     display: none;
 }
 
+.dashboard-page .reports-export-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 12px;
+    padding: 8px 0 4px;
+}
+
 .dashboard-page .enterprise-form-inline {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));

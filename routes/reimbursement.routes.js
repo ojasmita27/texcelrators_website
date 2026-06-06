@@ -274,6 +274,28 @@ router.post(
 );
 
 /**
+ * DELETE /reimbursements/:id
+ *
+ * Admin deletes a reimbursement claim
+ */
+router.delete(
+  '/:id',
+  requireAuth,
+  requireRole('admin'),
+  blockIfMustChangePassword,
+  asyncHandler(async (req, res) => {
+    const reimbursement = await Reimbursement.findById(req.params.id);
+    if (!reimbursement) {
+      return res.status(404).json({ message: 'Reimbursement not found' });
+    }
+
+    await reimbursement.deleteOne();
+
+    return res.json({ message: 'Reimbursement deleted' });
+  })
+);
+
+/**
  * POST /reimbursements/:id/process-reimbursement
  * 
  * Admin processes the actual reimbursement payment

@@ -59,6 +59,7 @@
                 <a href="#members-section" data-sidebar-link data-target="members-section" data-for-roles="admin"><i class="fas fa-users"></i><span>Members</span></a>
                 <a href="#expenses-section" data-sidebar-link data-target="expenses-section" data-for-roles="admin"><i class="fas fa-file-invoice-dollar"></i><span>Expenses</span></a>
                 <a href="#receipt-verification-section" data-sidebar-link data-target="receipt-verification-section" data-for-roles="admin"><i class="fas fa-clipboard-check"></i><span>Verification</span></a>
+                <a href="#reports-section" data-sidebar-link data-target="reports-section" data-for-roles="admin"><i class="fas fa-file-excel"></i><span>Reports</span></a>
                 <a href="#admin" data-sidebar-link data-target="admin" data-for-roles="admin"><i class="fas fa-user-shield"></i><span>Admin</span></a>
             </nav>
 
@@ -334,6 +335,25 @@
                                 <div id="expense-empty-state" class="table-empty-state">No expenses recorded yet.</div>
                             </div>
                         </div>
+                    </div>
+                </section>
+
+                <section class="panel glass-panel premium-panel" id="reports-section" data-dashboard-section data-for-roles="admin">
+                    <div class="panel-header premium-header">
+                        <div class="header-left">
+                            <h3><i class="fas fa-file-excel"></i> Reports &amp; Exports</h3>
+                            <p>Download live data from MongoDB as Excel (.xlsx) files.</p>
+                        </div>
+                    </div>
+                    <div class="reports-export-grid" id="reports-export-grid">
+                        <button type="button" class="dashboard-button primary" data-report-export="members"><i class="fas fa-users"></i> Export Members</button>
+                        <button type="button" class="dashboard-button primary" data-report-export="payments"><i class="fas fa-wallet"></i> Export Payments</button>
+                        <button type="button" class="dashboard-button primary" data-report-export="reimbursements"><i class="fas fa-receipt"></i> Export Reimbursements</button>
+                        <button type="button" class="dashboard-button primary" data-report-export="expense-claims"><i class="fas fa-file-invoice"></i> Export Expense Claims</button>
+                        <button type="button" class="dashboard-button primary" data-report-export="club-expenses"><i class="fas fa-coins"></i> Export Club Expenses</button>
+                        <button type="button" class="dashboard-button primary" data-report-export="projects"><i class="fas fa-robot"></i> Export Projects</button>
+                        <button type="button" class="dashboard-button primary" data-report-export="events"><i class="fas fa-calendar"></i> Export Events</button>
+                        <button type="button" class="dashboard-button" data-report-export="full"><i class="fas fa-book"></i> Export Full Club Report</button>
                     </div>
                 </section>
 

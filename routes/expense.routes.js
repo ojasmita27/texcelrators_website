@@ -32,4 +32,20 @@ router.post(
   })
 );
 
+router.delete(
+  '/:id',
+  requireAuth,
+  requireRole('admin'),
+  blockIfMustChangePassword,
+  asyncHandler(async (req, res) => {
+    const expense = await Expense.findById(req.params.id);
+    if (!expense) {
+      return res.status(404).json({ message: 'Expense not found' });
+    }
+
+    await expense.deleteOne();
+    return res.json({ message: 'Expense deleted' });
+  })
+);
+
 module.exports = { expenseRoutes: router };

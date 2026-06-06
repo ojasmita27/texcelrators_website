@@ -269,23 +269,33 @@ router.put(
   requireRole('admin'),
   blockIfMustChangePassword,
   asyncHandler(async (req, res) => {
-    const { description, status, budgetAllocated, teamLeadId, endDate, notes, tags } = req.body;
+    const { description, status, budgetAllocated, teamLeadId, teamMemberIds, endDate, notes, tags, visibility, name } = req.body;
 
     const project = await Project.findById(req.params.id);
     if (!project) {
       return res.status(404).json({ message: 'Project not found' });
     }
 
-    if (description) project.description = description;
-    if (status) project.status = status;
-    if (budgetAllocated) project.budgetAllocated = Number(budgetAllocated);
-    if (endDate) project.endDate = new Date(endDate);
-    if (notes) project.notes = notes;
-    if (tags) project.tags = tags;
+    if (description !== undefined) project.description = description;
+    if (status !== undefined) project.status = status;
+    if (budgetAllocated !== undefined) project.budgetAllocated = Number(budgetAllocated);
+    if (endDate !== undefined) project.endDate = endDate ? new Date(endDate) : null;
+    if (notes !== undefined) project.notes = notes;
+    if (tags !== undefined) project.tags = tags;
+    if (visibility !== undefined) project.visibility = visibility;
+    if (name !== undefined) project.name = name;
 
-    if (teamLeadId) {
-      const lead = await User.findOne({ _id: teamLeadId, role: 'member' });
-      if (lead) project.teamLead = teamLeadId;
+    if (teamLeadId !== undefined) {
+      if (!teamLeadId) {
+        project.teamLead = null;
+      } else {
+        const lead = await User.findOne({ _id: teamLeadId, role: 'member' });
+        if (lead) project.teamLead = teamLeadId;
+      }
+    }
+
+    if (teamMemberIds !== undefined && Array.isArray(teamMemberIds)) {
+      project.teamMembers = teamMemberIds;
     }
 
     project.lastModifiedBy = req.user._id;
@@ -296,6 +306,27 @@ router.put(
       message: 'Project updated',
       project
     });
+  })
+);
+
+/**
+ * DELETE /projects/:id
+ *
+ * Admin permanently deletes a project
+ */
+router.delete(
+  '/:id',
+  requireAuth,
+  requireRole('admin'),
+  blockIfMustChangePassword,
+  asyncHandler(async (req, res) => {
+    const project = await Project.findById(req.params.id);
+    if (!project) {
+      return res.status(404).json({ message: 'Project not found' });
+    }
+
+    await project.deleteOne();
+    return res.json({ message: 'Project deleted' });
   })
 );
 

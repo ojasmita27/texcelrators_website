@@ -21,6 +21,7 @@ const { memberTransactionRoutes } = require('./routes/member-transaction.routes'
 const { reimbursementRoutes } = require('./routes/reimbursement.routes');
 const { projectRoutes } = require('./routes/project.routes');
 const { eventRoutes } = require('./routes/event.routes');
+const { reportRoutes } = require('./routes/reports.routes');
 
 const app = express();
 
@@ -75,6 +76,7 @@ app.use('/member-transactions', memberTransactionRoutes);
 app.use('/reimbursements', reimbursementRoutes);
 app.use('/projects', projectRoutes);
 app.use('/events', eventRoutes);
+app.use('/reports', reportRoutes);
 
 // 404
 app.use((req, res) => {

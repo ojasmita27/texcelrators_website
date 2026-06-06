@@ -85,10 +85,11 @@ router.get(
     if (req.user.role === 'member') {
       query = {
         $or: [
-          { visibility: 'public' },
+          { visibility: { $in: ['public', 'members_only'] } },
           { participants: req.user._id },
           { organizingTeam: req.user._id }
-        ]
+        ],
+        status: { $ne: 'cancelled' }
       };
     }
 
@@ -372,6 +373,27 @@ router.put(
       message: 'Event updated',
       event
     });
+  })
+);
+
+/**
+ * DELETE /events/:id
+ *
+ * Admin deletes an event
+ */
+router.delete(
+  '/:id',
+  requireAuth,
+  requireRole('admin'),
+  blockIfMustChangePassword,
+  asyncHandler(async (req, res) => {
+    const event = await Event.findById(req.params.id);
+    if (!event) {
+      return res.status(404).json({ message: 'Event not found' });
+    }
+
+    await event.deleteOne();
+    return res.json({ message: 'Event deleted' });
   })
 );
 
