@@ -2604,7 +2604,7 @@ function renderDashboardApp() {
     function showRoleBasedUI() {
         // Hide/show sidebar links based on role
         document.querySelectorAll('[data-for-roles]').forEach((element) => {
-            const allowedRoles = element.getAttribute('data-for-roles').split(',');
+            const allowedRoles = element.getAttribute('data-for-roles').split(',').map((role) => role.trim());
             if (allowedRoles.includes(userRole)) {
                 element.style.display = '';
             } else {
@@ -2614,7 +2614,7 @@ function renderDashboardApp() {
 
         // Hide/show dashboard sections based on role
         document.querySelectorAll('[data-for-roles]').forEach((section) => {
-            const allowedRoles = section.getAttribute('data-for-roles').split(',');
+            const allowedRoles = section.getAttribute('data-for-roles').split(',').map((role) => role.trim());
             if (allowedRoles.includes(userRole)) {
                 section.style.display = '';
             } else {
@@ -2696,6 +2696,10 @@ function renderDashboardApp() {
 
     function isMemberRole() {
         return String(userRole || '').toLowerCase() === 'member';
+    }
+
+    function isAdminRole() {
+        return String(userRole || '').toLowerCase() === 'admin';
     }
 
     function computeMemberFeeState(totalFee, paidAmount) {
@@ -4562,7 +4566,7 @@ function renderDashboardApp() {
     }
 
     function renderVerificationQueue() {
-        if (!elements.receiptVerificationContainer || userRole !== 'admin') return;
+        if (!elements.receiptVerificationContainer || !isAdminRole()) return;
 
         const pendingPayments = state.payments.filter((payment) => normalizePaymentStatus(payment.status) === 'pending');
         const approvedPayments = state.payments
@@ -5786,6 +5790,28 @@ function renderDashboardApp() {
         });
     }
 
+    function bindAdminVerificationNavigation() {
+        if (!isAdminRole()) return;
+
+        const pendingMetric = elements.pendingVerificationsSmall
+            ? elements.pendingVerificationsSmall.closest('.small-metric')
+            : null;
+        if (pendingMetric) {
+            pendingMetric.addEventListener('click', () => {
+                activateDashboardSection('receipt-verification-section');
+            });
+        }
+
+        const pendingCard = elements.pendingVerificationsCard
+            ? elements.pendingVerificationsCard.closest('.metric-card, .dashboard-stat-card, .premium-metric-card')
+            : null;
+        if (pendingCard) {
+            pendingCard.addEventListener('click', () => {
+                activateDashboardSection('receipt-verification-section');
+            });
+        }
+    }
+
     function bindActions() {
         if (elements.logoutButton) {
             elements.logoutButton.addEventListener('click', (event) => {
@@ -6022,7 +6048,7 @@ function renderDashboardApp() {
             elements.expenseForm.addEventListener('submit', addExpense);
         }
 
-        if (elements.receiptVerificationContainer && userRole === 'admin') {
+        if (elements.receiptVerificationContainer && isAdminRole()) {
             elements.receiptVerificationContainer.addEventListener('click', (event) => {
                 const viewButton = event.target.closest('.view-payment-receipt-btn');
                 const verifyButton = event.target.closest('.verify-payment-btn');
@@ -6131,6 +6157,7 @@ function renderDashboardApp() {
         } catch (e) { console.warn('Analytics update failed', e); }
         bindSidebarNavigation();
         bindActions();
+        bindAdminVerificationNavigation();
         setDashboardLoadingState(false);
         if (dashboardRootEl) {
             dashboardRootEl.removeAttribute('aria-busy');
