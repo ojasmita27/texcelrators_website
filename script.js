@@ -4820,7 +4820,7 @@ function renderDashboardApp() {
             refreshCurrentMemberFeeState();
             renderMemberPayments();
             renderTransactions();
-            renderMemberReceiptStatus();
+           // renderMemberPaymentHistory();
             renderVerificationQueue();
             updatePaymentFlowUI();
             if (elements.receiptInput) elements.receiptInput.value = '';
@@ -4859,7 +4859,7 @@ function renderDashboardApp() {
             renderMembers();
             renderExpenses();
             renderMemberExpenses();
-            renderMemberReceiptStatus();
+           // renderMemberPaymentHistory();
             renderVerificationQueue();
             renderFinance();
             showDashboardToast('Payment approved successfully.', 'success');
@@ -4888,7 +4888,7 @@ function renderDashboardApp() {
             renderMemberPayments();
             renderTransactions();
             renderMembers();
-            renderMemberReceiptStatus();
+            // renderMemberPaymentHistory();
             renderVerificationQueue();
             renderFinance();
             showDashboardToast('Payment rejected.', 'success');
@@ -6110,7 +6110,7 @@ function renderDashboardApp() {
         renderMembers();
         renderExpenses();
         renderMemberExpenses();
-        renderMemberReceiptStatus();
+       // renderMemberPaymentHistory();
         renderVerificationQueue();
         renderFinance();
         renderProjects();
