@@ -4498,6 +4498,10 @@ function renderDashboardApp() {
         `).join('');
     }
 
+    function renderMemberReceiptStatus() {
+        renderReimbursements();
+    }
+
     function mergePaymentIntoState(apiPayment) {
         if (!apiPayment) return;
         const mapped = mapApiPayment(apiPayment);
