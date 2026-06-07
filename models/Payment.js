@@ -4,6 +4,7 @@ const PaymentSchema = new mongoose.Schema(
   {
     member: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     amount: { type: Number, required: true, min: 0 },
+    installmentNumber: { type: Number, min: 1, max: 3, default: null },
     method: { type: String, enum: ['receipt', 'manual'], required: true },
 
     // Receipt upload (for member submissions)

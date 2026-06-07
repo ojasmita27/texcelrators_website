@@ -1191,15 +1191,26 @@ function createInstallmentItem(installment) {
         ? installment.installmentStatus
         : (installment && installment.status ? installment.status : 'DUE');
     const isCompleted = installmentStatus === 'COMPLETED';
+    const isLocked = installmentStatus === 'LOCKED';
+    const progressPercent = amount > 0 ? Math.min(100, Math.round((installmentPaid / amount) * 100)) : 0;
+    const statusClass = isCompleted
+        ? 'active'
+        : (installmentStatus === 'PARTIALLY PAID' ? 'pending' : (isLocked ? 'rejected' : 'pending'));
 
-    const item = document.createElement('div');
-    item.className = `installment-item ${isCompleted ? 'is-paid' : 'is-due'}`;
+    const item = document.createElement('article');
+    item.className = `installment-item ${isCompleted ? 'is-paid' : ''} ${isLocked ? 'is-locked' : 'is-due'}`;
     item.innerHTML = `
-        <div>
+        <div class="installment-item-head">
             <strong>${title}</strong>
-            <span>${formatCurrency(amount)} · Paid ${formatCurrency(installmentPaid)} · Remaining ${formatCurrency(installmentRemaining)}</span>
+            <span class="status-pill ${statusClass}">${installmentStatus}</span>
         </div>
-        <span class="status-pill">${installmentStatus}</span>
+        <div class="installment-progress-track" aria-hidden="true">
+            <div class="installment-progress-fill" style="width:${progressPercent}%"></div>
+        </div>
+        <div class="installment-item-meta">
+            <span>${formatCurrency(installmentPaid)} / ${formatCurrency(amount)}</span>
+            <span>Remaining ${formatCurrency(installmentRemaining)}</span>
+        </div>
     `;
     return item;
 }
@@ -2688,6 +2699,8 @@ function renderDashboardApp() {
             paidAmount: 0,
             remainingAmount: 0,
             nextDueAmount: 0,
+            activeInstallmentNumber: null,
+            activeInstallmentRemaining: 0,
             progress: 0,
             approvedPaymentsTotal: 0
         },
@@ -2765,9 +2778,88 @@ function renderDashboardApp() {
         };
     }
 
+    const MEMBERSHIP_INSTALLMENT_AMOUNTS = [5000, 5000, 3500];
+
+    function buildInstallmentSchedule(approvedPaidTotal) {
+        const approvedPaid = Math.max(0, getSafeNumber(approvedPaidTotal, 0));
+        let allocationPool = approvedPaid;
+
+        const installments = MEMBERSHIP_INSTALLMENT_AMOUNTS.map((amount, index) => {
+            const paid = Math.min(allocationPool, amount);
+            allocationPool = Math.max(0, allocationPool - paid);
+
+            return {
+                number: index + 1,
+                title: `Installment ${index + 1}`,
+                amount,
+                installmentPaid: paid,
+                installmentRemaining: Math.max(0, amount - paid),
+                installmentStatus: 'LOCKED',
+                locked: true
+            };
+        });
+
+        const firstOpenIndex = installments.findIndex((installment) => installment.installmentPaid < installment.amount);
+
+        if (firstOpenIndex === -1) {
+            installments.forEach((installment) => {
+                installment.installmentStatus = 'COMPLETED';
+                installment.installmentPaid = installment.amount;
+                installment.installmentRemaining = 0;
+                installment.locked = false;
+            });
+
+            return {
+                installments,
+                activeInstallmentNumber: null,
+                activeInstallmentRemaining: 0,
+                allComplete: true
+            };
+        }
+
+        installments.forEach((installment, index) => {
+            if (index < firstOpenIndex) {
+                installment.installmentStatus = 'COMPLETED';
+                installment.installmentPaid = installment.amount;
+                installment.installmentRemaining = 0;
+                installment.locked = false;
+                return;
+            }
+
+            if (index === firstOpenIndex) {
+                installment.locked = false;
+                if (installment.installmentPaid >= installment.amount) {
+                    installment.installmentStatus = 'COMPLETED';
+                } else if (installment.installmentPaid > 0) {
+                    installment.installmentStatus = 'PARTIALLY PAID';
+                } else {
+                    installment.installmentStatus = 'DUE';
+                }
+                return;
+            }
+
+            installment.installmentStatus = 'LOCKED';
+            installment.locked = true;
+        });
+
+        const activeInstallment = installments[firstOpenIndex];
+
+        return {
+            installments,
+            activeInstallmentNumber: activeInstallment.number,
+            activeInstallmentRemaining: activeInstallment.installmentRemaining,
+            allComplete: false
+        };
+    }
+
     function getValidatedPaymentAmount() {
-        const remaining = getSafeNumber(state.memberFee.remainingAmount, 0);
+        const activeInstallmentNumber = state.memberFee.activeInstallmentNumber;
+        const remaining = getSafeNumber(state.memberFee.activeInstallmentRemaining, 0);
         const raw = elements.paymentAmountInput ? Number(elements.paymentAmountInput.value) : NaN;
+
+        if (!activeInstallmentNumber) {
+            return { valid: false, amount: 0, message: 'All installments are complete.' };
+        }
 
         if (!Number.isFinite(raw) || raw <= 0) {
             return { valid: false, amount: 0, message: 'Enter a payment amount greater than 0.' };
@@ -2777,28 +2869,29 @@ function renderDashboardApp() {
             return {
                 valid: false,
                 amount: raw,
-                message: `Amount cannot exceed remaining balance of ${formatCurrency(remaining)}.`
+                message: `Amount cannot exceed installment ${activeInstallmentNumber} remaining balance of ${formatCurrency(remaining)}.`
             };
         }
 
-        return { valid: true, amount: raw, message: '' };
+        return { valid: true, amount: raw, message: '', installmentNumber: activeInstallmentNumber };
     }
 
     function syncPaymentAmountUI() {
         if (userRole !== 'member') return;
 
-        const remaining = getSafeNumber(state.memberFee.remainingAmount, 0);
+        const activeInstallmentNumber = state.memberFee.activeInstallmentNumber;
+        const remaining = getSafeNumber(state.memberFee.activeInstallmentRemaining, 0);
         const validation = getValidatedPaymentAmount();
 
         if (elements.paymentAmountHint) {
-            elements.paymentAmountHint.textContent = remaining > 0
-                ? `Maximum payable now: ${formatCurrency(remaining)}`
-                : 'No remaining balance to pay.';
+            elements.paymentAmountHint.textContent = activeInstallmentNumber
+                ? `Installment ${activeInstallmentNumber} maximum: ${formatCurrency(remaining)}`
+                : 'All installments are complete.';
         }
 
         if (elements.paymentAmountInput) {
             elements.paymentAmountInput.max = remaining > 0 ? String(remaining) : '0';
-            elements.paymentAmountInput.disabled = remaining <= 0;
+            elements.paymentAmountInput.disabled = !activeInstallmentNumber || remaining <= 0;
         }
 
         const displayAmount = validation.valid
@@ -2809,6 +2902,27 @@ function renderDashboardApp() {
 
         if (elements.amountToPay) {
             elements.amountToPay.textContent = formatCurrency(displayAmount);
+        }
+
+        const activeInstallmentLabel = document.getElementById('activeInstallmentLabel');
+        const activeInstallmentDue = document.getElementById('activeInstallmentDue');
+        const activeInstallmentRemainingDisplay = document.getElementById('activeInstallmentRemainingDisplay');
+        const activeInstallment = (state.installments || []).find((item) => item.number === activeInstallmentNumber);
+
+        if (activeInstallmentLabel) {
+            activeInstallmentLabel.textContent = activeInstallmentNumber
+                ? `Installment ${activeInstallmentNumber}`
+                : 'Complete';
+        }
+
+        if (activeInstallmentDue) {
+            activeInstallmentDue.textContent = activeInstallment
+                ? formatCurrency(activeInstallment.amount)
+                : formatCurrency(0);
+        }
+
+        if (activeInstallmentRemainingDisplay) {
+            activeInstallmentRemainingDisplay.textContent = formatCurrency(remaining);
         }
     }
 
@@ -2821,7 +2935,11 @@ function renderDashboardApp() {
         state.memberFee.remainingAmount = feeState.remainingAmount;
         state.memberFee.nextDueAmount = feeState.nextDueAmount;
         state.memberFee.progress = feeState.progress;
-        state.installments = getInstallmentsFromPaidAmount(feeState.paidAmount, total);
+
+        const schedule = buildInstallmentSchedule(feeState.paidAmount);
+        state.installments = schedule.installments;
+        state.memberFee.activeInstallmentNumber = schedule.activeInstallmentNumber;
+        state.memberFee.activeInstallmentRemaining = schedule.activeInstallmentRemaining;
     }
 
     function formatPaymentApprovalLabel(status) {
@@ -2866,7 +2984,8 @@ function renderDashboardApp() {
             receiptViewUrl: receiptPath ? `${API_BASE}${receiptPath}` : '',
             receiptDownloadUrl: normalizedStatus === 'approved' && receiptPdfUrl
                 ? receiptPdfUrl
-                : (normalizedStatus === 'approved' && receiptPath ? `${API_BASE}${receiptPath}` : '')
+                : (normalizedStatus === 'approved' && receiptPath ? `${API_BASE}${receiptPath}` : ''),
+            installmentNumber: p.installmentNumber ? Number(p.installmentNumber) : null
         };
     }
 
@@ -3104,6 +3223,7 @@ function renderDashboardApp() {
         expenseAmount: document.getElementById('expenseAmount'),
         expenseDate: document.getElementById('expenseDate'),
         expenseCategory: document.getElementById('expenseCategory'),
+        expenseNotes: document.getElementById('expenseNotes'),
 
         totalFeeLabel: document.getElementById('totalFeeLabel'),
 
@@ -3117,25 +3237,26 @@ function renderDashboardApp() {
     function updatePaymentFlowUI() {
         if (userRole !== 'member') return;
 
-        const hasRemaining = state.memberFee.remainingAmount > 0;
+        const hasActiveInstallment = Boolean(state.memberFee.activeInstallmentNumber)
+            && state.memberFee.activeInstallmentRemaining > 0;
 
         if (elements.scanDoneButton) {
-            elements.scanDoneButton.disabled = !hasRemaining;
+            elements.scanDoneButton.disabled = !hasActiveInstallment;
         }
 
         if (elements.paidButton) {
-            elements.paidButton.disabled = !hasRemaining;
+            elements.paidButton.disabled = !hasActiveInstallment;
         }
 
         if (elements.submitReceiptButton) {
-            elements.submitReceiptButton.disabled = !hasRemaining;
+            elements.submitReceiptButton.disabled = !hasActiveInstallment;
         }
 
         syncPaymentAmountUI();
 
         if (!elements.paymentFlowMessage) return;
 
-        if (!hasRemaining) {
+        if (!hasActiveInstallment) {
             elements.paymentFlowMessage.textContent = 'No pending amount. Payment already complete.';
             return;
         }
@@ -3327,31 +3448,6 @@ function renderDashboardApp() {
                 showDashboardToast(err.message || 'Failed to update profile.', 'error');
             }
         }
-    }
-
-    function getInstallmentsFromPaidAmount(paidAmount, totalFee) {
-        const safeTotal = getSafeNumber(totalFee, 0);
-        const approvedPaid = Math.min(getSafeNumber(paidAmount, 0), safeTotal);
-        const installmentRemaining = Math.max(0, safeTotal - approvedPaid);
-
-        let installmentStatus = 'DUE';
-        if (safeTotal > 0 && approvedPaid >= safeTotal) {
-            installmentStatus = 'COMPLETED';
-        } else if (approvedPaid > 0) {
-            installmentStatus = 'PARTIALLY PAID';
-        }
-
-        if (safeTotal <= 0) return [];
-
-        return [{
-            title: 'Membership Fee',
-            amount: safeTotal,
-            installmentPaid: approvedPaid,
-            installmentRemaining,
-            installmentStatus,
-            status: installmentStatus,
-            paid: installmentStatus === 'COMPLETED'
-        }];
     }
 
     function refreshCurrentMemberFeeState() {
@@ -4594,9 +4690,9 @@ function renderDashboardApp() {
         }
 
         if (elements.paymentAmountInput) {
-            const remaining = state.memberFee.remainingAmount;
+            const remaining = getSafeNumber(state.memberFee.activeInstallmentRemaining, 0);
             const currentValue = Number(elements.paymentAmountInput.value);
-            if (remaining <= 0) {
+            if (!state.memberFee.activeInstallmentNumber || remaining <= 0) {
                 elements.paymentAmountInput.value = '';
             } else if (!Number.isFinite(currentValue) || currentValue <= 0 || currentValue > remaining) {
                 elements.paymentAmountInput.value = String(remaining);
@@ -4720,6 +4816,10 @@ function renderDashboardApp() {
                 ? `<a href="${payment.receiptDownloadUrl}" class="dashboard-button" download="${downloadFileName}" target="_blank" rel="noopener noreferrer">Download Receipt</a>`
                 : '';
 
+            const installmentLabel = payment.installmentNumber
+                ? `Installment ${payment.installmentNumber}`
+                : '—';
+
             return `
                 <tr>
                     <td>
@@ -4729,6 +4829,7 @@ function renderDashboardApp() {
                         </div>
                     </td>
                     <td>${formatCurrency(payment.amount)}</td>
+                    <td>${installmentLabel}</td>
                     <td><span class="status-chip status-${normalizedStatus}">${approvalLabel}</span></td>
                     <td><div class="receipt-cell">${receiptCell}</div></td>
                     <td>${downloadLink}</td>
@@ -4919,11 +5020,13 @@ function renderDashboardApp() {
                 ? payment.receiptName
                 : 'Uploaded receipt';
 
+            const installmentLabel = payment.installmentNumber ? `Installment ${payment.installmentNumber}` : '—';
+
             return `
                 <div class="receipt-row receipt-admin-row">
                     <div>
                         <strong>${member ? member.name : 'Unknown Member'} | ${formatCurrency(payment.amount)}</strong>
-                        <span>${formatDate(payment.submittedAt || payment.date)} | ${receiptLabel}</span>
+                        <span>${formatDate(payment.submittedAt || payment.date)} | ${installmentLabel} | ${receiptLabel}</span>
                     </div>
                     <div class="receipt-actions">
                         <button type="button" class="dashboard-button view-payment-receipt-btn" data-payment-id="${payment.id}">View Receipt</button>
@@ -4944,11 +5047,13 @@ function renderDashboardApp() {
                 ? `<a href="${downloadUrl}" class="dashboard-button" download="${downloadFileName}" target="_blank" rel="noopener noreferrer">Download Receipt</a>`
                 : '';
 
+            const installmentLabel = payment.installmentNumber ? `Installment ${payment.installmentNumber}` : '—';
+
             return `
                 <div class="receipt-row receipt-admin-row">
                     <div>
                         <strong>${member ? member.name : 'Unknown Member'} | ${formatCurrency(payment.amount)}</strong>
-                        <span>${formatDate(payment.approvedAt || payment.date)} | ${receiptNumber} | ${receiptFileName}</span>
+                        <span>${formatDate(payment.approvedAt || payment.date)} | ${installmentLabel} | ${receiptNumber} | ${receiptFileName}</span>
                     </div>
                     <div class="receipt-actions">
                         <span class="status-chip status-approved">Approved</span>
@@ -4974,11 +5079,18 @@ function renderDashboardApp() {
                         ${isAdmin ? '<th>Status</th>' : ''}
                         <th>Paid Amount</th>
                         <th>Remaining Balance</th>
+                        ${isAdmin ? '<th>Current Installment</th>' : ''}
                         ${isAdmin ? '<th>Actions</th>' : ''}
                     </tr>
                 </thead>
                 <tbody>
-                    ${state.members.map((member) => `
+                    ${state.members.map((member) => {
+                        const memberSchedule = buildInstallmentSchedule(member.paid || 0);
+                        const installmentLabel = memberSchedule.activeInstallmentNumber
+                            ? `Installment ${memberSchedule.activeInstallmentNumber}`
+                            : 'Complete';
+
+                        return `
                         <tr>
                             <td>
                                 <div class="member-cell">
@@ -4989,6 +5101,7 @@ function renderDashboardApp() {
                             ${isAdmin ? `<td><span class="status-chip status-${member.status || 'inactive'}">${formatMemberStatus(member.status)}</span></td>` : ''}
                             <td>${formatCurrency(member.paid)}</td>
                             <td>${formatCurrency(member.remaining)}</td>
+                            ${isAdmin ? `<td>${installmentLabel}</td>` : ''}
                             ${isAdmin ? `
                                 <td class="member-actions-cell">
                                     <button type="button" class="dashboard-button" data-member-action="reset" data-member-id="${member.id}">Reset Password</button>
@@ -4998,7 +5111,8 @@ function renderDashboardApp() {
                                 </td>
                             ` : ''}
                         </tr>
-                    `).join('')}
+                    `;
+                    }).join('')}
                 </tbody>
             </table>
         `;
@@ -5161,8 +5275,8 @@ function renderDashboardApp() {
     }
 
     async function submitReceiptForVerification(file) {
-        if (state.memberFee.remainingAmount <= 0) {
-            alert('This member has no remaining balance.');
+        if (!state.memberFee.activeInstallmentNumber || state.memberFee.activeInstallmentRemaining <= 0) {
+            alert('No active installment payment is due.');
             return;
         }
 
@@ -5185,6 +5299,7 @@ function renderDashboardApp() {
         const paymentAmount = amountValidation.amount;
         const form = new FormData();
         form.append('amount', String(paymentAmount));
+        form.append('installmentNumber', String(amountValidation.installmentNumber));
         form.append('notes', 'Receipt payment');
         form.append('receipt', file);
 
@@ -5325,6 +5440,8 @@ function renderDashboardApp() {
         const title = elements.expenseTitle.value.trim();
         const amount = Number(elements.expenseAmount.value);
         const date = elements.expenseDate.value;
+        const category = elements.expenseCategory?.value || '';
+        const notes = elements.expenseNotes?.value?.trim() || '';
 
         if (!title || !amount || !date) {
             return;
@@ -5332,7 +5449,7 @@ function renderDashboardApp() {
 
         apiRequest('/expenses/add', {
             method: 'POST',
-            body: { title, amount, date }
+            body: { title, amount, date, category, notes }
         }).then(async () => {
             elements.expenseForm.reset();
             await refreshDashboardFromApi();
@@ -6384,8 +6501,8 @@ function renderDashboardApp() {
 
         if (elements.scanDoneButton && userRole === 'member') {
             elements.scanDoneButton.addEventListener('click', () => {
-                if (state.memberFee.remainingAmount <= 0) {
-                    alert('No pending amount to pay.');
+                if (!state.memberFee.activeInstallmentNumber || state.memberFee.activeInstallmentRemaining <= 0) {
+                    alert('No active installment payment is due.');
                     return;
                 }
 
@@ -6594,24 +6711,21 @@ function renderDashboardApp() {
         }
 
         const openAddMemberBtn = document.getElementById('openAddMember');
-        if (openAddMemberBtn && isAdminRole()) {
-            openAddMemberBtn.addEventListener('click', () => focusDashboardForm('members-section', '#addMemberName'));
+        function bindQuickActionButton(button, sectionId, focusSelector) {
+            if (!button || !isAdminRole()) return;
+            button.addEventListener('click', () => {
+                document.querySelectorAll('.premium-action-btn, .action-metric-link').forEach((el) => {
+                    el.classList.remove('is-pressed');
+                });
+                button.classList.add('is-pressed');
+                focusDashboardForm(sectionId, focusSelector);
+            });
         }
 
-        const openAddPaymentBtn = document.getElementById('openAddPayment');
-        if (openAddPaymentBtn && isAdminRole()) {
-            openAddPaymentBtn.addEventListener('click', () => focusDashboardForm('admin', '#adminPaymentAmount'));
-        }
-
-        const openAddExpenseBtn = document.getElementById('openAddExpense');
-        if (openAddExpenseBtn && isAdminRole()) {
-            openAddExpenseBtn.addEventListener('click', () => focusDashboardForm('expenses-section', '#expenseTitle'));
-        }
-
-        const openPendingReceiptsBtn = document.getElementById('openPendingReceipts');
-        if (openPendingReceiptsBtn && isAdminRole()) {
-            openPendingReceiptsBtn.addEventListener('click', () => focusDashboardForm('receipt-verification-section'));
-        }
+        bindQuickActionButton(document.getElementById('openAddMember'), 'members-section', '#addMemberName');
+        bindQuickActionButton(document.getElementById('openAddPayment'), 'admin', '#adminPaymentAmount');
+        bindQuickActionButton(document.getElementById('openAddExpense'), 'expenses-section', '#expenseTitle');
+        bindQuickActionButton(document.getElementById('openPendingReceipts'), 'receipt-verification-section');
 
         const collaborationsContainer = document.getElementById('collaborations-container');
         if (collaborationsContainer && isAdminRole()) {

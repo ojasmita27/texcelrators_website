@@ -1896,10 +1896,15 @@ body > * {
 
 .dashboard-page #expenses-section .expenses-admin-form {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: minmax(0, 1.35fr) minmax(0, 0.85fr) minmax(0, 1fr) minmax(0, 1.1fr) auto;
     gap: 0.85rem;
     align-items: end;
     width: 100%;
+}
+
+.dashboard-page #expenses-section .expenses-admin-date-field {
+    grid-column: 1 / -1;
+    max-width: 280px;
 }
 
 .dashboard-page #expenses-section .expenses-admin-field {
@@ -1941,15 +1946,106 @@ body > * {
     white-space: nowrap;
 }
 
-@media (min-width: 1100px) {
-    .dashboard-page #expenses-section .expenses-admin-form {
-        grid-template-columns: minmax(0, 1.35fr) minmax(0, 0.85fr) minmax(0, 0.95fr) minmax(0, 1fr) auto;
-        align-items: end;
+.dashboard-page #expenses-section .expenses-admin-form .expense-submit-btn {
+    min-height: 48px;
+    white-space: nowrap;
+    align-self: end;
+}
+
+.installment-item {
+    display: grid;
+    gap: 0.55rem;
+    padding: 0.95rem 1rem;
+    border-radius: 14px;
+    border: 1px solid rgba(0, 212, 255, 0.12);
+    background: rgba(0, 99, 255, 0.04);
+}
+
+.installment-item.is-locked {
+    opacity: 0.72;
+}
+
+.installment-item-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.installment-progress-track {
+    height: 8px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.08);
+    overflow: hidden;
+}
+
+.installment-progress-fill {
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, #0099ff, #00d4ff);
+}
+
+.installment-item-meta {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.75rem;
+    color: var(--text-secondary);
+    font-size: 0.88rem;
+    flex-wrap: wrap;
+}
+
+.installment-list {
+    display: grid;
+    gap: 0.75rem;
+}
+
+.active-installment-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.85rem;
+}
+
+.active-installment-grid .field-label,
+.payment-amount-entry label {
+    display: block;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    margin-bottom: 0.25rem;
+}
+
+.club-summary-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.85rem;
+    align-items: stretch;
+}
+
+.club-summary-card {
+    min-height: 118px;
+    padding: 1rem 1.05rem;
+}
+
+.club-summary-members-card #recentClubMembersList {
+    max-height: 88px;
+    overflow: auto;
+}
+
+.admin-overview-kpi-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+@media (max-width: 1100px) {
+    .admin-overview-kpi-grid,
+    .club-summary-grid,
+    .active-installment-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
-    .dashboard-page #expenses-section .expenses-admin-form .expense-submit-btn {
-        grid-column: auto;
-        align-self: end;
+    .dashboard-page #expenses-section .expenses-admin-form {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 }
 
@@ -10553,6 +10649,16 @@ html::before {
         grid-template-columns: 1fr;
     }
 
+    .dashboard-page #expenses-section .expenses-admin-date-field {
+        max-width: none;
+    }
+
+    .club-summary-grid,
+    .admin-overview-kpi-grid,
+    .active-installment-grid {
+        grid-template-columns: 1fr;
+    }
+
     .collaboration-actions {
         justify-content: flex-start;
     }
@@ -10922,6 +11028,13 @@ html::before {
 
 .dashboard-page .premium-action-grid {
     gap: 0.75rem;
+}
+
+.dashboard-page .action-metric-link.is-pressed,
+.dashboard-page .premium-action-btn.is-pressed {
+    border-color: rgba(0, 212, 255, 0.42);
+    background: linear-gradient(135deg, rgba(0, 153, 255, 0.18), rgba(0, 212, 255, 0.1));
+    transform: translateY(-1px);
 }
 
 .dashboard-page .premium-action-btn {

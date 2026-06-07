@@ -99,8 +99,8 @@
                 <div class="panel-header premium-header">
                     <h3><i class="fas fa-chart-pie"></i> Club Summary</h3>
                 </div>
-                <div class="metrics-grid premium-metrics" id="clubSummaryGrid">
-                    <div class="metric-card premium-metric-card" style="flex:1;">
+                <div class="metrics-grid premium-metrics club-summary-grid" id="clubSummaryGrid">
+                    <div class="metric-card premium-metric-card club-summary-card">
                         <div class="metric-top">
                             <i class="fas fa-wallet metric-icon" aria-hidden="true"></i>
                             <div class="metric-label">Total Club Funds</div>
@@ -108,7 +108,7 @@
                         <strong id="clubSummaryFundsCard" aria-live="polite"></strong>
                     </div>
 
-                    <div class="metric-card premium-metric-card" style="flex:1;">
+                    <div class="metric-card premium-metric-card club-summary-card">
                         <div class="metric-top">
                             <i class="fas fa-users metric-icon" aria-hidden="true"></i>
                             <div class="metric-label">Total Members</div>
@@ -116,7 +116,7 @@
                         <strong id="clubSummaryMembersCard" aria-live="polite"></strong>
                     </div>
 
-                    <div class="metric-card premium-metric-card" style="flex:1;">
+                    <div class="metric-card premium-metric-card club-summary-card club-summary-members-card">
                         <div class="metric-top">
                             <i class="fas fa-user-clock metric-icon" aria-hidden="true"></i>
                             <div class="metric-label">Recent Members</div>
@@ -255,12 +255,26 @@
                             </div>
                         </section>
 
+                        <section class="member-payment-block membership-progress-block" id="membership-installments-block">
+                            <h4>Membership Progress</h4>
+                            <div id="installments-container" class="installment-list compact"></div>
+                        </section>
+
+                        <section class="member-payment-block active-installment-block" id="active-installment-block">
+                            <h4>Current Active Installment</h4>
+                            <div class="active-installment-grid">
+                                <div><span class="field-label">Installment</span><strong id="activeInstallmentLabel">—</strong></div>
+                                <div><span class="field-label">Amount Due</span><strong id="activeInstallmentDue">₹0</strong></div>
+                                <div><span class="field-label">Remaining</span><strong id="activeInstallmentRemainingDisplay">₹0</strong></div>
+                            </div>
+                        </section>
+
                         <section class="member-payment-block payment-qr-block" id="payment-qr">
                             <h4>QR Payment</h4>
                             <div class="payment-amount-entry">
                                 <label for="paymentAmountInput">Amount to Pay</label>
                                 <input type="number" id="paymentAmountInput" min="1" step="1" placeholder="Enter amount" inputmode="numeric">
-                                <small id="paymentAmountHint" class="payment-amount-hint">Enter any amount up to your remaining balance.</small>
+                                <small id="paymentAmountHint" class="payment-amount-hint">Enter any amount up to the current installment remaining balance.</small>
                             </div>
                             <div class="qr-compact">
                                 <div id="qrCode" class="qr-code"></div>
@@ -301,6 +315,7 @@
                                         <tr>
                                             <th>Date</th>
                                             <th>Amount</th>
+                                            <th>Installment</th>
                                             <th>Status</th>
                                             <th>Receipt #</th>
                                             <th>Download</th>
@@ -312,7 +327,6 @@
                             </div>
                         </section>
 
-                        <div id="installments-container" class="installment-list compact"></div>
                     </div>
                 </section>
 
@@ -351,16 +365,12 @@
 
                             <form id="expenseForm" class="card-form compact expenses-admin-form">
                                 <div class="expenses-admin-field">
-                                    <label for="expenseTitle">Expense title</label>
+                                    <label for="expenseTitle">Title</label>
                                     <input type="text" id="expenseTitle" placeholder="Expense title" required>
                                 </div>
                                 <div class="expenses-admin-field">
                                     <label for="expenseAmount">Amount</label>
                                     <input type="number" id="expenseAmount" placeholder="Amount" min="1" required>
-                                </div>
-                                <div class="expenses-admin-field">
-                                    <label for="expenseDate">Date</label>
-                                    <input type="date" id="expenseDate" required>
                                 </div>
                                 <div class="expenses-admin-field">
                                     <label for="expenseCategory">Category</label>
@@ -374,7 +384,15 @@
                                         <option value="other">Other</option>
                                     </select>
                                 </div>
-                                <button type="submit" class="dashboard-button primary expense-submit-btn"><i class="fas fa-plus"></i> Add</button>
+                                <div class="expenses-admin-field">
+                                    <label for="expenseNotes">Notes</label>
+                                    <input type="text" id="expenseNotes" placeholder="Optional notes">
+                                </div>
+                                <button type="submit" class="dashboard-button primary expense-submit-btn"><i class="fas fa-plus"></i> Add Expense</button>
+                                <div class="expenses-admin-field expenses-admin-date-field">
+                                    <label for="expenseDate">Date</label>
+                                    <input type="date" id="expenseDate" required>
+                                </div>
                             </form>
                         </div>
 

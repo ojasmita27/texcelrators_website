@@ -5,6 +5,7 @@ const { Payment } = require('../models/Payment');
 const { User } = require('../models/User');
 const { requireAuth, requireRole, blockIfMustChangePassword } = require('../middleware/auth');
 const { buildReceiptNumber, generateReceiptPdf } = require('../utils/pdfGenerator');
+const { getActiveInstallmentContext } = require('../utils/membershipInstallments');
 const fs = require('fs/promises');
 const path = require('path');
 
@@ -43,6 +44,43 @@ async function getNextReceiptSequence(year) {
   });
 
   return maxSequence + 1;
+}
+
+async function getMemberApprovedTotal(memberId) {
+  const approvedSum = await Payment.aggregate([
+    { $match: { member: memberId, status: 'approved' } },
+    { $group: { _id: null, total: { $sum: '$amount' } } }
+  ]);
+
+  return approvedSum[0]?.total || 0;
+}
+
+function validateInstallmentPayment(amount, installmentContext, requestedInstallmentNumber) {
+  if (!installmentContext.activeInstallmentNumber) {
+    return { ok: false, message: 'Membership fee is already fully paid' };
+  }
+
+  if (
+    requestedInstallmentNumber
+    && Number(requestedInstallmentNumber) !== installmentContext.activeInstallmentNumber
+  ) {
+    return {
+      ok: false,
+      message: `Payments must be applied to installment ${installmentContext.activeInstallmentNumber} only`
+    };
+  }
+
+  if (amount > installmentContext.activeInstallmentRemaining) {
+    return {
+      ok: false,
+      message: `Amount cannot exceed installment ${installmentContext.activeInstallmentNumber} remaining balance of ${installmentContext.activeInstallmentRemaining}`
+    };
+  }
+
+  return {
+    ok: true,
+    installmentNumber: installmentContext.activeInstallmentNumber
+  };
 }
 
 async function removeGeneratedPdf(filePath) {
@@ -145,9 +183,18 @@ router.post(
         return res.status(404).json({ message: 'Member not found' });
       }
 
+      const approvedTotal = await getMemberApprovedTotal(member._id);
+      const installmentContext = getActiveInstallmentContext(approvedTotal);
+      const installmentValidation = validateInstallmentPayment(amount, installmentContext);
+
+      if (!installmentValidation.ok) {
+        return res.status(400).json({ message: installmentValidation.message });
+      }
+
       const payment = new Payment({
         member: member._id,
         amount,
+        installmentNumber: installmentValidation.installmentNumber,
         method: 'manual',
         status: 'approved',
         notes,
@@ -167,18 +214,17 @@ router.post(
       return res.status(400).json({ message: 'receipt file is required' });
     }
 
-    const memberTotalFee = Number.parseInt(String(process.env.MEMBER_TOTAL_FEE || ''), 10) || 13500;
-    const approvedSum = await Payment.aggregate([
-      { $match: { member: req.user._id, status: 'approved' } },
-      { $group: { _id: null, total: { $sum: '$amount' } } }
-    ]);
-    const approvedTotal = approvedSum[0]?.total || 0;
-    const remainingBalance = Math.max(0, memberTotalFee - approvedTotal);
+    const approvedTotal = await getMemberApprovedTotal(req.user._id);
+    const installmentContext = getActiveInstallmentContext(approvedTotal);
+    const requestedInstallmentNumber = Number(req.body.installmentNumber);
+    const installmentValidation = validateInstallmentPayment(
+      amount,
+      installmentContext,
+      Number.isFinite(requestedInstallmentNumber) ? requestedInstallmentNumber : null
+    );
 
-    if (amount > remainingBalance) {
-      return res.status(400).json({
-        message: `Amount cannot exceed remaining balance of ${remainingBalance}`
-      });
+    if (!installmentValidation.ok) {
+      return res.status(400).json({ message: installmentValidation.message });
     }
 
     // Public URL path (server serves local ./uploads at /uploads)
@@ -190,6 +236,7 @@ router.post(
     const payment = await Payment.create({
       member: req.user._id,
       amount,
+      installmentNumber: installmentValidation.installmentNumber,
       method: 'receipt',
       receiptPath: publicReceiptPath,
       receiptOriginalName: req.file.originalname,

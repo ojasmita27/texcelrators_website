@@ -26,6 +26,7 @@ const router = Router();
 const paymentSelect = [
   'member',
   'amount',
+  'installmentNumber',
   'method',
   'receiptPath',
   'receiptOriginalName',
