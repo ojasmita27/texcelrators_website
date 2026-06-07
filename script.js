@@ -558,11 +558,6 @@
             const openAddExpense = document.getElementById('openAddExpense');
             if (openAddExpense) openAddExpense.addEventListener('click', () => focusDashboardForm('expenses-section', '#expenseTitle'));
 
-            // demo: add a recent activity if empty (non-functional placeholder for visual polish only)
-            const txContainer = document.getElementById('transactions-container');
-            if (txContainer && txContainer.children.length === 0) {
-                addActivityEntry({ icon: 'fa-plus-circle', title: 'Dashboard ready', meta: 'UI upgraded to premium command center', ts: new Date().toLocaleString() });
-            }
         });
 
 // ====== HERO CAROUSEL CODE ======
@@ -2714,7 +2709,8 @@ function renderDashboardApp() {
             totalFunds: 0
         },
         paymentFlow: {
-            qrScanned: false
+            qrScanned: false,
+            amountToPay: 0
         },
         profileEditor: {
             isEditing: false,
@@ -2764,9 +2760,56 @@ function renderDashboardApp() {
         return {
             paidAmount: paid,
             remainingAmount: remaining,
-            nextDueAmount: remaining > 5000 ? 5000 : remaining,
+            nextDueAmount: remaining,
             progress: Number.isFinite(progress) ? progress : 0
         };
+    }
+
+    function getValidatedPaymentAmount() {
+        const remaining = getSafeNumber(state.memberFee.remainingAmount, 0);
+        const raw = elements.paymentAmountInput ? Number(elements.paymentAmountInput.value) : NaN;
+
+        if (!Number.isFinite(raw) || raw <= 0) {
+            return { valid: false, amount: 0, message: 'Enter a payment amount greater than 0.' };
+        }
+
+        if (raw > remaining) {
+            return {
+                valid: false,
+                amount: raw,
+                message: `Amount cannot exceed remaining balance of ${formatCurrency(remaining)}.`
+            };
+        }
+
+        return { valid: true, amount: raw, message: '' };
+    }
+
+    function syncPaymentAmountUI() {
+        if (userRole !== 'member') return;
+
+        const remaining = getSafeNumber(state.memberFee.remainingAmount, 0);
+        const validation = getValidatedPaymentAmount();
+
+        if (elements.paymentAmountHint) {
+            elements.paymentAmountHint.textContent = remaining > 0
+                ? `Maximum payable now: ${formatCurrency(remaining)}`
+                : 'No remaining balance to pay.';
+        }
+
+        if (elements.paymentAmountInput) {
+            elements.paymentAmountInput.max = remaining > 0 ? String(remaining) : '0';
+            elements.paymentAmountInput.disabled = remaining <= 0;
+        }
+
+        const displayAmount = validation.valid
+            ? validation.amount
+            : (remaining > 0 ? remaining : 0);
+
+        state.paymentFlow.amountToPay = validation.valid ? validation.amount : 0;
+
+        if (elements.amountToPay) {
+            elements.amountToPay.textContent = formatCurrency(displayAmount);
+        }
     }
 
     function applyMemberFeeSummary(totalFee, paidAmount) {
@@ -3013,6 +3056,8 @@ function renderDashboardApp() {
         memberPaymentHistoryBody: document.getElementById('memberPaymentHistoryBody'),
         memberPaymentHistoryEmpty: document.getElementById('memberPaymentHistoryEmpty'),
         paymentStatusChip: document.getElementById('paymentStatusChip'),
+        paymentAmountInput: document.getElementById('paymentAmountInput'),
+        paymentAmountHint: document.getElementById('paymentAmountHint'),
         copyUpiButton: document.getElementById('copyUpiButton'),
         clubUpiId: document.getElementById('clubUpiId'),
         adminPaymentForm: document.getElementById('adminPaymentForm'),
@@ -3085,6 +3130,8 @@ function renderDashboardApp() {
         if (elements.submitReceiptButton) {
             elements.submitReceiptButton.disabled = !hasRemaining;
         }
+
+        syncPaymentAmountUI();
 
         if (!elements.paymentFlowMessage) return;
 
@@ -3284,44 +3331,27 @@ function renderDashboardApp() {
 
     function getInstallmentsFromPaidAmount(paidAmount, totalFee) {
         const safeTotal = getSafeNumber(totalFee, 0);
-        const approvedPaid = getSafeNumber(paidAmount, 0);
-        const firstAmount = Math.min(5000, safeTotal);
-        const secondAmount = Math.min(5000, Math.max(0, safeTotal - firstAmount));
-        const thirdAmount = Math.max(0, safeTotal - firstAmount - secondAmount);
+        const approvedPaid = Math.min(getSafeNumber(paidAmount, 0), safeTotal);
+        const installmentRemaining = Math.max(0, safeTotal - approvedPaid);
 
-        const installmentDefs = [
-            { title: 'First installment', amount: firstAmount },
-            { title: 'Second installment', amount: secondAmount },
-            { title: 'Second year fee', amount: thirdAmount }
-        ];
+        let installmentStatus = 'DUE';
+        if (safeTotal > 0 && approvedPaid >= safeTotal) {
+            installmentStatus = 'COMPLETED';
+        } else if (approvedPaid > 0) {
+            installmentStatus = 'PARTIALLY PAID';
+        }
 
-        let remainingApprovedPool = approvedPaid;
+        if (safeTotal <= 0) return [];
 
-        return installmentDefs
-            .filter((installment) => installment.amount > 0)
-            .map((installment) => {
-                const installmentAmount = getSafeNumber(installment.amount, 0);
-                const installmentPaid = Math.min(remainingApprovedPool, installmentAmount);
-                remainingApprovedPool = Math.max(0, remainingApprovedPool - installmentPaid);
-                const installmentRemaining = Math.max(0, installmentAmount - installmentPaid);
-
-                let installmentStatus = 'DUE';
-                if (installmentPaid >= installmentAmount && installmentAmount > 0) {
-                    installmentStatus = 'COMPLETED';
-                } else if (installmentPaid > 0) {
-                    installmentStatus = 'PARTIALLY PAID';
-                }
-
-                return {
-                    title: installment.title,
-                    amount: installmentAmount,
-                    installmentPaid,
-                    installmentRemaining,
-                    installmentStatus,
-                    status: installmentStatus,
-                    paid: installmentStatus === 'COMPLETED'
-                };
-            });
+        return [{
+            title: 'Membership Fee',
+            amount: safeTotal,
+            installmentPaid: approvedPaid,
+            installmentRemaining,
+            installmentStatus,
+            status: installmentStatus,
+            paid: installmentStatus === 'COMPLETED'
+        }];
     }
 
     function refreshCurrentMemberFeeState() {
@@ -3639,22 +3669,29 @@ function renderDashboardApp() {
             const canModerate = normalizedStatus === 'pending';
 
             return `
-                <div class="collaboration-row">
-                    <div>
-                        <strong>${entry.fullName || 'Unknown'} · ${entry.roleInterested || 'Role not specified'}</strong>
-                        <span>${entry.email || '—'} | ${entry.phone || '—'} | ${entry.college || '—'}</span>
-                        <span>Skills: ${entry.skills || '—'}</span>
-                        <span>Reason: ${entry.collaborationReason || '—'}</span>
-                        <span>Submitted: ${formatDate(entry.submittedAt || entry.createdAt || new Date())}</span>
+                <article class="collaboration-card">
+                    <div class="collaboration-card-header">
+                        <div>
+                            <strong>${entry.fullName || 'Unknown'}</strong>
+                            <span class="collaboration-role">${entry.roleInterested || 'Role not specified'}</span>
+                        </div>
+                        <span class="status-chip ${statusClass}">${statusLabel}</span>
+                    </div>
+                    <div class="collaboration-card-grid">
+                        <div><span>Email</span><strong>${entry.email || '—'}</strong></div>
+                        <div><span>Phone</span><strong>${entry.phone || '—'}</strong></div>
+                        <div><span>College</span><strong>${entry.college || '—'}</strong></div>
+                        <div><span>Submission Date</span><strong>${formatDate(entry.submittedAt || entry.createdAt || new Date())}</strong></div>
+                        <div class="collaboration-span-2"><span>Skills</span><strong>${entry.skills || '—'}</strong></div>
+                        <div class="collaboration-span-2"><span>Reason</span><strong>${entry.collaborationReason || '—'}</strong></div>
                     </div>
                     <div class="collaboration-actions">
-                        <span class="status-chip ${statusClass}">${statusLabel}</span>
                         <button type="button" class="dashboard-button view-collaboration-btn" data-collaboration-id="${collaborationId}">View Details</button>
                         ${canModerate ? `<button type="button" class="dashboard-button primary approve-collaboration-btn" data-collaboration-id="${collaborationId}">Approve</button>` : ''}
                         ${canModerate ? `<button type="button" class="dashboard-button reject-collaboration-btn" data-collaboration-id="${collaborationId}">Reject</button>` : ''}
                         <button type="button" class="dashboard-button delete-collaboration-btn" data-collaboration-id="${collaborationId}">Delete</button>
                     </div>
-                </div>
+                </article>
             `;
         }).join('');
     }
@@ -3687,6 +3724,7 @@ function renderDashboardApp() {
             await apiRequest(`/api/collaboration/${collaborationId}/approve`, { method: 'POST' });
             await refreshDashboardFromApi();
             renderCollaborations();
+            renderFinance();
             showDashboardToast('Collaboration request approved.', 'success');
         } catch (err) {
             console.error('Approve collaboration failed:', err);
@@ -3703,6 +3741,7 @@ function renderDashboardApp() {
             await apiRequest(`/api/collaboration/${collaborationId}/reject`, { method: 'POST' });
             await refreshDashboardFromApi();
             renderCollaborations();
+            renderFinance();
             showDashboardToast('Collaboration request rejected.', 'success');
         } catch (err) {
             console.error('Reject collaboration failed:', err);
@@ -3719,6 +3758,7 @@ function renderDashboardApp() {
             await apiRequest(`/api/collaboration/${collaborationId}`, { method: 'DELETE' });
             await refreshDashboardFromApi();
             renderCollaborations();
+            renderFinance();
             showDashboardToast('Collaboration request deleted.', 'success');
         } catch (err) {
             console.error('Delete collaboration failed:', err);
@@ -4553,9 +4593,17 @@ function renderDashboardApp() {
             });
         }
 
-        if (elements.amountToPay) {
-            elements.amountToPay.textContent = formatCurrency(state.memberFee.nextDueAmount);
+        if (elements.paymentAmountInput) {
+            const remaining = state.memberFee.remainingAmount;
+            const currentValue = Number(elements.paymentAmountInput.value);
+            if (remaining <= 0) {
+                elements.paymentAmountInput.value = '';
+            } else if (!Number.isFinite(currentValue) || currentValue <= 0 || currentValue > remaining) {
+                elements.paymentAmountInput.value = String(remaining);
+            }
         }
+
+        syncPaymentAmountUI();
 
         if (elements.paymentStatusChip) {
             const paid = Number(state.memberFee.paidAmount) || 0;
@@ -5034,19 +5082,53 @@ function renderDashboardApp() {
         if (elements.totalExpensesCard) elements.totalExpensesCard.textContent = formatCurrency(state.finance.totalExpenses);
         if (elements.totalFundsCard) elements.totalFundsCard.textContent = formatCurrency(state.finance.totalFunds);
 
+        const totalMembers = Array.isArray(state.members) ? state.members.length : 0;
         const activeMembers = state.members.filter((member) => member.active !== false && member.status !== 'inactive' && member.status !== 'removed').length;
         const pendingVerifications = Array.isArray(state.payments) ? state.payments.filter((payment) => payment.status === 'pending').length : 0;
         const recentReceipts = Array.isArray(state.payments) ? state.payments.filter((payment) => Boolean(payment.receiptName || payment.receiptPreview)).length : 0;
+        const projectsCount = Array.isArray(state.enterprise?.projects) ? state.enterprise.projects.length : 0;
+        const eventsCount = Array.isArray(state.enterprise?.events) ? state.enterprise.events.length : 0;
+        const collaborationsCount = Array.isArray(state.collaborations) ? state.collaborations.length : 0;
+        const pendingReimbursements = Array.isArray(state.enterprise?.reimbursements)
+            ? state.enterprise.reimbursements.filter((claim) => ['submitted', 'under_review'].includes(String(claim.status || '').toLowerCase())).length
+            : 0;
 
-        if (elements.activeMembersCard) elements.activeMembersCard.textContent = activeMembers ? String(activeMembers) : '—';
-        if (elements.pendingVerificationsCard) elements.pendingVerificationsCard.textContent = pendingVerifications ? String(pendingVerifications) : '—';
-        if (elements.pendingVerificationsSmall) elements.pendingVerificationsSmall.textContent = pendingVerifications ? String(pendingVerifications) : '—';
+        const overviewTotalMembersCard = document.getElementById('overviewTotalMembersCard');
+        const overviewProjectsCard = document.getElementById('overviewProjectsCard');
+        const overviewEventsCard = document.getElementById('overviewEventsCard');
+        const overviewCollaborationsCard = document.getElementById('overviewCollaborationsCard');
+        const overviewPendingReimbursementsCard = document.getElementById('overviewPendingReimbursementsCard');
+
+        if (overviewTotalMembersCard) overviewTotalMembersCard.textContent = String(totalMembers);
+        if (elements.activeMembersCard) elements.activeMembersCard.textContent = String(activeMembers);
+        if (elements.pendingVerificationsCard) elements.pendingVerificationsCard.textContent = String(pendingVerifications);
+        if (elements.pendingVerificationsSmall) elements.pendingVerificationsSmall.textContent = String(pendingVerifications);
+        if (overviewProjectsCard) overviewProjectsCard.textContent = String(projectsCount);
+        if (overviewEventsCard) overviewEventsCard.textContent = String(eventsCount);
+        if (overviewCollaborationsCard) overviewCollaborationsCard.textContent = String(collaborationsCount);
+        if (overviewPendingReimbursementsCard) overviewPendingReimbursementsCard.textContent = String(pendingReimbursements);
         if (elements.recentReceiptsCount) elements.recentReceiptsCount.textContent = recentReceipts ? String(recentReceipts) : '—';
+
+        const totalExpensesKpi = document.getElementById('totalExpensesKpi');
+        const monthExpensesKpi = document.getElementById('monthExpensesKpi');
+        const pendingReimbursementsKpi = document.getElementById('pendingReimbursementsKpi');
+        const now = new Date();
+        const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+        const monthExpenseTotal = (state.expenses || []).reduce((sum, expense) => {
+            const expenseDate = expense.date ? new Date(expense.date) : null;
+            if (!expenseDate || Number.isNaN(expenseDate.getTime()) || expenseDate < monthStart) {
+                return sum;
+            }
+            return sum + (Number(expense.amount) || 0);
+        }, 0);
+
+        if (totalExpensesKpi) totalExpensesKpi.textContent = formatCurrency(state.finance.totalExpenses);
+        if (monthExpensesKpi) monthExpensesKpi.textContent = formatCurrency(monthExpenseTotal);
+        if (pendingReimbursementsKpi) pendingReimbursementsKpi.textContent = String(pendingReimbursements);
 
         const clubSummaryFundsCard = document.getElementById('clubSummaryFundsCard');
         const clubSummaryMembersCard = document.getElementById('clubSummaryMembersCard');
         const recentClubMembersList = document.getElementById('recentClubMembersList');
-        const totalMembers = Array.isArray(state.members) ? state.members.length : 0;
         const recentMembers = Array.isArray(state.members) ? state.members.slice(0, 5) : [];
 
         if (clubSummaryFundsCard) clubSummaryFundsCard.textContent = formatCurrency(Number(state.finance.totalFunds) || 0);
@@ -5067,9 +5149,15 @@ function renderDashboardApp() {
                 : '';
         }
 
-        if (elements.incomeBar) elements.incomeBar.style.width = `${Math.max(35, (state.finance.totalIncome / 70000) * 100)}%`;
-        if (elements.expenseBar) elements.expenseBar.style.width = `${Math.max(20, (state.finance.totalExpenses / 25000) * 100)}%`;
-        if (elements.netBar) elements.netBar.style.width = `${Math.max(25, (state.finance.totalFunds / 60000) * 100)}%`;
+        const financeMax = Math.max(
+            state.finance.totalIncome,
+            state.finance.totalExpenses,
+            state.finance.totalFunds,
+            1
+        );
+        if (elements.incomeBar) elements.incomeBar.style.width = `${Math.min(100, (state.finance.totalIncome / financeMax) * 100)}%`;
+        if (elements.expenseBar) elements.expenseBar.style.width = `${Math.min(100, (state.finance.totalExpenses / financeMax) * 100)}%`;
+        if (elements.netBar) elements.netBar.style.width = `${Math.min(100, Math.max(0, (state.finance.totalFunds / financeMax) * 100))}%`;
     }
 
     async function submitReceiptForVerification(file) {
@@ -5088,7 +5176,13 @@ function renderDashboardApp() {
             return;
         }
 
-        const paymentAmount = state.memberFee.nextDueAmount;
+        const amountValidation = getValidatedPaymentAmount();
+        if (!amountValidation.valid) {
+            alert(amountValidation.message || 'Enter a valid payment amount.');
+            return;
+        }
+
+        const paymentAmount = amountValidation.amount;
         const form = new FormData();
         form.append('amount', String(paymentAmount));
         form.append('notes', 'Receipt payment');
@@ -5689,6 +5783,9 @@ function renderDashboardApp() {
                 // show any sections that are linked to this target (e.g., club summary shown with analytics)
                 showLinkedSections(targetId);
                 updateDashboardWorkspaceState(targetId);
+                window.requestAnimationFrame(() => {
+                    targetSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                });
             });
         });
     }
@@ -5731,6 +5828,9 @@ function renderDashboardApp() {
         // show any linked sections
         showLinkedSections(targetId);
         updateDashboardWorkspaceState(targetId);
+        window.requestAnimationFrame(() => {
+            targetSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
     }
 
     // ===== PROJECT MANAGEMENT SYSTEM =====
@@ -6276,10 +6376,22 @@ function renderDashboardApp() {
             });
         }
 
+        if (elements.paymentAmountInput && userRole === 'member') {
+            elements.paymentAmountInput.addEventListener('input', () => {
+                syncPaymentAmountUI();
+            });
+        }
+
         if (elements.scanDoneButton && userRole === 'member') {
             elements.scanDoneButton.addEventListener('click', () => {
                 if (state.memberFee.remainingAmount <= 0) {
                     alert('No pending amount to pay.');
+                    return;
+                }
+
+                const amountValidation = getValidatedPaymentAmount();
+                if (!amountValidation.valid) {
+                    alert(amountValidation.message || 'Enter a valid payment amount.');
                     return;
                 }
 
@@ -6291,9 +6403,16 @@ function renderDashboardApp() {
         if (elements.paidButton && userRole === 'member') {
             elements.paidButton.addEventListener('click', () => {
                 if (!state.paymentFlow.qrScanned) {
-                    alert('Please scan the QR and click "I Have Scanned QR" first.');
+                    alert('Please scan the QR and click "Scanned QR" first.');
                     return;
                 }
+
+                const amountValidation = getValidatedPaymentAmount();
+                if (!amountValidation.valid) {
+                    alert(amountValidation.message || 'Enter a valid payment amount.');
+                    return;
+                }
+
                 elements.receiptInput?.click();
             });
         }
@@ -6472,6 +6591,26 @@ function renderDashboardApp() {
                 if (!exportButton) return;
                 downloadReport(exportButton.getAttribute('data-report-export'));
             });
+        }
+
+        const openAddMemberBtn = document.getElementById('openAddMember');
+        if (openAddMemberBtn && isAdminRole()) {
+            openAddMemberBtn.addEventListener('click', () => focusDashboardForm('members-section', '#addMemberName'));
+        }
+
+        const openAddPaymentBtn = document.getElementById('openAddPayment');
+        if (openAddPaymentBtn && isAdminRole()) {
+            openAddPaymentBtn.addEventListener('click', () => focusDashboardForm('admin', '#adminPaymentAmount'));
+        }
+
+        const openAddExpenseBtn = document.getElementById('openAddExpense');
+        if (openAddExpenseBtn && isAdminRole()) {
+            openAddExpenseBtn.addEventListener('click', () => focusDashboardForm('expenses-section', '#expenseTitle'));
+        }
+
+        const openPendingReceiptsBtn = document.getElementById('openPendingReceipts');
+        if (openPendingReceiptsBtn && isAdminRole()) {
+            openPendingReceiptsBtn.addEventListener('click', () => focusDashboardForm('receipt-verification-section'));
         }
 
         const collaborationsContainer = document.getElementById('collaborations-container');

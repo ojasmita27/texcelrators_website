@@ -1953,6 +1953,70 @@ body > * {
     }
 }
 
+.admin-overview-kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.85rem;
+}
+
+.admin-overview-section .overview-kpi-card {
+    min-height: 108px;
+    padding: 1rem 1.05rem;
+}
+
+.admin-overview-section .overview-kpi-card .metric-value {
+    font-size: 1.55rem;
+    font-weight: 800;
+    color: var(--text-primary);
+}
+
+.payment-amount-entry {
+    display: grid;
+    gap: 0.4rem;
+    margin-bottom: 0.85rem;
+}
+
+.payment-amount-entry label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+}
+
+.payment-amount-entry input {
+    width: 100%;
+    max-width: 280px;
+    min-height: 48px;
+    padding: 12px 14px;
+    border-radius: 12px;
+    border: 1.5px solid rgba(0, 212, 255, 0.12);
+    background: rgba(0, 99, 255, 0.08);
+    color: var(--text-primary);
+    box-sizing: border-box;
+}
+
+.payment-amount-hint {
+    color: var(--text-secondary);
+    font-size: 0.82rem;
+}
+
+.action-metric-link {
+    width: 100%;
+    text-align: left;
+    border: 1px solid rgba(0, 212, 255, 0.12);
+    background: rgba(0, 99, 255, 0.04);
+    border-radius: 14px;
+    padding: 0.85rem 1rem;
+    cursor: pointer;
+    transition: border-color 180ms ease, background 180ms ease;
+}
+
+.action-metric-link:hover {
+    border-color: rgba(0, 212, 255, 0.28);
+    background: rgba(0, 99, 255, 0.08);
+}
+
 .collaboration-summary-grid {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -1965,34 +2029,69 @@ body > * {
     gap: 0.85rem;
 }
 
-.collaboration-row {
+.collaboration-card {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    gap: 1rem;
-    align-items: start;
+    gap: 0.85rem;
     padding: 1rem 1.1rem;
     border-radius: 14px;
     border: 1px solid rgba(0, 212, 255, 0.12);
     background: rgba(0, 99, 255, 0.04);
 }
 
-.collaboration-row strong {
-    display: block;
-    margin-bottom: 0.35rem;
+.collaboration-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 0.75rem;
+    flex-wrap: wrap;
 }
 
-.collaboration-row span {
+.collaboration-card-header strong {
+    display: block;
+    font-size: 1rem;
+}
+
+.collaboration-role {
     display: block;
     color: var(--text-secondary);
-    font-size: 0.88rem;
-    line-height: 1.45;
+    font-size: 0.86rem;
+    margin-top: 0.2rem;
+}
+
+.collaboration-card-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem 1rem;
+}
+
+.collaboration-card-grid > div {
+    display: grid;
+    gap: 0.2rem;
+    min-width: 0;
+}
+
+.collaboration-card-grid span {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-secondary);
+    font-weight: 700;
+}
+
+.collaboration-card-grid strong {
+    font-size: 0.92rem;
+    line-height: 1.4;
+    word-break: break-word;
+}
+
+.collaboration-span-2 {
+    grid-column: 1 / -1;
 }
 
 .collaboration-actions {
     display: flex;
     flex-wrap: wrap;
     gap: 0.5rem;
-    justify-content: flex-end;
     align-items: center;
 }
 
@@ -10444,15 +10543,13 @@ html::before {
     .expense-layout-grid,
     .expense-kpi-grid,
     .expense-form,
-    .collaboration-summary-grid {
+    .collaboration-summary-grid,
+    .admin-overview-kpi-grid,
+    .collaboration-card-grid {
         grid-template-columns: 1fr;
     }
 
     .dashboard-page #expenses-section .expenses-admin-form {
-        grid-template-columns: 1fr;
-    }
-
-    .collaboration-row {
         grid-template-columns: 1fr;
     }
 

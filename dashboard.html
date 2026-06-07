@@ -126,6 +126,49 @@
                 </div>
             </section>
 
+            <section class="panel glass-panel premium-panel full-width-section admin-overview-section" id="admin-overview-section" data-dashboard-section data-for-roles="admin" data-dashboard-show-with="analytics">
+                <div class="panel-header premium-header">
+                    <div class="header-left">
+                        <h3><i class="fas fa-gauge-high"></i> Overview Dashboard</h3>
+                        <p>Live club metrics from MongoDB.</p>
+                    </div>
+                </div>
+                <div class="admin-overview-kpi-grid">
+                    <article class="metric-card premium-metric-card overview-kpi-card">
+                        <div class="metric-top"><i class="fas fa-users metric-icon" aria-hidden="true"></i><div class="metric-label">Total Members</div></div>
+                        <strong id="overviewTotalMembersCard" class="metric-value">0</strong>
+                    </article>
+                    <article class="metric-card premium-metric-card overview-kpi-card">
+                        <div class="metric-top"><i class="fas fa-user-check metric-icon" aria-hidden="true"></i><div class="metric-label">Active Members</div></div>
+                        <strong id="activeMembersCard" class="metric-value">0</strong>
+                    </article>
+                    <article class="metric-card premium-metric-card overview-kpi-card">
+                        <div class="metric-top"><i class="fas fa-wallet metric-icon" aria-hidden="true"></i><div class="metric-label">Total Funds</div></div>
+                        <strong id="totalFundsCard" class="metric-value">₹0</strong>
+                    </article>
+                    <article class="metric-card premium-metric-card overview-kpi-card">
+                        <div class="metric-top"><i class="fas fa-clock metric-icon" aria-hidden="true"></i><div class="metric-label">Pending Payments</div></div>
+                        <strong id="pendingVerificationsCard" class="metric-value">0</strong>
+                    </article>
+                    <article class="metric-card premium-metric-card overview-kpi-card">
+                        <div class="metric-top"><i class="fas fa-robot metric-icon" aria-hidden="true"></i><div class="metric-label">Projects</div></div>
+                        <strong id="overviewProjectsCard" class="metric-value">0</strong>
+                    </article>
+                    <article class="metric-card premium-metric-card overview-kpi-card">
+                        <div class="metric-top"><i class="fas fa-calendar metric-icon" aria-hidden="true"></i><div class="metric-label">Events</div></div>
+                        <strong id="overviewEventsCard" class="metric-value">0</strong>
+                    </article>
+                    <article class="metric-card premium-metric-card overview-kpi-card">
+                        <div class="metric-top"><i class="fas fa-handshake metric-icon" aria-hidden="true"></i><div class="metric-label">Collaborations</div></div>
+                        <strong id="overviewCollaborationsCard" class="metric-value">0</strong>
+                    </article>
+                    <article class="metric-card premium-metric-card overview-kpi-card">
+                        <div class="metric-top"><i class="fas fa-receipt metric-icon" aria-hidden="true"></i><div class="metric-label">Pending Reimbursements</div></div>
+                        <strong id="overviewPendingReimbursementsCard" class="metric-value">0</strong>
+                    </article>
+                </div>
+            </section>
+
             <!-- ANALYTICS MODULE (Large chart + supporting visuals) -->
             <section class="panel glass-panel analytics-panel premium-analytics" id="analytics" data-dashboard-section>
                 <div class="panel-header premium-header">
@@ -214,6 +257,11 @@
 
                         <section class="member-payment-block payment-qr-block" id="payment-qr">
                             <h4>QR Payment</h4>
+                            <div class="payment-amount-entry">
+                                <label for="paymentAmountInput">Amount to Pay</label>
+                                <input type="number" id="paymentAmountInput" min="1" step="1" placeholder="Enter amount" inputmode="numeric">
+                                <small id="paymentAmountHint" class="payment-amount-hint">Enter any amount up to your remaining balance.</small>
+                            </div>
                             <div class="qr-compact">
                                 <div id="qrCode" class="qr-code"></div>
                                 <div class="qr-details">
@@ -684,10 +732,10 @@
                     </button>
                 </div>
                 <div class="small-metrics premium-small-metrics">
-                    <div class="small-metric premium-small-metric">
-                        <div class="metric-heading"><i class="fas fa-clock"></i> Pending</div>
+                    <button type="button" class="small-metric premium-small-metric action-metric-link" id="openPendingReceipts" data-target-section="receipt-verification-section">
+                        <div class="metric-heading"><i class="fas fa-clock"></i> Pending Receipts</div>
                         <strong id="pendingVerificationsSmall">—</strong>
-                    </div>
+                    </button>
                     <div class="small-metric premium-small-metric">
                         <div class="metric-heading"><i class="fas fa-file-pdf"></i> Receipts</div>
                         <strong id="recentReceiptsCount">—</strong>

@@ -167,6 +167,20 @@ router.post(
       return res.status(400).json({ message: 'receipt file is required' });
     }
 
+    const memberTotalFee = Number.parseInt(String(process.env.MEMBER_TOTAL_FEE || ''), 10) || 13500;
+    const approvedSum = await Payment.aggregate([
+      { $match: { member: req.user._id, status: 'approved' } },
+      { $group: { _id: null, total: { $sum: '$amount' } } }
+    ]);
+    const approvedTotal = approvedSum[0]?.total || 0;
+    const remainingBalance = Math.max(0, memberTotalFee - approvedTotal);
+
+    if (amount > remainingBalance) {
+      return res.status(400).json({
+        message: `Amount cannot exceed remaining balance of ${remainingBalance}`
+      });
+    }
+
     // Public URL path (server serves local ./uploads at /uploads)
     // Default RECEIPT_UPLOAD_DIR=uploads/receipts -> public path /uploads/receipts/<file>
     const uploadDir = String(process.env.RECEIPT_UPLOAD_DIR || 'uploads/receipts').replace(/\\/g, '/');

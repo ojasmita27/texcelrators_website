@@ -43,7 +43,6 @@ const PaymentSchema = new mongoose.Schema(
 PaymentSchema.index({ member: 1, submittedAt: -1 });
 PaymentSchema.index({ status: 1, submittedAt: -1 });
 
-PaymentSchema.index({ receiptNumber: 1 }, { unique: true, sparse: true });
 const Payment = mongoose.model('Payment', PaymentSchema);
 
 module.exports = { Payment };
