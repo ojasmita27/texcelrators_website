@@ -40,7 +40,7 @@ function formatAmount(amount) {
 }
 
 function buildReceiptNumber(year, sequence) {
-  return `TXC-${year}-${String(sequence).padStart(4, '0')}`;
+  return `TXC-${year}-${String(sequence).padStart(6, '0')}`;
 }
 
 function wrapText(text, maxChars) {

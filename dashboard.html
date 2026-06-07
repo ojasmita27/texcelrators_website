@@ -58,6 +58,7 @@
                 <a href="#contribution-analytics-section" data-sidebar-link data-target="contribution-analytics-section" data-for-roles="admin"><i class="fas fa-star"></i><span>Contributors</span></a>
                 <a href="#members-section" data-sidebar-link data-target="members-section" data-for-roles="admin"><i class="fas fa-users"></i><span>Members</span></a>
                 <a href="#expenses-section" data-sidebar-link data-target="expenses-section" data-for-roles="admin"><i class="fas fa-file-invoice-dollar"></i><span>Expenses</span></a>
+                <a href="#collaborations-section" data-sidebar-link data-target="collaborations-section" data-for-roles="admin"><i class="fas fa-handshake"></i><span>Collaborations</span></a>
                 <a href="#receipt-verification-section" data-sidebar-link data-target="receipt-verification-section" data-for-roles="admin"><i class="fas fa-clipboard-check"></i><span>Verification</span></a>
                 <a href="#reports-section" data-sidebar-link data-target="reports-section" data-for-roles="admin"><i class="fas fa-file-excel"></i><span>Reports</span></a>
                 <a href="#admin" data-sidebar-link data-target="admin" data-for-roles="admin"><i class="fas fa-user-shield"></i><span>Admin</span></a>
@@ -300,19 +301,31 @@
                                 </div>
                             </div>
 
-                            <form id="expenseForm" class="card-form compact expense-form">
-                                <input type="text" id="expenseTitle" placeholder="Expense title" required>
-                                <input type="number" id="expenseAmount" placeholder="Amount" min="1" required>
-                                <input type="date" id="expenseDate" required>
-                                <select id="expenseCategory">
-                                    <option value="">Category</option>
-                                    <option value="parts">Parts</option>
-                                    <option value="materials">Materials</option>
-                                    <option value="tools">Tools</option>
-                                    <option value="transport">Transport</option>
-                                    <option value="venue">Venue</option>
-                                    <option value="other">Other</option>
-                                </select>
+                            <form id="expenseForm" class="card-form compact expenses-admin-form">
+                                <div class="expenses-admin-field">
+                                    <label for="expenseTitle">Expense title</label>
+                                    <input type="text" id="expenseTitle" placeholder="Expense title" required>
+                                </div>
+                                <div class="expenses-admin-field">
+                                    <label for="expenseAmount">Amount</label>
+                                    <input type="number" id="expenseAmount" placeholder="Amount" min="1" required>
+                                </div>
+                                <div class="expenses-admin-field">
+                                    <label for="expenseDate">Date</label>
+                                    <input type="date" id="expenseDate" required>
+                                </div>
+                                <div class="expenses-admin-field">
+                                    <label for="expenseCategory">Category</label>
+                                    <select id="expenseCategory">
+                                        <option value="">Category</option>
+                                        <option value="parts">Parts</option>
+                                        <option value="materials">Materials</option>
+                                        <option value="tools">Tools</option>
+                                        <option value="transport">Transport</option>
+                                        <option value="venue">Venue</option>
+                                        <option value="other">Other</option>
+                                    </select>
+                                </div>
                                 <button type="submit" class="dashboard-button primary expense-submit-btn"><i class="fas fa-plus"></i> Add</button>
                             </form>
                         </div>
@@ -336,6 +349,46 @@
                             </div>
                         </div>
                     </div>
+                </section>
+
+                <section class="panel glass-panel premium-panel" id="collaborations-section" data-dashboard-section data-for-roles="admin">
+                    <div class="panel-header premium-header">
+                        <div class="header-left">
+                            <h3><i class="fas fa-handshake"></i> Collaboration Requests</h3>
+                            <p>Review inbound collaboration inquiries from MongoDB.</p>
+                        </div>
+                    </div>
+                    <div class="collaboration-summary-grid" id="collaboration-summary-grid">
+                        <div class="kpi-card premium-kpi-card">
+                            <div class="kpi-icon"><i class="fas fa-inbox"></i></div>
+                            <div class="kpi-content">
+                                <div class="kpi-label">Total Requests</div>
+                                <div class="kpi-value" id="collaborationTotalKpi">0</div>
+                            </div>
+                        </div>
+                        <div class="kpi-card premium-kpi-card">
+                            <div class="kpi-icon"><i class="fas fa-clock"></i></div>
+                            <div class="kpi-content">
+                                <div class="kpi-label">Pending</div>
+                                <div class="kpi-value" id="collaborationPendingKpi">0</div>
+                            </div>
+                        </div>
+                        <div class="kpi-card premium-kpi-card">
+                            <div class="kpi-icon"><i class="fas fa-check"></i></div>
+                            <div class="kpi-content">
+                                <div class="kpi-label">Approved</div>
+                                <div class="kpi-value" id="collaborationApprovedKpi">0</div>
+                            </div>
+                        </div>
+                        <div class="kpi-card premium-kpi-card">
+                            <div class="kpi-icon"><i class="fas fa-times"></i></div>
+                            <div class="kpi-content">
+                                <div class="kpi-label">Rejected</div>
+                                <div class="kpi-value" id="collaborationRejectedKpi">0</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="collaborations-container" class="collaborations-list"></div>
                 </section>
 
                 <section class="panel glass-panel premium-panel" id="reports-section" data-dashboard-section data-for-roles="admin">

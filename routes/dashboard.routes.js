@@ -6,13 +6,14 @@ const { Expense } = require('../models/Expense');
 
 // NEW: Import enterprise financial models
 const mongoose = require('mongoose');
-let MemberTransaction, Reimbursement, Project, Event;
+let MemberTransaction, Reimbursement, Project, Event, Collaboration;
 
 try {
   MemberTransaction = require('../models/MemberTransaction').MemberTransaction;
   Reimbursement = require('../models/Reimbursement').Reimbursement;
   Project = require('../models/Project').Project;
   Event = require('../models/Event').Event;
+  Collaboration = require('../models/Collaboration');
 } catch (err) {
   // Models might not be loaded yet in some scenarios
   console.log('Note: Enterprise models not fully available');
@@ -203,6 +204,9 @@ router.get(
       const expensesTotal = totalExpenses[0]?.total || 0;
 
       const enterpriseData = await loadEnterpriseData(req.user, true);
+      const collaborations = Collaboration
+        ? await Collaboration.find().sort({ submittedAt: -1 }).limit(500).lean()
+        : [];
 
       return res.json({
         user: req.user.toSafeJSON(),
@@ -213,6 +217,7 @@ router.get(
         payments: recentPayments,
         pendingPayments,
         expenses,
+        collaborations,
         summary: {
           paymentsApprovedTotal: paymentsTotal,
           expensesTotal,

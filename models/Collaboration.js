@@ -55,8 +55,8 @@ const CollaborationSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ['new', 'reviewed', 'contacted', 'rejected'],
-      default: 'new'
+      enum: ['new', 'pending', 'reviewed', 'contacted', 'approved', 'rejected'],
+      default: 'pending'
     },
     submittedAt: {
       type: Date,

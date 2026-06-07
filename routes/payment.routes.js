@@ -26,8 +26,23 @@ function getPersonLabel(person, fallback = 'N/A') {
 
 async function getNextReceiptSequence(year) {
   const prefix = `TXC-${year}-`;
-  const count = await Payment.countDocuments({ receiptNumber: new RegExp(`^${prefix}`) });
-  return count + 1;
+  const escapedPrefix = prefix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const payments = await Payment.find({
+    receiptNumber: { $regex: `^${escapedPrefix}\\d+$` }
+  })
+    .select('receiptNumber')
+    .lean();
+
+  let maxSequence = 0;
+  payments.forEach((entry) => {
+    const suffix = String(entry.receiptNumber || '').slice(prefix.length);
+    const sequence = Number.parseInt(suffix, 10);
+    if (Number.isFinite(sequence) && sequence > maxSequence) {
+      maxSequence = sequence;
+    }
+  });
+
+  return maxSequence + 1;
 }
 
 async function removeGeneratedPdf(filePath) {
@@ -51,7 +66,7 @@ async function generateReceiptForApprovedPayment(payment, approver) {
     : 'N/A';
   const approverName = getPersonLabel(approver, 'Admin');
 
-  for (let attempt = 0; attempt < 3; attempt += 1) {
+  for (let attempt = 0; attempt < 5; attempt += 1) {
     const receiptYear = generatedAt.getFullYear();
     const sequence = await getNextReceiptSequence(receiptYear);
     const receiptNumber = buildReceiptNumber(receiptYear, sequence);

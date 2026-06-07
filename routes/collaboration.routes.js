@@ -1,8 +1,21 @@
 const { Router } = require('express');
 const { asyncHandler } = require('../utils/asyncHandler');
 const Collaboration = require('../models/Collaboration');
+const { requireAuth, requireRole, blockIfMustChangePassword } = require('../middleware/auth');
 
 const router = Router();
+
+const VALID_ROLES = [
+  'Technical Team',
+  'Designing Team',
+  'Fabrication Team',
+  'Media Team',
+  'Management Team',
+  'Sponsorship / Partnership',
+  'Volunteer',
+  'Event Collaboration',
+  'Other'
+];
 
 /**
  * POST /api/collaboration
@@ -13,7 +26,6 @@ router.post(
   asyncHandler(async (req, res) => {
     const { fullName, email, phone, college, roleInterested, skills, collaborationReason, portfolioLink } = req.body || {};
 
-    // Validate required fields
     if (!fullName || !email || !phone || !college || !roleInterested || !skills || !collaborationReason) {
       return res.status(400).json({
         success: false,
@@ -21,7 +33,6 @@ router.post(
       });
     }
 
-    // Validate email format (basic)
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       return res.status(400).json({
@@ -30,7 +41,6 @@ router.post(
       });
     }
 
-    // Normalize inputs
     const trimmedName = String(fullName).trim();
     const trimmedEmail = String(email).toLowerCase().trim();
     const trimmedPhone = String(phone).trim();
@@ -40,26 +50,13 @@ router.post(
     const trimmedReason = String(collaborationReason).trim();
     const trimmedPortfolio = portfolioLink ? String(portfolioLink).trim() : null;
 
-    // Validate role
-    const validRoles = [
-      'Technical Team',
-      'Designing Team',
-      'Fabrication Team',
-      'Media Team',
-      'Management Team',
-      'Sponsorship / Partnership',
-      'Volunteer',
-      'Event Collaboration',
-      'Other'
-    ];
-    if (!validRoles.includes(trimmedRole)) {
+    if (!VALID_ROLES.includes(trimmedRole)) {
       return res.status(400).json({
         success: false,
         message: 'Invalid role selected'
       });
     }
 
-    // Check for duplicate submissions (same email in last 24 hours)
     const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
     const recentSubmission = await Collaboration.findOne({
       email: trimmedEmail,
@@ -73,8 +70,7 @@ router.post(
       });
     }
 
-    // Create new collaboration document
-    const collaboration = new Collaboration({
+    const collaboration = await Collaboration.create({
       fullName: trimmedName,
       email: trimmedEmail,
       phone: trimmedPhone,
@@ -83,10 +79,8 @@ router.post(
       skills: trimmedSkills,
       collaborationReason: trimmedReason,
       portfolioLink: trimmedPortfolio,
-      status: 'new'
+      status: 'pending'
     });
-
-    await collaboration.save();
 
     return res.status(201).json({
       success: true,
@@ -101,17 +95,82 @@ router.post(
 );
 
 /**
- * GET /api/collaboration (Optional - for future admin dashboard)
- * Get all collaboration inquiries (admin only - not implemented yet)
+ * GET /api/collaboration
+ * Admin: list all collaboration requests
  */
 router.get(
   '/',
+  requireAuth,
+  requireRole('admin'),
+  blockIfMustChangePassword,
   asyncHandler(async (req, res) => {
-    // Reserved for future admin authentication
-    return res.status(501).json({
-      success: false,
-      message: 'Admin endpoint not yet implemented'
-    });
+    const collaborations = await Collaboration.find()
+      .sort({ submittedAt: -1 })
+      .limit(500)
+      .lean();
+
+    return res.json({ collaborations });
+  })
+);
+
+/**
+ * POST /api/collaboration/:id/approve
+ */
+router.post(
+  '/:id/approve',
+  requireAuth,
+  requireRole('admin'),
+  blockIfMustChangePassword,
+  asyncHandler(async (req, res) => {
+    const collaboration = await Collaboration.findById(req.params.id);
+    if (!collaboration) {
+      return res.status(404).json({ success: false, message: 'Collaboration request not found' });
+    }
+
+    collaboration.status = 'approved';
+    await collaboration.save();
+
+    return res.json({ success: true, message: 'Collaboration request approved', collaboration });
+  })
+);
+
+/**
+ * POST /api/collaboration/:id/reject
+ */
+router.post(
+  '/:id/reject',
+  requireAuth,
+  requireRole('admin'),
+  blockIfMustChangePassword,
+  asyncHandler(async (req, res) => {
+    const collaboration = await Collaboration.findById(req.params.id);
+    if (!collaboration) {
+      return res.status(404).json({ success: false, message: 'Collaboration request not found' });
+    }
+
+    collaboration.status = 'rejected';
+    await collaboration.save();
+
+    return res.json({ success: true, message: 'Collaboration request rejected', collaboration });
+  })
+);
+
+/**
+ * DELETE /api/collaboration/:id
+ */
+router.delete(
+  '/:id',
+  requireAuth,
+  requireRole('admin'),
+  blockIfMustChangePassword,
+  asyncHandler(async (req, res) => {
+    const collaboration = await Collaboration.findById(req.params.id);
+    if (!collaboration) {
+      return res.status(404).json({ success: false, message: 'Collaboration request not found' });
+    }
+
+    await collaboration.deleteOne();
+    return res.json({ success: true, message: 'Collaboration request deleted' });
   })
 );
 

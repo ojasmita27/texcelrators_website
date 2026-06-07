@@ -2707,6 +2707,7 @@ function renderDashboardApp() {
             events: [],
             contributionStats: {}
         },
+        collaborations: [],
         finance: {
             totalIncome: 0,
             totalExpenses: 0,
@@ -2864,6 +2865,7 @@ function renderDashboardApp() {
         }
 
         state.expenses = Array.isArray(data.expenses) ? data.expenses.map(mapApiExpense) : [];
+        state.collaborations = Array.isArray(data.collaborations) ? data.collaborations : [];
         state.enterprise = data && data.enterprise ? data.enterprise : {
             memberTransactions: [],
             reimbursements: [],
@@ -3569,6 +3571,161 @@ function renderDashboardApp() {
                 </div>
             </div>
         `;
+    }
+
+    function getCollaborationId(entry) {
+        return String(entry && (entry._id || entry.id) ? (entry._id || entry.id) : '');
+    }
+
+    function normalizeCollaborationStatus(status) {
+        const normalized = String(status || 'pending').toLowerCase();
+        if (normalized === 'new' || normalized === 'pending') return 'pending';
+        if (normalized === 'approved' || normalized === 'reviewed' || normalized === 'contacted') return 'approved';
+        if (normalized === 'rejected') return 'rejected';
+        return 'pending';
+    }
+
+    function formatCollaborationStatusLabel(status) {
+        const normalized = normalizeCollaborationStatus(status);
+        if (normalized === 'approved') return 'Approved';
+        if (normalized === 'rejected') return 'Rejected';
+        return 'Pending';
+    }
+
+    function getCollaborationStatusClass(status) {
+        const normalized = normalizeCollaborationStatus(status);
+        if (normalized === 'approved') return 'status-approved';
+        if (normalized === 'rejected') return 'status-rejected';
+        return 'status-pending';
+    }
+
+    function renderCollaborations() {
+        const container = document.getElementById('collaborations-container');
+        if (!container || !isAdminRole()) return;
+
+        const collaborations = Array.isArray(state.collaborations) ? state.collaborations : [];
+        const summary = {
+            total: collaborations.length,
+            pending: 0,
+            approved: 0,
+            rejected: 0
+        };
+
+        collaborations.forEach((entry) => {
+            const bucket = normalizeCollaborationStatus(entry.status);
+            summary[bucket] += 1;
+        });
+
+        const totalKpi = document.getElementById('collaborationTotalKpi');
+        const pendingKpi = document.getElementById('collaborationPendingKpi');
+        const approvedKpi = document.getElementById('collaborationApprovedKpi');
+        const rejectedKpi = document.getElementById('collaborationRejectedKpi');
+
+        if (totalKpi) totalKpi.textContent = String(summary.total);
+        if (pendingKpi) pendingKpi.textContent = String(summary.pending);
+        if (approvedKpi) approvedKpi.textContent = String(summary.approved);
+        if (rejectedKpi) rejectedKpi.textContent = String(summary.rejected);
+
+        if (collaborations.length === 0) {
+            container.innerHTML = '<div class="receipt-empty">No collaboration requests yet.</div>';
+            return;
+        }
+
+        container.innerHTML = collaborations.map((entry) => {
+            const collaborationId = getCollaborationId(entry);
+            const statusLabel = formatCollaborationStatusLabel(entry.status);
+            const statusClass = getCollaborationStatusClass(entry.status);
+            const normalizedStatus = normalizeCollaborationStatus(entry.status);
+            const canModerate = normalizedStatus === 'pending';
+
+            return `
+                <div class="collaboration-row">
+                    <div>
+                        <strong>${entry.fullName || 'Unknown'} · ${entry.roleInterested || 'Role not specified'}</strong>
+                        <span>${entry.email || '—'} | ${entry.phone || '—'} | ${entry.college || '—'}</span>
+                        <span>Skills: ${entry.skills || '—'}</span>
+                        <span>Reason: ${entry.collaborationReason || '—'}</span>
+                        <span>Submitted: ${formatDate(entry.submittedAt || entry.createdAt || new Date())}</span>
+                    </div>
+                    <div class="collaboration-actions">
+                        <span class="status-chip ${statusClass}">${statusLabel}</span>
+                        <button type="button" class="dashboard-button view-collaboration-btn" data-collaboration-id="${collaborationId}">View Details</button>
+                        ${canModerate ? `<button type="button" class="dashboard-button primary approve-collaboration-btn" data-collaboration-id="${collaborationId}">Approve</button>` : ''}
+                        ${canModerate ? `<button type="button" class="dashboard-button reject-collaboration-btn" data-collaboration-id="${collaborationId}">Reject</button>` : ''}
+                        <button type="button" class="dashboard-button delete-collaboration-btn" data-collaboration-id="${collaborationId}">Delete</button>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    function viewCollaborationDetails(collaborationId) {
+        const entry = (state.collaborations || []).find((item) => getCollaborationId(item) === String(collaborationId));
+        if (!entry) {
+            alert('Collaboration request not found.');
+            return;
+        }
+
+        const lines = [
+            `Full Name: ${entry.fullName || '—'}`,
+            `Email: ${entry.email || '—'}`,
+            `Phone: ${entry.phone || '—'}`,
+            `College: ${entry.college || '—'}`,
+            `Role Interested: ${entry.roleInterested || '—'}`,
+            `Skills: ${entry.skills || '—'}`,
+            `Collaboration Reason: ${entry.collaborationReason || '—'}`,
+            `Portfolio: ${entry.portfolioLink || '—'}`,
+            `Submission Date: ${formatDate(entry.submittedAt || entry.createdAt || new Date())}`,
+            `Status: ${formatCollaborationStatusLabel(entry.status)}`
+        ];
+
+        alert(lines.join('\n'));
+    }
+
+    async function approveCollaborationRequest(collaborationId) {
+        try {
+            await apiRequest(`/api/collaboration/${collaborationId}/approve`, { method: 'POST' });
+            await refreshDashboardFromApi();
+            renderCollaborations();
+            showDashboardToast('Collaboration request approved.', 'success');
+        } catch (err) {
+            console.error('Approve collaboration failed:', err);
+            if (!handleAuthFailure(err)) {
+                alert(err.message || 'Failed to approve collaboration request');
+            }
+        }
+    }
+
+    async function rejectCollaborationRequest(collaborationId) {
+        if (!confirm('Reject this collaboration request?')) return;
+
+        try {
+            await apiRequest(`/api/collaboration/${collaborationId}/reject`, { method: 'POST' });
+            await refreshDashboardFromApi();
+            renderCollaborations();
+            showDashboardToast('Collaboration request rejected.', 'success');
+        } catch (err) {
+            console.error('Reject collaboration failed:', err);
+            if (!handleAuthFailure(err)) {
+                alert(err.message || 'Failed to reject collaboration request');
+            }
+        }
+    }
+
+    async function deleteCollaborationRequest(collaborationId) {
+        if (!confirm('Delete this collaboration request permanently?')) return;
+
+        try {
+            await apiRequest(`/api/collaboration/${collaborationId}`, { method: 'DELETE' });
+            await refreshDashboardFromApi();
+            renderCollaborations();
+            showDashboardToast('Collaboration request deleted.', 'success');
+        } catch (err) {
+            console.error('Delete collaboration failed:', err);
+            if (!handleAuthFailure(err)) {
+                alert(err.message || 'Failed to delete collaboration request');
+            }
+        }
     }
 
     function renderAnnouncements() {
@@ -6317,6 +6474,32 @@ function renderDashboardApp() {
             });
         }
 
+        const collaborationsContainer = document.getElementById('collaborations-container');
+        if (collaborationsContainer && isAdminRole()) {
+            collaborationsContainer.addEventListener('click', (event) => {
+                const viewButton = event.target.closest('.view-collaboration-btn');
+                const approveButton = event.target.closest('.approve-collaboration-btn');
+                const rejectButton = event.target.closest('.reject-collaboration-btn');
+                const deleteButton = event.target.closest('.delete-collaboration-btn');
+
+                if (viewButton) {
+                    viewCollaborationDetails(viewButton.getAttribute('data-collaboration-id'));
+                }
+
+                if (approveButton) {
+                    approveCollaborationRequest(approveButton.getAttribute('data-collaboration-id'));
+                }
+
+                if (rejectButton) {
+                    rejectCollaborationRequest(rejectButton.getAttribute('data-collaboration-id'));
+                }
+
+                if (deleteButton) {
+                    deleteCollaborationRequest(deleteButton.getAttribute('data-collaboration-id'));
+                }
+            });
+        }
+
         if (elements.receiptVerificationContainer && isAdminRole()) {
             elements.receiptVerificationContainer.addEventListener('click', (event) => {
                 const viewButton = event.target.closest('.view-payment-receipt-btn');
@@ -6444,6 +6627,7 @@ function renderDashboardApp() {
         renderReimbursements();
         renderContributionAnalytics();
         renderAnnouncements();
+        renderCollaborations();
         renderMemberProfile();
         renderRulesPortal();
         // Build and populate charts from freshest state

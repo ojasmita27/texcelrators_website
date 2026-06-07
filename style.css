@@ -1891,7 +1891,109 @@ body > * {
 .status-pill.rejected { background: rgba(255,107,107,0.12); color:var(--danger-color); border:1px solid rgba(255,107,107,0.24); }
 
 .expense-section {
-    overflow: hidden;
+    overflow: visible;
+}
+
+.dashboard-page #expenses-section .expenses-admin-form {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.85rem;
+    align-items: end;
+    width: 100%;
+}
+
+.dashboard-page #expenses-section .expenses-admin-field {
+    display: grid;
+    gap: 0.35rem;
+    min-width: 0;
+}
+
+.dashboard-page #expenses-section .expenses-admin-field label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+}
+
+.dashboard-page #expenses-section .expenses-admin-form input,
+.dashboard-page #expenses-section .expenses-admin-form select {
+    width: 100%;
+    min-width: 0;
+    min-height: 48px;
+    padding: 12px 14px;
+    border-radius: 12px;
+    border: 1.5px solid rgba(0, 212, 255, 0.12);
+    background: rgba(0, 99, 255, 0.08);
+    color: var(--text-primary);
+    font-size: 0.95rem;
+    box-sizing: border-box;
+}
+
+.dashboard-page #expenses-section .expenses-admin-form select {
+    appearance: auto;
+}
+
+.dashboard-page #expenses-section .expenses-admin-form .expense-submit-btn {
+    grid-column: 1 / -1;
+    justify-self: start;
+    min-height: 48px;
+    white-space: nowrap;
+}
+
+@media (min-width: 1100px) {
+    .dashboard-page #expenses-section .expenses-admin-form {
+        grid-template-columns: minmax(0, 1.35fr) minmax(0, 0.85fr) minmax(0, 0.95fr) minmax(0, 1fr) auto;
+        align-items: end;
+    }
+
+    .dashboard-page #expenses-section .expenses-admin-form .expense-submit-btn {
+        grid-column: auto;
+        align-self: end;
+    }
+}
+
+.collaboration-summary-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.85rem;
+    margin-bottom: 1rem;
+}
+
+.collaborations-list {
+    display: grid;
+    gap: 0.85rem;
+}
+
+.collaboration-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 1rem;
+    align-items: start;
+    padding: 1rem 1.1rem;
+    border-radius: 14px;
+    border: 1px solid rgba(0, 212, 255, 0.12);
+    background: rgba(0, 99, 255, 0.04);
+}
+
+.collaboration-row strong {
+    display: block;
+    margin-bottom: 0.35rem;
+}
+
+.collaboration-row span {
+    display: block;
+    color: var(--text-secondary);
+    font-size: 0.88rem;
+    line-height: 1.45;
+}
+
+.collaboration-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    justify-content: flex-end;
+    align-items: center;
 }
 
 .expense-layout-grid {
@@ -10341,8 +10443,21 @@ html::before {
 
     .expense-layout-grid,
     .expense-kpi-grid,
-    .expense-form {
+    .expense-form,
+    .collaboration-summary-grid {
         grid-template-columns: 1fr;
+    }
+
+    .dashboard-page #expenses-section .expenses-admin-form {
+        grid-template-columns: 1fr;
+    }
+
+    .collaboration-row {
+        grid-template-columns: 1fr;
+    }
+
+    .collaboration-actions {
+        justify-content: flex-start;
     }
 
     .expense-table {
