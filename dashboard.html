@@ -10,7 +10,7 @@
     <style id="club-summary-overrides">
     /* Compact Club Summary overrides - scoped to club summary section */
     #club-summary-section .panel-header { padding: 10px 14px; }
-    #club-summary-section .metrics-grid { display: flex; gap: 12px; align-items: stretch; }
+    #club-summary-section .metrics-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; align-items: stretch; width: 100%; }
     #club-summary-section .premium-metric-card { padding: 10px 12px; box-sizing: border-box; display:flex; flex-direction:column; justify-content:center; }
     #club-summary-section .metric-top { display:flex; gap:10px; align-items:center; margin-bottom:6px; }
     #club-summary-section .metric-label { font-size:0.85rem; text-transform:none; color:var(--text-secondary); }
@@ -243,38 +243,61 @@
                     </div>
 
                     <div class="member-payment-module">
-                        <section class="member-payment-block payment-summary-block">
-                            <h4>Membership Fee Summary</h4>
-                            <div id="payments-container" class="compact-metrics"></div>
-                            <div class="payment-progress" aria-label="Membership payment progress">
-                                <span id="paymentProgress"></span>
-                            </div>
-                            <div class="member-payment-meta">
-                                <span id="totalFeeLabel">Total fee: ₹0</span>
-                                <span class="status-chip status-pending" id="paymentStatusChip">Pending</span>
-                            </div>
-                        </section>
+                        <div class="member-payment-top-grid">
+                            <section class="member-payment-block payment-summary-block">
+                                <h4>Membership Fee Summary</h4>
+                                <div id="payments-container" class="compact-metrics"></div>
+                                <div class="payment-progress" aria-label="Membership payment progress">
+                                    <span id="paymentProgress"></span>
+                                </div>
+                                <div class="member-payment-meta">
+                                    <span id="totalFeeLabel">Total fee: ₹0</span>
+                                    <span class="status-chip status-pending" id="paymentStatusChip">Pending</span>
+                                </div>
+                            </section>
 
-                        <section class="member-payment-block membership-progress-block" id="membership-installments-block">
-                            <h4>Membership Progress</h4>
-                            <div id="installments-container" class="installment-list compact"></div>
-                        </section>
+                            <div class="member-payment-side-column">
+                                <section class="member-payment-block membership-progress-block" id="membership-installments-block">
+                                    <h4>Installment Progress</h4>
+                                    <div id="installments-container" class="installment-list"></div>
+                                </section>
 
-                        <section class="member-payment-block active-installment-block" id="active-installment-block">
-                            <h4>Current Active Installment</h4>
-                            <div class="active-installment-grid">
-                                <div><span class="field-label">Installment</span><strong id="activeInstallmentLabel">—</strong></div>
-                                <div><span class="field-label">Amount Due</span><strong id="activeInstallmentDue">₹0</strong></div>
-                                <div><span class="field-label">Remaining</span><strong id="activeInstallmentRemainingDisplay">₹0</strong></div>
+                                <section class="member-payment-block active-installment-block" id="active-installment-block">
+                                    <h4>Current Active Installment</h4>
+                                    <div class="active-installment-card">
+                                        <div class="active-installment-highlight">
+                                            <span class="field-label">Installment</span>
+                                            <strong id="activeInstallmentLabel" class="active-installment-number">—</strong>
+                                        </div>
+                                        <div class="active-installment-grid">
+                                            <div class="active-installment-stat">
+                                                <span class="field-label">Paid Amount</span>
+                                                <strong id="activeInstallmentPaidDisplay">₹0</strong>
+                                            </div>
+                                            <div class="active-installment-stat">
+                                                <span class="field-label">Remaining Amount</span>
+                                                <strong id="activeInstallmentRemainingDisplay">₹0</strong>
+                                            </div>
+                                            <div class="active-installment-stat active-installment-max-stat">
+                                                <span class="field-label">Maximum Allowed Payment</span>
+                                                <strong id="activeInstallmentMaxDisplay" class="active-installment-max-value">—</strong>
+                                            </div>
+                                            <div class="active-installment-stat">
+                                                <span class="field-label">Payment Status</span>
+                                                <strong id="activeInstallmentStatusDisplay" class="active-installment-status-value">—</strong>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </section>
                             </div>
-                        </section>
+                        </div>
 
                         <section class="member-payment-block payment-qr-block" id="payment-qr">
                             <h4>QR Payment</h4>
                             <div class="payment-amount-entry">
                                 <label for="paymentAmountInput">Amount to Pay</label>
                                 <input type="number" id="paymentAmountInput" min="1" step="1" placeholder="Enter amount" inputmode="numeric">
-                                <small id="paymentAmountHint" class="payment-amount-hint">Enter any amount up to the current installment remaining balance.</small>
+                                <small id="paymentAmountHint" class="payment-amount-hint visually-hidden-hint" aria-hidden="true"></small>
                             </div>
                             <div class="qr-compact">
                                 <div id="qrCode" class="qr-code"></div>
@@ -293,6 +316,7 @@
                             </div>
                         </section>
 
+                        <div class="member-payment-receipt-history-grid">
                         <section class="member-payment-block payment-receipt-block">
                             <h4>Receipt Upload</h4>
                             <input type="file" id="receiptInput" accept="image/*,.pdf" hidden>
@@ -326,6 +350,7 @@
                                 <div class="receipt-empty" id="memberPaymentHistoryEmpty">No payments found yet.</div>
                             </div>
                         </section>
+                        </div>
 
                     </div>
                 </section>
@@ -337,66 +362,67 @@
                         <h3><i class="fas fa-receipt"></i> Expense Management</h3>
                     </div>
 
-                    <div class="expense-layout-grid">
-                        <div class="expense-left-column">
-                            <div class="expense-kpi-grid">
-                                <div class="kpi-card premium-kpi-card">
-                                    <div class="kpi-icon"><i class="fas fa-wallet"></i></div>
-                                    <div class="kpi-content">
-                                        <div class="kpi-label">Total Expenses</div>
-                                        <div class="kpi-value" id="totalExpensesKpi">₹0</div>
-                                    </div>
-                                </div>
-                                <div class="kpi-card premium-kpi-card">
-                                    <div class="kpi-icon"><i class="fas fa-calendar-month"></i></div>
-                                    <div class="kpi-content">
-                                        <div class="kpi-label">This Month</div>
-                                        <div class="kpi-value" id="monthExpensesKpi">₹0</div>
-                                    </div>
-                                </div>
-                                <div class="kpi-card premium-kpi-card">
-                                    <div class="kpi-icon"><i class="fas fa-hourglass-end"></i></div>
-                                    <div class="kpi-content">
-                                        <div class="kpi-label">Pending Reimbursements</div>
-                                        <div class="kpi-value" id="pendingReimbursementsKpi">0</div>
-                                    </div>
+                    <div class="expense-management-layout">
+                        <div class="expense-kpi-grid expense-kpi-row">
+                            <div class="kpi-card premium-kpi-card expense-kpi-card">
+                                <div class="kpi-icon"><i class="fas fa-wallet"></i></div>
+                                <div class="kpi-content">
+                                    <div class="kpi-label">Total Expenses</div>
+                                    <div class="kpi-value" id="totalExpensesKpi">₹0</div>
                                 </div>
                             </div>
-
-                            <form id="expenseForm" class="card-form compact expenses-admin-form">
-                                <div class="expenses-admin-field">
-                                    <label for="expenseTitle">Title</label>
-                                    <input type="text" id="expenseTitle" placeholder="Expense title" required>
+                            <div class="kpi-card premium-kpi-card expense-kpi-card">
+                                <div class="kpi-icon"><i class="fas fa-calendar-month"></i></div>
+                                <div class="kpi-content">
+                                    <div class="kpi-label">This Month Expenses</div>
+                                    <div class="kpi-value" id="monthExpensesKpi">₹0</div>
                                 </div>
-                                <div class="expenses-admin-field">
-                                    <label for="expenseAmount">Amount</label>
-                                    <input type="number" id="expenseAmount" placeholder="Amount" min="1" required>
+                            </div>
+                            <div class="kpi-card premium-kpi-card expense-kpi-card">
+                                <div class="kpi-icon"><i class="fas fa-hourglass-end"></i></div>
+                                <div class="kpi-content">
+                                    <div class="kpi-label">Pending Reimbursements</div>
+                                    <div class="kpi-value" id="pendingReimbursementsKpi">0</div>
                                 </div>
-                                <div class="expenses-admin-field">
-                                    <label for="expenseCategory">Category</label>
-                                    <select id="expenseCategory">
-                                        <option value="">Category</option>
-                                        <option value="parts">Parts</option>
-                                        <option value="materials">Materials</option>
-                                        <option value="tools">Tools</option>
-                                        <option value="transport">Transport</option>
-                                        <option value="venue">Venue</option>
-                                        <option value="other">Other</option>
-                                    </select>
-                                </div>
-                                <div class="expenses-admin-field">
-                                    <label for="expenseNotes">Notes</label>
-                                    <input type="text" id="expenseNotes" placeholder="Optional notes">
-                                </div>
-                                <button type="submit" class="dashboard-button primary expense-submit-btn"><i class="fas fa-plus"></i> Add Expense</button>
-                                <div class="expenses-admin-field expenses-admin-date-field">
-                                    <label for="expenseDate">Date</label>
-                                    <input type="date" id="expenseDate" required>
-                                </div>
-                            </form>
+                            </div>
                         </div>
 
-                        <div class="expense-right-column">
+                        <form id="expenseForm" class="card-form compact expenses-admin-form expense-form-row">
+                            <div class="expenses-admin-field">
+                                <label for="expenseTitle">Title</label>
+                                <input type="text" id="expenseTitle" placeholder="Expense title" required>
+                            </div>
+                            <div class="expenses-admin-field">
+                                <label for="expenseAmount">Amount</label>
+                                <input type="number" id="expenseAmount" placeholder="Amount" min="1" required>
+                            </div>
+                            <div class="expenses-admin-field">
+                                <label for="expenseCategory">Category</label>
+                                <select id="expenseCategory">
+                                    <option value="">Category</option>
+                                    <option value="parts">Parts</option>
+                                    <option value="materials">Materials</option>
+                                    <option value="tools">Tools</option>
+                                    <option value="transport">Transport</option>
+                                    <option value="venue">Venue</option>
+                                    <option value="other">Other</option>
+                                </select>
+                            </div>
+                            <div class="expenses-admin-field">
+                                <label for="expenseNotes">Notes</label>
+                                <input type="text" id="expenseNotes" placeholder="Optional notes">
+                            </div>
+                            <div class="expenses-admin-field expenses-admin-submit-field">
+                                <span class="field-label field-label-spacer" aria-hidden="true">&nbsp;</span>
+                                <button type="submit" class="dashboard-button primary expense-submit-btn"><i class="fas fa-plus"></i> Add Expense</button>
+                            </div>
+                            <div class="expenses-admin-field expenses-admin-date-field">
+                                <label for="expenseDate">Date</label>
+                                <input type="date" id="expenseDate" required>
+                            </div>
+                        </form>
+
+                        <div class="expense-table-area">
                             <div id="member-expenses-container" class="table-card compact expense-table-shell">
                                 <table class="transaction-table members-table expense-table">
                                     <thead>

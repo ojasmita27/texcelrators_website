@@ -2905,8 +2905,10 @@ function renderDashboardApp() {
         }
 
         const activeInstallmentLabel = document.getElementById('activeInstallmentLabel');
-        const activeInstallmentDue = document.getElementById('activeInstallmentDue');
+        const activeInstallmentPaidDisplay = document.getElementById('activeInstallmentPaidDisplay');
         const activeInstallmentRemainingDisplay = document.getElementById('activeInstallmentRemainingDisplay');
+        const activeInstallmentMaxDisplay = document.getElementById('activeInstallmentMaxDisplay');
+        const activeInstallmentStatusDisplay = document.getElementById('activeInstallmentStatusDisplay');
         const activeInstallment = (state.installments || []).find((item) => item.number === activeInstallmentNumber);
 
         if (activeInstallmentLabel) {
@@ -2915,14 +2917,26 @@ function renderDashboardApp() {
                 : 'Complete';
         }
 
-        if (activeInstallmentDue) {
-            activeInstallmentDue.textContent = activeInstallment
-                ? formatCurrency(activeInstallment.amount)
+        if (activeInstallmentPaidDisplay) {
+            activeInstallmentPaidDisplay.textContent = activeInstallment
+                ? formatCurrency(getSafeNumber(activeInstallment.installmentPaid, 0))
                 : formatCurrency(0);
         }
 
         if (activeInstallmentRemainingDisplay) {
             activeInstallmentRemainingDisplay.textContent = formatCurrency(remaining);
+        }
+
+        if (activeInstallmentMaxDisplay) {
+            activeInstallmentMaxDisplay.textContent = activeInstallmentNumber && remaining > 0
+                ? formatCurrency(remaining)
+                : (activeInstallmentNumber ? formatCurrency(0) : '—');
+        }
+
+        if (activeInstallmentStatusDisplay) {
+            activeInstallmentStatusDisplay.textContent = activeInstallment
+                ? (activeInstallment.installmentStatus || activeInstallment.status || '—')
+                : (activeInstallmentNumber ? '—' : 'Complete');
         }
     }
 

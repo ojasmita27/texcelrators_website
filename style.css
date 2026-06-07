@@ -1940,16 +1940,17 @@ body > * {
 }
 
 .dashboard-page #expenses-section .expenses-admin-form .expense-submit-btn {
-    grid-column: 1 / -1;
-    justify-self: start;
-    min-height: 48px;
-    white-space: nowrap;
-}
-
-.dashboard-page #expenses-section .expenses-admin-form .expense-submit-btn {
+    width: 100%;
     min-height: 48px;
     white-space: nowrap;
     align-self: end;
+}
+
+.dashboard-page #expenses-section .expenses-admin-submit-field .field-label-spacer {
+    visibility: hidden;
+    height: 0;
+    margin: 0;
+    overflow: hidden;
 }
 
 .installment-item {
@@ -2001,8 +2002,49 @@ body > * {
 
 .active-installment-grid {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 0.85rem;
+}
+
+.active-installment-card {
+    display: grid;
+    gap: 0.9rem;
+    padding: 0.85rem;
+    border-radius: 12px;
+    border: 1px solid rgba(0, 212, 255, 0.14);
+    background: rgba(0, 99, 255, 0.05);
+}
+
+.active-installment-highlight {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    padding-bottom: 0.65rem;
+    border-bottom: 1px solid rgba(0, 212, 255, 0.1);
+}
+
+.active-installment-number {
+    font-size: 1.35rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    line-height: 1.2;
+}
+
+.active-installment-stat {
+    display: grid;
+    gap: 0.3rem;
+    min-width: 0;
+}
+
+.active-installment-stat strong {
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    word-break: break-word;
+}
+
+.active-installment-status-value {
+    text-transform: capitalize;
 }
 
 .active-installment-grid .field-label,
@@ -2191,24 +2233,26 @@ body > * {
     align-items: center;
 }
 
-.expense-layout-grid {
-    display: grid;
-    grid-template-columns: minmax(0, 0.98fr) minmax(0, 1.02fr);
-    gap: 1rem;
-    align-items: start;
-}
-
-.expense-left-column,
-.expense-right-column {
+.expense-management-layout {
     display: grid;
     gap: 1rem;
-    min-width: 0;
+    width: 100%;
 }
 
 .expense-kpi-grid {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 0.85rem;
+    width: 100%;
+}
+
+.expense-kpi-card {
+    min-height: 108px;
+}
+
+.expense-table-area {
+    width: 100%;
+    min-width: 0;
 }
 
 .kpi-card.premium-kpi-card {
@@ -2475,13 +2519,31 @@ body:not(.dashboard-page) #expenses-container {
 .qr-amount { font-weight:800; font-size:1.15rem; }
 
 .member-payment-module {
-    display: grid;
-    gap: 0.95rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    width: 100%;
 }
 
-.member-payment-center .member-payment-module {
-    grid-template-columns: repeat(12, minmax(0, 1fr));
+.member-payment-top-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 55fr) minmax(0, 45fr);
     gap: 1rem;
+    align-items: start;
+    width: 100%;
+}
+
+.member-payment-side-column {
+    display: grid;
+    gap: 1rem;
+    min-width: 0;
+}
+
+.member-payment-center .payment-summary-block,
+.member-payment-center .membership-progress-block,
+.member-payment-center .active-installment-block {
+    width: 100%;
+    min-width: 0;
 }
 
 .member-payment-block {
@@ -2509,24 +2571,69 @@ body:not(.dashboard-page) #expenses-container {
     font-size: 0.88rem;
 }
 
-.payment-summary-block {
-    grid-column: span 5;
+.member-payment-center .payment-qr-block {
+    width: 100%;
 }
 
-.payment-qr-block {
-    grid-column: span 7;
+.member-payment-receipt-history-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+    gap: 1rem;
+    width: 100%;
 }
 
-.payment-receipt-block {
-    grid-column: span 5;
+.member-payment-center .payment-receipt-block,
+.member-payment-center .payment-history-block {
+    width: 100%;
+    min-width: 0;
 }
 
-.payment-history-block {
-    grid-column: span 7;
+.member-payment-center .installment-list {
+    width: 100%;
 }
 
-.member-payment-center #installments-container {
-    grid-column: 1 / -1;
+.member-payment-center .installment-item {
+    display: grid;
+    grid-template-columns: 1fr;
+    align-items: stretch;
+    justify-content: initial;
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+}
+
+.member-payment-center .installment-item-head {
+    flex-wrap: wrap;
+}
+
+.member-payment-center .installment-item-head .status-pill {
+    flex-shrink: 0;
+    white-space: nowrap;
+    margin-left: auto;
+}
+
+.member-payment-center .installment-progress-track {
+    width: 100%;
+}
+
+.member-payment-center .installment-item-meta {
+    width: 100%;
+}
+
+.member-payment-center .installment-item.is-locked .installment-item-meta span:last-child {
+    display: none;
+}
+
+.visually-hidden-hint {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
 }
 
 .qr-details {
@@ -2668,15 +2775,13 @@ body:not(.dashboard-page) #expenses-container {
 }
 
 @media (max-width: 1100px) {
-    .member-payment-center .member-payment-module {
+    .member-payment-top-grid,
+    .member-payment-receipt-history-grid {
         grid-template-columns: 1fr;
     }
 
-    .payment-summary-block,
-    .payment-qr-block,
-    .payment-receipt-block,
-    .payment-history-block {
-        grid-column: 1;
+    .expense-kpi-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 }
 
@@ -8293,28 +8398,6 @@ html::before {
     margin-top: 1rem;
 }
 
-.installment-item {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 1rem;
-    padding: 0.95rem 1rem;
-    border-radius: 16px;
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    background: rgba(255, 255, 255, 0.03);
-}
-
-.installment-item strong,
-.installment-item span {
-    display: block;
-}
-
-.installment-item span {
-    color: var(--text-secondary);
-    font-size: 0.9rem;
-    margin-top: 0.25rem;
-}
-
 .installment-item.is-paid {
     border-color: rgba(67, 233, 123, 0.16);
 }
@@ -9207,7 +9290,6 @@ html::before {
         grid-template-columns: 1fr;
     }
 
-    .expense-layout-grid,
     .expense-kpi-grid {
         grid-template-columns: 1fr;
     }
@@ -9231,13 +9313,13 @@ html::before {
         align-items: flex-start;
     }
 
-    .installment-item {
-        align-items: flex-start;
+    .member-payment-center .installment-item-head {
         flex-direction: column;
+        align-items: flex-start;
     }
 
-    .installment-item .status-pill {
-        align-self: flex-start;
+    .member-payment-center .installment-item-head .status-pill {
+        margin-left: 0;
     }
 
     .receipt-row {
@@ -10636,7 +10718,6 @@ html::before {
         flex-direction: column;
     }
 
-    .expense-layout-grid,
     .expense-kpi-grid,
     .expense-form,
     .collaboration-summary-grid,
@@ -11049,4 +11130,70 @@ html::before {
 
 .dashboard-page .premium-action-btn .btn-label {
     font-weight: 800;
+}
+
+/* Dashboard UI refinement — spacing, actions panel, expense form row */
+.dashboard-page .premium-action-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+}
+
+.dashboard-page .premium-action-btn,
+.dashboard-page .action-metric-link.premium-action-btn {
+    display: flex;
+    align-items: center;
+    min-height: 56px;
+    padding: 0.85rem 1rem;
+    border-radius: 14px;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+}
+
+.dashboard-page .premium-action-btn:hover,
+.dashboard-page .action-metric-link.premium-action-btn:hover {
+    transform: translateY(-2px);
+}
+
+.dashboard-page .premium-action-btn .btn-icon {
+    width: 40px;
+    height: 40px;
+    min-width: 40px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+}
+
+.dashboard-page #expenses-section .expense-management-layout {
+    padding: 0 0.15rem;
+}
+
+.dashboard-page #expenses-section .expenses-admin-form.expense-form-row {
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.75fr) minmax(0, 0.95fr) minmax(0, 1.1fr) minmax(0, auto);
+}
+
+.dashboard-page .member-payment-block {
+    padding: 1.05rem 1.1rem;
+}
+
+.dashboard-page .member-payment-block h4 {
+    font-size: 1rem;
+    font-weight: 800;
+    letter-spacing: 0.01em;
+}
+
+@media (max-width: 900px) {
+    .member-payment-top-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .active-installment-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 720px) {
+    .expense-kpi-grid {
+        grid-template-columns: 1fr;
+    }
 }
