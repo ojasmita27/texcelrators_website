@@ -30,6 +30,7 @@ const paymentSelect = [
   'method',
   'receiptPath',
   'receiptOriginalName',
+  'receiptUploadedAt',
   'receiptNumber',
   'receiptPdfPath',
   'receiptPdfName',

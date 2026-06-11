@@ -8,6 +8,9 @@ const morgan = require('morgan');
 const { MongoMemoryServer } = require('mongodb-memory-server');
 
 const { connectMongo } = require('./config/db');
+const { ensureUploadDirs } = require('./utils/ensureUploadDirs');
+const { syncPaymentIndexes } = require('./utils/syncPaymentIndexes');
+const { syncReceiptCountersFromPayments } = require('./utils/receiptSequence');
 
 const { authRoutes } = require('./routes/auth.routes');
 const { memberRoutes } = require('./routes/member.routes');
@@ -165,6 +168,10 @@ async function start() {
   }
 
   await connectWithInMemoryFallback();
+
+  await ensureUploadDirs();
+  await syncPaymentIndexes();
+  await syncReceiptCountersFromPayments();
 
   const shutdown = async () => {
     if (isShuttingDown) return;

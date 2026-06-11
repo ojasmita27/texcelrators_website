@@ -3,6 +3,7 @@ const { asyncHandler } = require('../utils/asyncHandler');
 const { signAccessToken } = require('../utils/jwt');
 const { User } = require('../models/User');
 const { requireAuth } = require('../middleware/auth');
+const { logInfo, logWarn, logError } = require('../utils/logger');
 
 const router = Router();
 
@@ -10,24 +11,35 @@ function getUserStatus(user) {
   return user.status || (user.active ? 'active' : 'inactive');
 }
 
-// Setup route: allow creating the first admin ONLY if none exists
+function normalizeEmail(email) {
+  return String(email || '').toLowerCase().trim();
+}
+
+function normalizePassword(password) {
+  return String(password || '').trim();
+}
+
+function loginFailure(res, status, message, code, meta = {}) {
+  logWarn('auth/login', message, meta);
+  return res.status(status).json({ message, code });
+}
+
 router.post(
   '/register-admin',
   asyncHandler(async (req, res) => {
     const existingUsers = await User.countDocuments();
     if (existingUsers > 0) {
-      return res.status(403).json({ message: 'Admin already exists' });
+      return res.status(403).json({ message: 'Admin already exists', code: 'ADMIN_EXISTS' });
     }
 
     const { name, email, password } = req.body || {};
     if (!name || !email || !password) {
-      return res.status(400).json({ message: 'name, email, password are required' });
+      return res.status(400).json({ message: 'name, email, password are required', code: 'VALIDATION_ERROR' });
     }
 
-    // normalize and trim inputs
-    const normalizedEmail = String(email).toLowerCase().trim();
+    const normalizedEmail = normalizeEmail(email);
     const normalizedName = String(name).trim();
-    const passwordToSet = String(password).trim();
+    const passwordToSet = normalizePassword(password);
 
     const user = new User({
       name: normalizedName,
@@ -42,49 +54,108 @@ router.post(
     await user.setPassword(passwordToSet);
     await user.save();
 
+    logInfo('auth/register-admin', 'Initial admin registered', { email: normalizedEmail });
     return res.status(201).json({ message: 'Admin registered', user: user.toSafeJSON() });
   })
 );
 
-// Required route: /login
 router.post(
   '/login',
   asyncHandler(async (req, res) => {
     const { email, password, role } = req.body || {};
+    const normalizedEmail = normalizeEmail(email);
+    const passwordToCheck = normalizePassword(password);
+    const requestedRole = role ? String(role).trim().toLowerCase() : '';
 
-    if (!email || !password) {
-      return res.status(400).json({ message: 'email and password are required' });
+    if (!normalizedEmail || !passwordToCheck) {
+      return res.status(400).json({
+        message: 'email and password are required',
+        code: 'VALIDATION_ERROR'
+      });
     }
 
-    const normalizedEmail = String(email).toLowerCase().trim();
-    const passwordToCheck = String(password).trim();
+    const matchingUsers = await User.find({ email: normalizedEmail }).limit(5);
+    if (matchingUsers.length > 1) {
+      logError('auth/login', 'Duplicate user records found for email', {
+        email: normalizedEmail,
+        count: matchingUsers.length
+      });
+    }
 
-    const user = await User.findOne({ email: normalizedEmail });
+    const user = matchingUsers[0];
     if (!user) {
-      return res.status(401).json({ message: 'Invalid credentials' });
+      return loginFailure(res, 401, 'No account found for this email address', 'USER_NOT_FOUND', {
+        email: normalizedEmail
+      });
     }
 
     const status = getUserStatus(user);
     if (status !== 'active') {
-      return res.status(403).json({ message: 'User is not active' });
+      return loginFailure(res, 403, 'User account is not active', 'USER_INACTIVE', {
+        email: normalizedEmail,
+        status
+      });
     }
 
-    if (role && user.role !== role) {
-      return res.status(403).json({ message: 'Role does not match account' });
+    if (requestedRole && user.role !== requestedRole) {
+      return loginFailure(res, 403, `Selected role "${requestedRole}" does not match account role "${user.role}"`, 'ROLE_MISMATCH', {
+        email: normalizedEmail,
+        requestedRole,
+        accountRole: user.role
+      });
     }
 
-    const ok = await user.comparePassword(passwordToCheck);
-    if (!ok) {
-      return res.status(401).json({ message: 'Invalid credentials' });
+    if (!user.passwordHash || user.passwordHash === 'temp') {
+      return loginFailure(res, 401, 'Password is not configured for this account', 'PASSWORD_NOT_SET', {
+        email: normalizedEmail
+      });
+    }
+
+    let passwordMatches = false;
+    try {
+      passwordMatches = await user.comparePassword(passwordToCheck);
+    } catch (err) {
+      logError('auth/login', 'Password comparison failed', {
+        email: normalizedEmail,
+        message: err && err.message
+      });
+      return res.status(500).json({
+        message: 'Unable to verify password at this time',
+        code: 'PASSWORD_CHECK_FAILED'
+      });
+    }
+
+    if (!passwordMatches) {
+      return loginFailure(res, 401, 'Password does not match this account', 'PASSWORD_MISMATCH', {
+        email: normalizedEmail
+      });
     }
 
     user.lastLoginAt = new Date();
     await user.save();
 
-    const token = signAccessToken({
-      sub: String(user._id),
-      role: user.role,
-      email: user.email
+    let token;
+    try {
+      token = signAccessToken({
+        sub: String(user._id),
+        role: user.role,
+        email: user.email
+      });
+    } catch (err) {
+      logError('auth/login', 'JWT generation failed', {
+        email: normalizedEmail,
+        message: err && err.message
+      });
+      return res.status(500).json({
+        message: 'Unable to create login session',
+        code: 'JWT_GENERATION_FAILED'
+      });
+    }
+
+    logInfo('auth/login', 'Login successful', {
+      email: normalizedEmail,
+      userId: String(user._id),
+      role: user.role
     });
 
     return res.json({
@@ -94,7 +165,6 @@ router.post(
   })
 );
 
-// Not in the original route list, but required for "First login → force password change"
 router.post(
   '/change-password',
   requireAuth,
@@ -102,22 +172,23 @@ router.post(
     const { oldPassword, newPassword } = req.body || {};
 
     if (!oldPassword || !newPassword) {
-      return res.status(400).json({ message: 'oldPassword and newPassword are required' });
+      return res.status(400).json({ message: 'oldPassword and newPassword are required', code: 'VALIDATION_ERROR' });
     }
 
-    if (String(newPassword).length < 6) {
-      return res.status(400).json({ message: 'newPassword must be at least 6 characters' });
+    if (String(newPassword).trim().length < 6) {
+      return res.status(400).json({ message: 'newPassword must be at least 6 characters', code: 'VALIDATION_ERROR' });
     }
 
-    const ok = await req.user.comparePassword(oldPassword);
+    const ok = await req.user.comparePassword(normalizePassword(oldPassword));
     if (!ok) {
-      return res.status(401).json({ message: 'Old password is incorrect' });
+      return res.status(401).json({ message: 'Old password is incorrect', code: 'PASSWORD_MISMATCH' });
     }
 
-    await req.user.setPassword(newPassword);
+    await req.user.setPassword(normalizePassword(newPassword));
     req.user.mustChangePassword = false;
     await req.user.save();
 
+    logInfo('auth/change-password', 'Password changed', { userId: String(req.user._id) });
     return res.json({ message: 'Password changed', user: req.user.toSafeJSON() });
   })
 );

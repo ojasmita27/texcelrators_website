@@ -2795,7 +2795,19 @@ body:not(.dashboard-page) #expenses-container {
 .receipt-row:hover { transform: translateY(-2px); box-shadow: 0 12px 28px rgba(0,0,0,0.28), 0 0 20px rgba(0,153,255,0.06); border-color: rgba(0,212,255,0.16); }
 .receipt-row strong { display:block; font-size:0.98rem; margin-bottom:4px; }
 .receipt-row span { display:block; color:var(--text-secondary); font-size:0.86rem; }
+.receipt-actions-inline {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.receipt-actions-inline .receipt-subtext {
+    margin: 0;
+}
+
 .receipt-actions { display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end; }
+
 .receipt-empty { padding:18px; text-align:center; color:var(--text-secondary); border:1px dashed rgba(0,212,255,0.14); border-radius:14px; background: rgba(0,99,255,0.03); }
 
 .verification-empty {

@@ -2483,7 +2483,7 @@ function renderDashboardApp() {
     }
 
     const API_BASE = resolveApiBase();
-    const RECEIPT_DOWNLOAD_PATH = '/payments/receipt';
+    const RECEIPT_BASE_PATH = '/payments/receipt';
     localStorage.setItem('API_BASE', API_BASE);
 
     if (!document.getElementById('dashboardToast')) {
@@ -2976,22 +2976,26 @@ function renderDashboardApp() {
         return trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
     }
 
-    function buildReceiptDownloadUrl(paymentId) {
+    function buildOfficialReceiptUrl(paymentId) {
         if (!paymentId) return '';
-        return `${RECEIPT_DOWNLOAD_PATH}/${encodeURIComponent(String(paymentId))}`;
+        return `${RECEIPT_BASE_PATH}/${encodeURIComponent(String(paymentId))}/official`;
     }
 
-    function canDownloadApprovedReceipt(payment) {
+    function buildProofReceiptUrl(paymentId) {
+        if (!paymentId) return '';
+        return `${RECEIPT_BASE_PATH}/${encodeURIComponent(String(paymentId))}/proof`;
+    }
+
+    function hasUploadedProof(payment) {
+        return Boolean(payment && payment.receiptPath);
+    }
+
+    function canDownloadOfficialReceipt(payment) {
         if (!payment || !isPaymentApproved(normalizePaymentStatus(payment.status))) return false;
-        return Boolean(payment.receiptPdfPath || payment.receiptPath || payment.receiptNumber);
+        return Boolean(payment.receiptNumber || payment.receiptPdfPath);
     }
 
-    function renderReceiptDownloadButton(payment) {
-        if (!canDownloadApprovedReceipt(payment)) return '';
-        return `<button type="button" class="dashboard-button download-payment-receipt-btn" data-payment-id="${payment.id}">Download Receipt</button>`;
-    }
-
-    async function downloadPaymentReceiptFile(paymentId) {
+    async function downloadPaymentReceiptAsset(paymentId, receiptKind) {
         if (!paymentId) return;
 
         const token = localStorage.getItem('authToken');
@@ -3000,7 +3004,8 @@ function renderDashboardApp() {
             return;
         }
 
-        const downloadUrl = `${API_BASE}${buildReceiptDownloadUrl(paymentId)}`;
+        const suffix = receiptKind === 'proof' ? 'proof' : 'official';
+        const downloadUrl = `${API_BASE}${RECEIPT_BASE_PATH}/${encodeURIComponent(String(paymentId))}/${suffix}`;
 
         try {
             const response = await fetch(downloadUrl, {
@@ -3018,8 +3023,17 @@ function renderDashboardApp() {
 
             const blob = await response.blob();
             const payment = state.payments.find((entry) => String(entry.id) === String(paymentId));
-            const fileName = (payment && payment.receiptPdfName)
-                || (payment && payment.receiptNumber ? `${payment.receiptNumber}.pdf` : 'receipt.pdf');
+            let fileName = 'receipt.pdf';
+
+            if (receiptKind === 'proof') {
+                fileName = (payment && payment.receiptName && payment.receiptName !== 'NA')
+                    ? payment.receiptName
+                    : 'uploaded-proof';
+            } else {
+                fileName = (payment && payment.receiptPdfName)
+                    || (payment && payment.receiptNumber ? `${payment.receiptNumber}.pdf` : 'official-receipt.pdf');
+            }
+
             const objectUrl = URL.createObjectURL(blob);
             const anchor = document.createElement('a');
             anchor.href = objectUrl;
@@ -3033,6 +3047,73 @@ function renderDashboardApp() {
                 alert(error.message || 'Unable to download receipt');
             }
         }
+    }
+
+    function downloadOfficialReceipt(paymentId) {
+        return downloadPaymentReceiptAsset(paymentId, 'official');
+    }
+
+    async function viewUploadedProof(paymentId) {
+        if (!paymentId) return;
+
+        const token = localStorage.getItem('authToken');
+        if (!token) {
+            window.location.href = 'login.html';
+            return;
+        }
+
+        const viewUrl = `${API_BASE}${RECEIPT_BASE_PATH}/${encodeURIComponent(String(paymentId))}/proof`;
+
+        try {
+            const response = await fetch(viewUrl, {
+                method: 'GET',
+                headers: { Authorization: `Bearer ${token}` }
+            });
+
+            if (!response.ok) {
+                const data = await response.json().catch(() => ({}));
+                throw new Error((data && data.message) ? data.message : 'Uploaded proof was not available');
+            }
+
+            const blob = await response.blob();
+            const objectUrl = URL.createObjectURL(blob);
+            window.open(objectUrl, '_blank', 'noopener,noreferrer');
+            window.setTimeout(() => URL.revokeObjectURL(objectUrl), 60000);
+        } catch (error) {
+            if (!handleAuthFailure(error)) {
+                alert(error.message || 'Unable to open uploaded proof');
+            }
+        }
+    }
+
+    function downloadUploadedProof(paymentId) {
+        return downloadPaymentReceiptAsset(paymentId, 'proof');
+    }
+
+    function renderReceiptActionButtons(payment) {
+        if (!payment) return '';
+
+        const normalizedStatus = normalizePaymentStatus(payment.status);
+        const buttons = [];
+
+        if (hasUploadedProof(payment)) {
+            buttons.push(`<button type="button" class="dashboard-button view-payment-proof-btn" data-payment-id="${payment.id}">View Uploaded Proof</button>`);
+        }
+
+        if (isPaymentApproved(normalizedStatus) && canDownloadOfficialReceipt(payment)) {
+            buttons.push(`<button type="button" class="dashboard-button download-official-receipt-btn" data-payment-id="${payment.id}">Download Official Receipt</button>`);
+        } else if (normalizePaymentStatus(payment.status) === 'pending' && hasUploadedProof(payment)) {
+            buttons.push('<span class="receipt-subtext">Pending Approval</span>');
+        }
+
+        return buttons.length
+            ? `<div class="receipt-actions-inline">${buttons.join('')}</div>`
+            : '';
+    }
+
+    function renderReceiptDownloadButton(payment) {
+        if (!canDownloadOfficialReceipt(payment)) return '';
+        return `<button type="button" class="dashboard-button download-official-receipt-btn" data-payment-id="${payment.id}">Download Official Receipt</button>`;
     }
 
     function mapApiPayment(p) {
@@ -3054,19 +3135,26 @@ function renderDashboardApp() {
             status: normalizedStatus,
             approvalStatus: normalizedStatus,
             receiptNumber: p.receiptNumber || '',
+            receiptPath,
             receiptName: p.receiptOriginalName || (receiptPath ? receiptPath.split('/').slice(-1)[0] : 'NA'),
+            receiptUploadedAt: p.receiptUploadedAt || p.submittedAt || null,
             receiptPreview,
             receiptType: receiptPreview ? 'image' : 'file',
             receiptPdfPath,
             receiptPdfName: p.receiptPdfName || '',
             receiptGeneratedAt: p.receiptGeneratedAt || '',
             receiptViewUrl: receiptPath,
-            receiptDownloadUrl: '',
+            officialReceiptUrl: '',
+            proofReceiptUrl: '',
             installmentNumber: p.installmentNumber ? Number(p.installmentNumber) : null
         };
 
-        if (canDownloadApprovedReceipt(mappedPayment)) {
-            mappedPayment.receiptDownloadUrl = buildReceiptDownloadUrl(paymentId);
+        if (hasUploadedProof(mappedPayment)) {
+            mappedPayment.proofReceiptUrl = buildProofReceiptUrl(paymentId);
+        }
+
+        if (canDownloadOfficialReceipt(mappedPayment)) {
+            mappedPayment.officialReceiptUrl = buildOfficialReceiptUrl(paymentId);
         }
 
         return mappedPayment;
@@ -4887,14 +4975,13 @@ function renderDashboardApp() {
 
         elements.memberPaymentHistoryBody.innerHTML = paymentRows.map((payment) => {
             const normalizedStatus = normalizePaymentStatus(payment.status);
-            const canDownloadReceipt = isPaymentApproved(normalizedStatus) && Boolean(payment.receiptDownloadUrl);
+            const actionButtons = renderReceiptActionButtons(payment);
             const approvalLabel = formatPaymentApprovalLabel(normalizedStatus);
             const submittedLabel = payment.submittedAt ? formatDate(payment.submittedAt) : formatDate(payment.date);
             const approvedLabel = payment.approvedAt ? formatDate(payment.approvedAt) : '—';
             const receiptCell = payment.receiptNumber
                 ? `<div class="receipt-stack"><span class="receipt-file-name">${payment.receiptNumber}</span><div class="receipt-subtext">${payment.receiptPdfName || payment.receiptName || 'Official receipt'}</div></div>`
                 : `<div class="receipt-stack"><span class="receipt-file-name">Pending</span><div class="receipt-subtext">Receipt number will appear after approval</div></div>`;
-            const downloadLink = canDownloadReceipt ? renderReceiptDownloadButton(payment) : '';
 
             const installmentLabel = payment.installmentNumber
                 ? `Installment ${payment.installmentNumber}`
@@ -4912,7 +4999,7 @@ function renderDashboardApp() {
                     <td>${installmentLabel}</td>
                     <td><span class="status-chip status-${normalizedStatus}">${approvalLabel}</span></td>
                     <td><div class="receipt-cell">${receiptCell}</div></td>
-                    <td>${downloadLink}</td>
+                    <td>${actionButtons}</td>
                 </tr>
             `;
         }).join('');
@@ -5016,59 +5103,22 @@ function renderDashboardApp() {
     }
 
     function viewPaymentReceipt(paymentId) {
-        const payment = state.payments.find((entry) => String(entry.id) === String(paymentId));
-        if (!payment) {
-            alert('Payment not found.');
-            return;
-        }
-
-        if (isPaymentApproved(normalizePaymentStatus(payment.status)) && canDownloadApprovedReceipt(payment)) {
-            downloadPaymentReceiptFile(payment.id);
-            return;
-        }
-
-        const viewUrl = payment.receiptViewUrl
-            ? `${API_BASE}${payment.receiptViewUrl}`
-            : (payment.receiptPreview || '');
-
-        if (!viewUrl) {
-            alert('No receipt file available for this payment.');
-            return;
-        }
-
-        window.open(viewUrl, '_blank', 'noopener,noreferrer');
+        viewUploadedProof(paymentId);
     }
 
     function renderPaymentReceiptCell(payment) {
         const normalizedStatus = normalizePaymentStatus(payment.status);
         const receiptNumber = payment.receiptNumber || '';
-        const receiptFileName = payment.receiptPdfName || payment.receiptName || '';
 
         if (isPaymentApproved(normalizedStatus)) {
-            if (receiptNumber) {
-                const downloadLink = renderReceiptDownloadButton(payment);
-                return `
-                    <div class="receipt-stack">
-                        <span class="status-chip status-approved">Approved</span>
-                        <span class="receipt-file-name">${receiptNumber}</span>
-                        <div class="receipt-subtext">${receiptFileName || 'Official receipt PDF'}</div>
-                        ${downloadLink}
-                    </div>
-                `;
-            }
-
-            return `<span class="receipt-file-name">Approved · receipt pending generation</span>`;
+            return renderReceiptActionButtons(payment) || `<span class="receipt-file-name">Approved · official receipt pending</span>`;
         }
 
-        if (payment.receiptPreview && payment.receiptType === 'image') {
-            return `<img src="${payment.receiptPreview}" alt="Receipt" class="receipt-thumb">`;
+        if (hasUploadedProof(payment)) {
+            return renderReceiptActionButtons(payment);
         }
 
-        if (receiptFileName && receiptFileName !== 'NA') {
-            return `<span class="receipt-file-name">${receiptFileName}</span>`;
-        }
-
-        return `<span class="receipt-file-name">Uploaded receipt</span>`;
+        return `<span class="receipt-file-name">No uploaded proof</span>`;
     }
 
     function renderVerificationQueue() {
@@ -5109,7 +5159,7 @@ function renderDashboardApp() {
                         <span>${formatDate(payment.submittedAt || payment.date)} | ${installmentLabel} | ${receiptLabel}</span>
                     </div>
                     <div class="receipt-actions">
-                        <button type="button" class="dashboard-button view-payment-receipt-btn" data-payment-id="${payment.id}">View Receipt</button>
+                        <button type="button" class="dashboard-button view-payment-proof-btn" data-payment-id="${payment.id}">View Uploaded Proof</button>
                         <button type="button" class="dashboard-button primary verify-payment-btn" data-payment-id="${payment.id}">Approve</button>
                         <button type="button" class="dashboard-button reject-payment-btn" data-payment-id="${payment.id}">Reject</button>
                     </div>
@@ -5121,7 +5171,7 @@ function renderDashboardApp() {
             const member = state.users.find((user) => user.id === payment.userId);
             const receiptNumber = payment.receiptNumber || 'Pending receipt number';
             const receiptFileName = payment.receiptPdfName || payment.receiptName || 'Official receipt PDF';
-            const downloadLink = renderReceiptDownloadButton(payment);
+            const actionButtons = renderReceiptActionButtons(payment);
 
             const installmentLabel = payment.installmentNumber ? `Installment ${payment.installmentNumber}` : '—';
 
@@ -5133,7 +5183,7 @@ function renderDashboardApp() {
                     </div>
                     <div class="receipt-actions">
                         <span class="status-chip status-approved">Approved</span>
-                        ${downloadLink}
+                        ${actionButtons}
                     </div>
                 </div>
             `;
@@ -6507,10 +6557,25 @@ function renderDashboardApp() {
 
     function bindActions() {
         dashboardRoot.addEventListener('click', (event) => {
-            const downloadButton = event.target.closest('.download-payment-receipt-btn');
-            if (!downloadButton) return;
-            event.preventDefault();
-            downloadPaymentReceiptFile(downloadButton.getAttribute('data-payment-id'));
+            const officialDownloadButton = event.target.closest('.download-official-receipt-btn');
+            if (officialDownloadButton) {
+                event.preventDefault();
+                downloadOfficialReceipt(officialDownloadButton.getAttribute('data-payment-id'));
+                return;
+            }
+
+            const proofViewButton = event.target.closest('.view-payment-proof-btn');
+            if (proofViewButton) {
+                event.preventDefault();
+                viewUploadedProof(proofViewButton.getAttribute('data-payment-id'));
+                return;
+            }
+
+            const legacyDownloadButton = event.target.closest('.download-payment-receipt-btn');
+            if (legacyDownloadButton) {
+                event.preventDefault();
+                downloadOfficialReceipt(legacyDownloadButton.getAttribute('data-payment-id'));
+            }
         });
 
         if (elements.logoutButton) {
@@ -6838,7 +6903,8 @@ function renderDashboardApp() {
 
         if (elements.receiptVerificationContainer && isAdminRole()) {
             elements.receiptVerificationContainer.addEventListener('click', (event) => {
-                const viewButton = event.target.closest('.view-payment-receipt-btn');
+                const viewButton = event.target.closest('.view-payment-proof-btn')
+                    || event.target.closest('.view-payment-receipt-btn');
                 const verifyButton = event.target.closest('.verify-payment-btn');
                 const rejectButton = event.target.closest('.reject-payment-btn');
 

@@ -2,19 +2,9 @@
 // LOGIN PAGE SCRIPT
 // ===========================
 
-// Backend API base
-// Use the current site origin by default so the login page talks to the same backend that served it.
-const storedApiBase = localStorage.getItem('API_BASE');
-const currentOrigin = window.location.origin;
-const legacyBases = new Set(['http://localhost:3000', 'http://localhost:5000']);
-const API_BASE = storedApiBase && !legacyBases.has(storedApiBase)
-    ? storedApiBase
-    : currentOrigin;
-
-// Auto-migrate old stored values to the active origin.
-if (!storedApiBase || legacyBases.has(storedApiBase)) {
-    localStorage.setItem('API_BASE', currentOrigin);
-}
+// Backend API base — always use the page origin so login hits the same server as the dashboard.
+const API_BASE = window.location.origin;
+localStorage.setItem('API_BASE', API_BASE);
 
 // Get DOM Elements
 const loginForm = document.getElementById('loginForm');
@@ -151,6 +141,7 @@ async function apiRequest(path, { method = 'GET', token = null, body = null } = 
         const err = new Error(msg);
         err.status = res.status;
         err.data = data;
+        err.code = data && data.code ? data.code : '';
         throw err;
     }
 
@@ -197,8 +188,8 @@ loginForm.addEventListener('submit', async (e) => {
 
     // Get form data
     const email = emailInput.value.trim();
-    const password = passwordInput.value;
-    const role = roleSelect ? roleSelect.value : 'member';
+    const password = passwordInput.value.trim();
+    const role = roleSelect ? roleSelect.value : '';
     const rememberMe = document.getElementById('remember').checked;
 
     const submitBtn = loginForm.querySelector('.login-button');
@@ -207,7 +198,7 @@ loginForm.addEventListener('submit', async (e) => {
     try {
         const result = await apiRequest('/auth/login', {
             method: 'POST',
-            body: { email, password, role }
+            body: { email, password }
         });
 
         const { token, user } = result;
@@ -243,7 +234,10 @@ loginForm.addEventListener('submit', async (e) => {
         }, 500);
     } catch (err) {
         console.error('Login error:', err);
-        showToast(err.message || 'Login failed. Please try again.', 'error', 4000);
+        const fallback = err.code === 'ROLE_MISMATCH'
+            ? 'Selected role does not match your account. Choose the correct role and try again.'
+            : (err.message || 'Login failed. Please try again.');
+        showToast(fallback, 'error', 5000);
         setLoading(submitBtn, false);
     }
 });

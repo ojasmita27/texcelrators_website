@@ -7,12 +7,13 @@ const PaymentSchema = new mongoose.Schema(
     installmentNumber: { type: Number, min: 1, max: 3, default: null },
     method: { type: String, enum: ['receipt', 'manual'], required: true },
 
-    // Receipt upload (for member submissions)
+    // Type A — uploaded member proof (never overwritten)
     receiptPath: { type: String, default: null },
     receiptOriginalName: { type: String, default: null },
+    receiptUploadedAt: { type: Date, default: null },
 
-    // Generated official receipt PDF
-    receiptNumber: { type: String, default: null, unique: true, sparse: true },
+    // Type B — official generated receipt (set only after approval)
+    receiptNumber: { type: String },
     receiptPdfPath: { type: String, default: null },
     receiptPdfName: { type: String, default: null },
     receiptGeneratedAt: { type: Date, default: null },
@@ -33,7 +34,6 @@ const PaymentSchema = new mongoose.Schema(
     verifiedAt: { type: Date, default: null },
     verifiedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
 
-    // Razorpay placeholders for future integration
     razorpayOrderId: { type: String, default: null },
     razorpayPaymentId: { type: String, default: null },
     razorpaySignature: { type: String, default: null }
@@ -43,6 +43,16 @@ const PaymentSchema = new mongoose.Schema(
 
 PaymentSchema.index({ member: 1, submittedAt: -1 });
 PaymentSchema.index({ status: 1, submittedAt: -1 });
+PaymentSchema.index(
+  { receiptNumber: 1 },
+  {
+    unique: true,
+    partialFilterExpression: {
+      receiptNumber: { $exists: true, $type: 'string', $gt: '' }
+    },
+    name: 'receiptNumber_unique_partial'
+  }
+);
 
 const Payment = mongoose.model('Payment', PaymentSchema);
 

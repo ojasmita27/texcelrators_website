@@ -90,26 +90,34 @@ function buildContentLines(data) {
   };
 
   addLine('Texcelerators Robotics Club', { font: 'F2', size: 20, leading: 26, x: 56 });
+  addLine('[ LOGO ] Texcelerators Official Receipt', { font: 'F1', size: 11, leading: 16, x: 56 });
   addLine('Official Payment Receipt', { font: 'F1', size: 13, leading: 18, x: 56 });
   addLine('', { size: 8, leading: 10 });
   addLine('------------------------------------------------------------', { font: 'F1', size: 11, leading: 14 });
   addLine('', { size: 8, leading: 10 });
 
   addWrappedLine(`Receipt Number: ${data.receiptNumber}`, { font: 'F2', size: 12, maxChars: 60 });
+  addWrappedLine(`Unique Receipt ID: ${data.receiptNumber}`, { maxChars: 60 });
   addWrappedLine(`Member Name: ${data.memberName}`, { maxChars: 60 });
   if (data.memberEmail) {
     addWrappedLine(`Member Email: ${data.memberEmail}`, { maxChars: 60 });
   }
   if (data.membershipId) {
-    addWrappedLine(`Membership ID: ${data.membershipId}`, { maxChars: 60 });
+    addWrappedLine(`Member ID: ${data.membershipId}`, { maxChars: 60 });
   }
   addWrappedLine(`Amount Paid: INR ${formatAmount(data.amount)}`, { maxChars: 60 });
+  if (data.installmentLabel) {
+    addWrappedLine(`Installment / Purpose: ${data.installmentLabel}`, { maxChars: 60 });
+  }
   addWrappedLine(`Payment Method: ${normalizeText(data.paymentMethod)}`, { maxChars: 60 });
-  addWrappedLine(`Submission Date & Time: ${formatDateTime(data.submissionDate)}`, { maxChars: 60 });
-  addWrappedLine(`Status: ${normalizeText(data.status || 'Approved')}`, { maxChars: 60 });
+  addWrappedLine(`Submitted Date & Time: ${formatDateTime(data.submissionDate)}`, { maxChars: 60 });
+  addWrappedLine(`Payment Status: ${normalizeText(data.status || 'Approved')}`, { maxChars: 60 });
   addWrappedLine(`Approved By: ${data.approvedByName || 'N/A'}`, { maxChars: 60 });
+  if (data.approverRole) {
+    addWrappedLine(`Approver Role: ${normalizeText(data.approverRole)}`, { maxChars: 60 });
+  }
   addWrappedLine(`Approval Date & Time: ${formatDateTime(data.approvalDateTime)}`, { maxChars: 60 });
-  addWrappedLine(`Receipt Generated At: ${formatDateTime(data.receiptGeneratedAt)}`, { maxChars: 60 });
+  addWrappedLine(`Generated Timestamp: ${formatDateTime(data.receiptGeneratedAt)}`, { maxChars: 60 });
 
   if (data.paymentNotes) {
     addLine('', { size: 8, leading: 10 });
@@ -119,7 +127,8 @@ function buildContentLines(data) {
 
   addLine('', { size: 8, leading: 10 });
   addLine('------------------------------------------------------------', { font: 'F1', size: 11, leading: 14 });
-  addWrappedLine('Computer Generated Official Receipt', { maxChars: 72 });
+  addWrappedLine('Authorized Digital Signature: ___________________________', { maxChars: 72 });
+  addWrappedLine('Computer Generated Official Receipt — Permanent Record', { maxChars: 72 });
 
   return lines;
 }
@@ -188,7 +197,9 @@ async function generateReceiptPdf({
   approvedByName,
   approvalDateTime,
   receiptGeneratedAt,
-  paymentNotes
+  paymentNotes,
+  installmentLabel,
+  approverRole
 }) {
   ensureDirectory(outputDir);
 
@@ -208,7 +219,9 @@ async function generateReceiptPdf({
     approvedByName,
     approvalDateTime,
     receiptGeneratedAt,
-    paymentNotes
+    paymentNotes,
+    installmentLabel,
+    approverRole
   });
 
   const pdfBuffer = buildPdfBuffer(contentLines);
