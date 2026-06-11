@@ -8,6 +8,7 @@ const { buildReceiptNumber, generateReceiptPdf } = require('../utils/pdfGenerato
 const { getActiveInstallmentContext } = require('../utils/membershipInstallments');
 const fs = require('fs/promises');
 const path = require('path');
+const mongoose = require('mongoose');
 
 const router = Router();
 const upload = receiptUploader();
@@ -93,6 +94,21 @@ async function removeGeneratedPdf(filePath) {
   }
 }
 
+function resolveUploadAbsolutePath(publicPath) {
+  if (!publicPath || typeof publicPath !== 'string') return null;
+  const normalizedPublicPath = publicPath.trim().replace(/\\/g, '/');
+  if (!normalizedPublicPath.startsWith('/uploads/')) return null;
+
+  const relativePath = normalizedPublicPath.slice('/uploads/'.length);
+  if (!relativePath || relativePath.includes('..')) return null;
+
+  const absolutePath = path.normalize(path.join(process.cwd(), 'uploads', relativePath));
+  const uploadsRoot = path.normalize(path.join(process.cwd(), 'uploads'));
+  if (!absolutePath.startsWith(uploadsRoot)) return null;
+
+  return absolutePath;
+}
+
 async function generateReceiptForApprovedPayment(payment, approver) {
   const approvedAt = payment.verifiedAt || new Date();
   const generatedAt = new Date();
@@ -151,6 +167,60 @@ async function generateReceiptForApprovedPayment(payment, approver) {
 
   throw new Error('Unable to generate a unique receipt number');
 }
+
+// Authenticated receipt download (official PDF or uploaded receipt fallback)
+router.get(
+  '/receipt/:paymentId',
+  requireAuth,
+  blockIfMustChangePassword,
+  asyncHandler(async (req, res) => {
+    const { paymentId } = req.params || {};
+
+    if (!mongoose.Types.ObjectId.isValid(paymentId)) {
+      return res.status(400).json({ message: 'Invalid payment id' });
+    }
+
+    const payment = await Payment.findById(paymentId);
+    if (!payment) {
+      return res.status(404).json({ message: 'Payment not found' });
+    }
+
+    const paymentMemberId = String(payment.member);
+    const requesterId = String(req.user._id);
+    if (req.user.role !== 'admin' && paymentMemberId !== requesterId) {
+      return res.status(403).json({ message: 'Not authorized to access this receipt' });
+    }
+
+    if (payment.status !== 'approved') {
+      return res.status(400).json({ message: 'Receipt is available only for approved payments' });
+    }
+
+    const publicPath = payment.receiptPdfPath || payment.receiptPath;
+    if (!publicPath) {
+      return res.status(404).json({ message: 'Receipt file not available' });
+    }
+
+    const absolutePath = resolveUploadAbsolutePath(publicPath);
+    if (!absolutePath) {
+      return res.status(400).json({ message: 'Invalid receipt path' });
+    }
+
+    try {
+      await fs.access(absolutePath);
+    } catch {
+      return res.status(404).json({ message: 'Receipt file was not found on the server' });
+    }
+
+    const downloadName = payment.receiptPdfName
+      || (payment.receiptNumber ? `${payment.receiptNumber}.pdf` : path.basename(absolutePath));
+
+    return res.download(absolutePath, downloadName, (err) => {
+      if (err && !res.headersSent) {
+        res.status(500).json({ message: 'Unable to download receipt file' });
+      }
+    });
+  })
+);
 
 // Required route: /add-payment
 // - Member: submits payment with receipt (pending)
