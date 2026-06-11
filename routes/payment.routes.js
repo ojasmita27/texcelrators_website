@@ -14,6 +14,14 @@ const router = Router();
 const upload = receiptUploader();
 const generatedReceiptDir = path.join(process.cwd(), 'uploads', 'receipts', 'generated');
 
+async function ensureGeneratedReceiptDir() {
+  await fs.mkdir(generatedReceiptDir, { recursive: true });
+}
+
+ensureGeneratedReceiptDir().catch(() => {
+  // Directory creation is retried during PDF generation.
+});
+
 function normalizePaymentMember(member) {
   if (!member) return null;
   if (typeof member === 'object') return member;
@@ -112,34 +120,13 @@ function resolveUploadAbsolutePath(publicPath) {
 async function generateReceiptForApprovedPayment(payment, approver) {
   const approvedAt = payment.verifiedAt || new Date();
   const generatedAt = new Date();
-  const paymentMember = normalizePaymentMember(payment.member);
-  const memberName = getPersonLabel(paymentMember, 'Member');
-  const memberEmail = paymentMember && paymentMember.email ? paymentMember.email : 'N/A';
-  const membershipId = paymentMember && (paymentMember._id || paymentMember.id)
-    ? String(paymentMember._id || paymentMember.id)
-    : 'N/A';
-  const approverName = getPersonLabel(approver, 'Admin');
 
   for (let attempt = 0; attempt < 5; attempt += 1) {
     const receiptYear = generatedAt.getFullYear();
     const sequence = await getNextReceiptSequence(receiptYear);
     const receiptNumber = buildReceiptNumber(receiptYear, sequence);
 
-    const generatedPdf = await generateReceiptPdf({
-      outputDir: generatedReceiptDir,
-      receiptNumber,
-      memberName,
-      memberEmail,
-      membershipId,
-      amount: payment.amount,
-      paymentMethod: payment.method,
-      submissionDate: payment.submittedAt || payment.createdAt || approvedAt,
-      status: 'Approved',
-      approvedByName: approverName,
-      approvalDateTime: approvedAt,
-      receiptGeneratedAt: generatedAt,
-      paymentNotes: payment.notes || ''
-    });
+    const generatedPdf = await buildReceiptPdfForPayment(payment, approver, receiptNumber);
 
     payment.status = 'approved';
     payment.verifiedBy = approver._id;
@@ -166,6 +153,95 @@ async function generateReceiptForApprovedPayment(payment, approver) {
   }
 
   throw new Error('Unable to generate a unique receipt number');
+}
+
+async function fileExistsAtPath(absolutePath) {
+  if (!absolutePath) return false;
+  try {
+    await fs.access(absolutePath);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function buildReceiptPdfForPayment(payment, approver, receiptNumber) {
+  const approvedAt = payment.verifiedAt || new Date();
+  const generatedAt = payment.receiptGeneratedAt || new Date();
+  const paymentMember = normalizePaymentMember(payment.member);
+  const memberName = getPersonLabel(paymentMember, 'Member');
+  const memberEmail = paymentMember && paymentMember.email ? paymentMember.email : 'N/A';
+  const membershipId = paymentMember && (paymentMember._id || paymentMember.id)
+    ? String(paymentMember._id || paymentMember.id)
+    : 'N/A';
+  const approverName = getPersonLabel(approver, 'Admin');
+
+  await ensureGeneratedReceiptDir();
+
+  return generateReceiptPdf({
+    outputDir: generatedReceiptDir,
+    receiptNumber,
+    memberName,
+    memberEmail,
+    membershipId,
+    amount: payment.amount,
+    paymentMethod: payment.method,
+    submissionDate: payment.submittedAt || payment.createdAt || approvedAt,
+    status: 'Approved',
+    approvedByName: approverName,
+    approvalDateTime: approvedAt,
+    receiptGeneratedAt: generatedAt,
+    paymentNotes: payment.notes || ''
+  });
+}
+
+async function regenerateMissingOfficialReceipt(payment, requester) {
+  if (!payment || payment.status !== 'approved' || !payment.receiptNumber) {
+    return null;
+  }
+
+  if (!payment.member || typeof payment.member === 'string') {
+    await payment.populate('member', 'name email');
+  }
+
+  const generatedPdf = await buildReceiptPdfForPayment(payment, requester, payment.receiptNumber);
+  payment.receiptPdfPath = generatedPdf.publicPath;
+  payment.receiptPdfName = generatedPdf.fileName;
+  if (!payment.receiptGeneratedAt) {
+    payment.receiptGeneratedAt = new Date();
+  }
+  if (!payment.receiptGeneratedBy && requester && requester._id) {
+    payment.receiptGeneratedBy = requester._id;
+  }
+
+  await payment.save();
+  return generatedPdf.absolutePath;
+}
+
+async function resolveReceiptDownloadTarget(payment, requester) {
+  const candidates = [
+    payment.receiptPdfPath,
+    payment.receiptPath
+  ].filter(Boolean);
+
+  for (const publicPath of candidates) {
+    const absolutePath = resolveUploadAbsolutePath(publicPath);
+    if (absolutePath && await fileExistsAtPath(absolutePath)) {
+      return { absolutePath, publicPath };
+    }
+  }
+
+  if (payment.receiptNumber) {
+    const regeneratedPath = await regenerateMissingOfficialReceipt(payment, requester);
+    if (regeneratedPath && await fileExistsAtPath(regeneratedPath)) {
+      return {
+        absolutePath: regeneratedPath,
+        publicPath: payment.receiptPdfPath
+      };
+    }
+  }
+
+  return null;
 }
 
 // Authenticated receipt download (official PDF or uploaded receipt fallback)
@@ -195,26 +271,20 @@ router.get(
       return res.status(400).json({ message: 'Receipt is available only for approved payments' });
     }
 
-    const publicPath = payment.receiptPdfPath || payment.receiptPath;
-    if (!publicPath) {
+    if (!payment.receiptPdfPath && !payment.receiptPath && !payment.receiptNumber) {
       return res.status(404).json({ message: 'Receipt file not available' });
     }
 
-    const absolutePath = resolveUploadAbsolutePath(publicPath);
-    if (!absolutePath) {
-      return res.status(400).json({ message: 'Invalid receipt path' });
-    }
-
-    try {
-      await fs.access(absolutePath);
-    } catch {
+    const downloadTarget = await resolveReceiptDownloadTarget(payment, req.user);
+    if (!downloadTarget || !downloadTarget.absolutePath) {
       return res.status(404).json({ message: 'Receipt file was not found on the server' });
     }
 
     const downloadName = payment.receiptPdfName
-      || (payment.receiptNumber ? `${payment.receiptNumber}.pdf` : path.basename(absolutePath));
+      || (payment.receiptNumber ? `${payment.receiptNumber}.pdf` : path.basename(downloadTarget.absolutePath));
 
-    return res.download(absolutePath, downloadName, (err) => {
+    res.setHeader('Cache-Control', 'private, no-store');
+    return res.download(downloadTarget.absolutePath, downloadName, (err) => {
       if (err && !res.headersSent) {
         res.status(500).json({ message: 'Unable to download receipt file' });
       }
@@ -366,4 +436,8 @@ router.post(
   })
 );
 
-module.exports = { paymentRoutes: router };
+module.exports = {
+  paymentRoutes: router,
+  resolveUploadAbsolutePath,
+  generatedReceiptDir
+};

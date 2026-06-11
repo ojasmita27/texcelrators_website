@@ -2472,8 +2472,18 @@ function renderDashboardApp() {
         return;
     }
 
-    // Backend API base — always use the current page origin to avoid stale localStorage ports/hosts
-    const API_BASE = window.location.origin;
+    // Backend API base — meta override, then current origin (never stale localStorage ports)
+    function resolveApiBase() {
+        const meta = document.querySelector('meta[name="api-base"]');
+        const metaBase = meta && meta.getAttribute('content');
+        if (metaBase && metaBase.trim()) {
+            return metaBase.trim().replace(/\/$/, '');
+        }
+        return window.location.origin;
+    }
+
+    const API_BASE = resolveApiBase();
+    const RECEIPT_DOWNLOAD_PATH = '/payments/receipt';
     localStorage.setItem('API_BASE', API_BASE);
 
     if (!document.getElementById('dashboardToast')) {
@@ -2966,9 +2976,14 @@ function renderDashboardApp() {
         return trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
     }
 
+    function buildReceiptDownloadUrl(paymentId) {
+        if (!paymentId) return '';
+        return `${RECEIPT_DOWNLOAD_PATH}/${encodeURIComponent(String(paymentId))}`;
+    }
+
     function canDownloadApprovedReceipt(payment) {
         if (!payment || !isPaymentApproved(normalizePaymentStatus(payment.status))) return false;
-        return Boolean(payment.receiptPdfPath || payment.receiptPath);
+        return Boolean(payment.receiptPdfPath || payment.receiptPath || payment.receiptNumber);
     }
 
     function renderReceiptDownloadButton(payment) {
@@ -2985,8 +3000,10 @@ function renderDashboardApp() {
             return;
         }
 
+        const downloadUrl = `${API_BASE}${buildReceiptDownloadUrl(paymentId)}`;
+
         try {
-            const response = await fetch(`${API_BASE}/payments/receipt/${paymentId}`, {
+            const response = await fetch(downloadUrl, {
                 method: 'GET',
                 headers: { Authorization: `Bearer ${token}` }
             });
@@ -3022,7 +3039,7 @@ function renderDashboardApp() {
         const memberId = (p.member && (p.member._id || p.member.id)) ? String(p.member._id || p.member.id) : String(p.member);
         const paymentId = String(p._id || p.id);
         const receiptPath = normalizePublicUploadPath(p.receiptPath || '');
-        const receiptPreview = receiptPath && isImagePath(receiptPath) ? receiptPath : '';
+        const receiptPreview = receiptPath && isImagePath(receiptPath) ? `${API_BASE}${receiptPath}` : '';
         const receiptPdfPath = normalizePublicUploadPath(p.receiptPdfPath || '');
         const submittedAt = p.submittedAt || p.createdAt || null;
         const approvedAt = p.verifiedAt || null;
@@ -3049,7 +3066,7 @@ function renderDashboardApp() {
         };
 
         if (canDownloadApprovedReceipt(mappedPayment)) {
-            mappedPayment.receiptDownloadUrl = `/payments/receipt/${paymentId}`;
+            mappedPayment.receiptDownloadUrl = buildReceiptDownloadUrl(paymentId);
         }
 
         return mappedPayment;
@@ -5005,9 +5022,14 @@ function renderDashboardApp() {
             return;
         }
 
+        if (isPaymentApproved(normalizePaymentStatus(payment.status)) && canDownloadApprovedReceipt(payment)) {
+            downloadPaymentReceiptFile(payment.id);
+            return;
+        }
+
         const viewUrl = payment.receiptViewUrl
-            || payment.receiptPreview
-            || payment.receiptPdfPath;
+            ? `${API_BASE}${payment.receiptViewUrl}`
+            : (payment.receiptPreview || '');
 
         if (!viewUrl) {
             alert('No receipt file available for this payment.');

@@ -36,12 +36,27 @@ app.use(morgan('dev'));
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true }));
 
-// Serve the frontend files from the project root
-app.use(express.static(path.join(process.cwd())));
+// Health check (required)
+app.get('/health', (req, res) => {
+  res.json({ status: 'ok' });
+});
 
-// Serve uploaded receipts (if you prefer private receipts, remove this and serve via a protected route)
-app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
+// API routes MUST be registered before static middleware so /payments/* is never swallowed
+app.use('/auth', authRoutes);
+app.use('/members', memberRoutes);
+app.use('/payments', paymentRoutes);
+app.use('/expenses', expenseRoutes);
+app.use('/dashboard', dashboardRoutes);
+app.use('/api/collaboration', collaborationRoutes);
 
+// Enterprise Financial Features Routes
+app.use('/member-transactions', memberTransactionRoutes);
+app.use('/reimbursements', reimbursementRoutes);
+app.use('/projects', projectRoutes);
+app.use('/events', eventRoutes);
+app.use('/reports', reportRoutes);
+
+// Explicit HTML entry points
 app.get('/', (req, res) => {
   res.sendFile(path.join(process.cwd(), 'index.html'));
 });
@@ -58,25 +73,9 @@ app.get('/dashboard', (req, res) => {
   res.sendFile(path.join(process.cwd(), 'dashboard.html'));
 });
 
-// Health check (required)
-app.get('/health', (req, res) => {
-  res.json({ status: 'ok' });
-});
-
-// Routes (clean REST structure)
-app.use('/auth', authRoutes);
-app.use('/members', memberRoutes);
-app.use('/payments', paymentRoutes);
-app.use('/expenses', expenseRoutes);
-app.use('/dashboard', dashboardRoutes);
-app.use('/api/collaboration', collaborationRoutes);
-
-// NEW: Enterprise Financial Features Routes
-app.use('/member-transactions', memberTransactionRoutes);
-app.use('/reimbursements', reimbursementRoutes);
-app.use('/projects', projectRoutes);
-app.use('/events', eventRoutes);
-app.use('/reports', reportRoutes);
+// Static assets and uploads (after API routes)
+app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
+app.use(express.static(path.join(process.cwd())));
 
 // 404
 app.use((req, res) => {
