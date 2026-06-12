@@ -7,6 +7,7 @@
     <title>Texcelerators Dashboard</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="project-management-styles.css">
+    <link rel="stylesheet" href="assets/css/certificates.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style id="club-summary-overrides">
     /* Compact Club Summary overrides - scoped to club summary section */
@@ -53,6 +54,7 @@
                 <a href="#projects-section" data-sidebar-link data-target="projects-section" data-for-roles="admin,member"><i class="fas fa-robot"></i><span>Projects</span></a>
                 <a href="#events-section" data-sidebar-link data-target="events-section" data-for-roles="admin,member"><i class="fas fa-calendar"></i><span>Events</span></a>
                 <a href="#reimbursement-section" data-sidebar-link data-target="reimbursement-section" data-for-roles="admin,member"><i class="fas fa-receipt"></i><span data-for-roles="admin">Reimbursements</span><span data-for-roles="member">Expense Claims</span></a>
+                <a href="#certificates-section" data-sidebar-link data-target="certificates-section" data-for-roles="admin,member"><i class="fas fa-certificate"></i><span>Certificates</span></a>
                 <a href="#rules-section" data-sidebar-link data-target="rules-section" data-for-roles="member"><i class="fas fa-scale-balanced"></i><span>Rules & Regulations</span></a>
                 <a href="#profile-section" data-sidebar-link data-target="profile-section" data-for-roles="member"><i class="fas fa-id-card"></i><span>Profile</span></a>
                 <a href="#member-transactions-section" data-sidebar-link data-target="member-transactions-section" data-for-roles="admin"><i class="fas fa-arrows-left-right"></i><span>Transfers</span></a>
@@ -736,6 +738,125 @@
                             });
                         })();
                     </script>
+                </section>
+
+                <section class="panel glass-panel premium-panel" id="certificates-section" data-dashboard-section data-for-roles="admin,member">
+                    <div class="panel-header premium-header">
+                        <div class="header-left">
+                            <h3><i class="fas fa-certificate"></i> Certificates</h3>
+                            <p>Upload and manage member achievement certificates.</p>
+                        </div>
+                        <div class="panel-actions">
+                            <button class="dashboard-button primary" id="openCertUploadForm">
+                                <i class="fas fa-plus"></i> Upload Certificate
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- KPI row -->
+                    <div class="cert-kpi-row" id="cert-kpi-row">
+                        <div class="kpi-card premium-kpi-card">
+                            <div class="kpi-icon"><i class="fas fa-certificate"></i></div>
+                            <div class="kpi-content">
+                                <div class="kpi-label">Total Certificates</div>
+                                <div class="kpi-value" id="certKpiTotal">0</div>
+                            </div>
+                        </div>
+                        <div class="kpi-card premium-kpi-card">
+                            <div class="kpi-icon"><i class="fas fa-trophy"></i></div>
+                            <div class="kpi-content">
+                                <div class="kpi-label">Competition Wins</div>
+                                <div class="kpi-value" id="certKpiWins">0</div>
+                            </div>
+                        </div>
+                        <div class="kpi-card premium-kpi-card">
+                            <div class="kpi-icon"><i class="fas fa-users"></i></div>
+                            <div class="kpi-content">
+                                <div class="kpi-label">Members with Certs</div>
+                                <div class="kpi-value" id="certKpiMembers">0</div>
+                            </div>
+                        </div>
+                        <div class="kpi-card premium-kpi-card">
+                            <div class="kpi-icon"><i class="fas fa-tools"></i></div>
+                            <div class="kpi-content">
+                                <div class="kpi-label">Workshops</div>
+                                <div class="kpi-value" id="certKpiWorkshops">0</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Upload form (hidden by default) -->
+                    <div class="cert-upload-form" id="cert-upload-form">
+                        <h4 style="margin-bottom:0.9rem;font-size:0.95rem;"><i class="fas fa-upload"></i> Upload New Certificate</h4>
+                        <form id="certUploadFormEl" enctype="multipart/form-data">
+                            <div class="cert-form-grid">
+                                <div class="cert-form-field" id="cert-member-field" data-for-roles="admin">
+                                    <label for="certMemberId">Member *</label>
+                                    <select id="certMemberId" name="memberId">
+                                        <option value="">Select member</option>
+                                    </select>
+                                </div>
+                                <div class="cert-form-field">
+                                    <label for="certTitle">Certificate Title *</label>
+                                    <input type="text" id="certTitle" name="title" placeholder="e.g. Robocon 2025 – 2nd Place" maxlength="200" required>
+                                </div>
+                                <div class="cert-form-field">
+                                    <label for="certOrg">Issuing Organization</label>
+                                    <input type="text" id="certOrg" name="issuingOrganization" placeholder="e.g. IIT Bombay" maxlength="200">
+                                </div>
+                                <div class="cert-form-field">
+                                    <label for="certIssuedDate">Issue Date</label>
+                                    <input type="date" id="certIssuedDate" name="issuedDate">
+                                </div>
+                                <div class="cert-form-field">
+                                    <label for="certCategory">Category</label>
+                                    <select id="certCategory" name="category">
+                                        <option value="other">Other</option>
+                                        <option value="competition_win">Competition Win</option>
+                                        <option value="competition_participation">Competition Participation</option>
+                                        <option value="workshop_completion">Workshop Completion</option>
+                                        <option value="training">Training</option>
+                                        <option value="skill_certification">Skill Certification</option>
+                                        <option value="appreciation">Appreciation</option>
+                                    </select>
+                                </div>
+                                <div class="cert-form-field">
+                                    <label for="certFile">Certificate File * (PDF/JPG/PNG, max 6 MB)</label>
+                                    <input type="file" id="certFile" name="certificate" accept=".pdf,image/jpeg,image/png,image/webp" required>
+                                </div>
+                                <div class="cert-form-field span-2">
+                                    <label for="certNotes">Notes / Comments</label>
+                                    <textarea id="certNotes" name="adminNotes" class="cert-notes-textarea" placeholder="Add any notes or comments about this certificate…" maxlength="5000"></textarea>
+                                </div>
+                            </div>
+                            <div class="cert-form-actions">
+                                <button type="submit" class="dashboard-button primary" id="certUploadSubmitBtn"><i class="fas fa-upload"></i> Upload</button>
+                                <button type="button" class="dashboard-button" id="certUploadCancelBtn">Cancel</button>
+                            </div>
+                            <div id="certUploadStatus" style="margin-top:0.6rem;font-size:0.85rem;"></div>
+                        </form>
+                    </div>
+
+                    <!-- Search + filter controls -->
+                    <div class="cert-controls-row">
+                        <input type="text" id="certSearch" class="search-input" placeholder="Search certificates…" autocomplete="off">
+                        <select id="certFilterCategory" class="search-input" style="max-width:180px;">
+                            <option value="all">All Categories</option>
+                            <option value="competition_win">Competition Win</option>
+                            <option value="competition_participation">Competition Participation</option>
+                            <option value="workshop_completion">Workshop Completion</option>
+                            <option value="training">Training</option>
+                            <option value="skill_certification">Skill Certification</option>
+                            <option value="appreciation">Appreciation</option>
+                            <option value="other">Other</option>
+                        </select>
+                        <select id="certFilterMember" class="search-input" style="max-width:180px;" data-for-roles="admin">
+                            <option value="all">All Members</option>
+                        </select>
+                    </div>
+
+                    <!-- Certificate list -->
+                    <div id="certificates-container"></div>
                 </section>
 
                 <section class="panel glass-panel premium-panel" id="profile-section" data-dashboard-section data-for-roles="member">

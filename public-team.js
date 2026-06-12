@@ -386,6 +386,7 @@ function initializeBackToTop() {
         'leadership-section': "Our leadership team brings together experts in various fields of robotics. What else would you like to explore?",
         'core-section': "Our core team members are specialists who drive our projects forward. Can I help you navigate to other sections?",
         'junior-section': "Our junior members are the future of robotics innovation, bringing fresh ideas and enthusiasm. Where would you like to go next?",
+        'alumni-section': "Our alumni have gone on to do incredible things in robotics and beyond. Their legacy lives on in everything we build. 🎓",
       };
       
       // ===== OPEN DIALOG =====

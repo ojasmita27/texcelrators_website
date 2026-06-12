@@ -3204,7 +3204,8 @@ function renderDashboardApp() {
             reimbursements: [],
             projects: [],
             events: [],
-            contributionStats: {}
+            contributionStats: {},
+            certificates: []
         };
 
         if (userRole === 'admin') {
@@ -6533,6 +6534,425 @@ function renderDashboardApp() {
         });
     }
 
+    /* ═══════════════════════════════════════════════════════
+       CERTIFICATE MANAGEMENT SYSTEM
+       ═══════════════════════════════════════════════════════ */
+
+    const CERT_CATEGORY_LABELS = {
+        competition_win:           'Competition Win',
+        competition_participation: 'Competition Participation',
+        workshop_completion:       'Workshop Completion',
+        training:                  'Training',
+        skill_certification:       'Skill Certification',
+        appreciation:              'Appreciation',
+        other:                     'Other'
+    };
+
+    function getCertCategoryLabel(cat) {
+        return CERT_CATEGORY_LABELS[cat] || cat || 'Other';
+    }
+
+    function getCertId(cert) {
+        return String(cert && (cert._id || cert.id) ? (cert._id || cert.id) : '');
+    }
+
+    function escapeCertHtml(str) {
+        return String(str || '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+    }
+
+    /* ── Populate the member dropdown in the upload form (admin only) ── */
+    function populateCertMemberSelect() {
+        const sel = document.getElementById('certMemberId');
+        if (!sel || !isAdminRole()) return;
+        const members = (state.users || []).filter(u => u.role === 'member');
+        sel.innerHTML = '<option value="">Select member</option>' +
+            members.map(m => `<option value="${m.id}">${escapeCertHtml(m.name)}</option>`).join('');
+    }
+
+    /* ── Populate the "filter by member" dropdown (admin only) ── */
+    function populateCertFilterMember() {
+        const sel = document.getElementById('certFilterMember');
+        if (!sel || !isAdminRole()) return;
+        const members = (state.users || []).filter(u => u.role === 'member');
+        sel.innerHTML = '<option value="all">All Members</option>' +
+            members.map(m => `<option value="${m.id}">${escapeCertHtml(m.name)}</option>`).join('');
+    }
+
+    /* ── Download a certificate file via the authenticated API ── */
+    async function downloadCertificate(certDbId, originalName) {
+        const token = localStorage.getItem('authToken');
+        if (!token) { window.location.href = 'login.html'; return; }
+        try {
+            const res = await fetch(`${API_BASE}/certificates/${encodeURIComponent(certDbId)}/download`, {
+                method: 'GET',
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            if (!res.ok) {
+                const d = await res.json().catch(() => ({}));
+                throw new Error(d.message || 'Download failed');
+            }
+            const blob = await res.blob();
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = originalName || 'certificate';
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
+        } catch (err) {
+            if (!handleAuthFailure(err)) showDashboardToast(err.message || 'Download failed', 'error');
+        }
+    }
+
+    /* ── Main render function ── */
+    function renderCertificates() {
+        const container = document.getElementById('certificates-container');
+        if (!container) return;
+
+        const allCerts = Array.isArray(state.enterprise && state.enterprise.certificates)
+            ? state.enterprise.certificates
+            : [];
+
+        /* ── Update KPI cards ── */
+        const kpiTotal     = document.getElementById('certKpiTotal');
+        const kpiWins      = document.getElementById('certKpiWins');
+        const kpiMembers   = document.getElementById('certKpiMembers');
+        const kpiWorkshops = document.getElementById('certKpiWorkshops');
+
+        if (kpiTotal)     kpiTotal.textContent     = allCerts.length;
+        if (kpiWins)      kpiWins.textContent       = allCerts.filter(c => c.category === 'competition_win').length;
+        if (kpiWorkshops) kpiWorkshops.textContent  = allCerts.filter(c => c.category === 'workshop_completion').length;
+        if (kpiMembers) {
+            const uniqueMembers = new Set(allCerts.map(c => {
+                const m = c.member;
+                return m && (m._id || m.id) ? String(m._id || m.id) : null;
+            }).filter(Boolean));
+            kpiMembers.textContent = uniqueMembers.size;
+        }
+
+        /* ── Apply current filter/search state ── */
+        const searchVal  = (document.getElementById('certSearch')         || {}).value || '';
+        const catFilter  = (document.getElementById('certFilterCategory') || {}).value || 'all';
+        const memFilter  = (document.getElementById('certFilterMember')   || {}).value || 'all';
+
+        const needle = searchVal.trim().toLowerCase();
+
+        let certs = allCerts.filter(cert => {
+            if (catFilter !== 'all' && cert.category !== catFilter) return false;
+            if (isAdminRole() && memFilter !== 'all') {
+                const mId = cert.member && (cert.member._id || cert.member.id)
+                    ? String(cert.member._id || cert.member.id) : '';
+                if (mId !== memFilter) return false;
+            }
+            if (needle) {
+                const memberName = cert.member && cert.member.name ? cert.member.name.toLowerCase() : '';
+                const uploadedBy = cert.uploadedBy && cert.uploadedBy.name ? cert.uploadedBy.name.toLowerCase() : '';
+                const haystack = [
+                    (cert.title || '').toLowerCase(),
+                    (cert.issuingOrganization || '').toLowerCase(),
+                    memberName,
+                    uploadedBy
+                ].join(' ');
+                if (!haystack.includes(needle)) return false;
+            }
+            return true;
+        });
+
+        if (certs.length === 0) {
+            container.innerHTML = `
+                <div class="cert-empty">
+                    <i class="fas fa-certificate"></i>
+                    ${needle || catFilter !== 'all' || memFilter !== 'all'
+                        ? 'No certificates match your filters.'
+                        : 'No certificates uploaded yet.'}
+                </div>`;
+            return;
+        }
+
+        /* ── Render certificate rows ── */
+        container.innerHTML = certs.map(cert => {
+            const certId    = getCertId(cert);
+            const title     = escapeCertHtml(cert.title || 'Untitled');
+            const org       = escapeCertHtml(cert.issuingOrganization || '—');
+            const catLabel  = getCertCategoryLabel(cert.category);
+            const memberName    = cert.member    && cert.member.name    ? escapeCertHtml(cert.member.name)    : '—';
+            const uploadedByName= cert.uploadedBy && cert.uploadedBy.name ? escapeCertHtml(cert.uploadedBy.name) : '—';
+            const uploadedByRole= cert.uploadedBy && cert.uploadedBy.role ? cert.uploadedBy.role : '';
+            const uploadDate = cert.uploadedAt || cert.createdAt
+                ? formatDate(cert.uploadedAt || cert.createdAt) : '—';
+            const issueDate  = cert.issuedDate ? formatDate(cert.issuedDate) : '—';
+            const notes      = cert.adminNotes ? escapeCertHtml(cert.adminNotes) : '';
+            const origName   = cert.fileOriginalName || 'certificate';
+
+            const adminActions = isAdminRole() ? `
+                <button type="button" class="dashboard-button cert-edit-btn" data-cert-id="${certId}" title="Edit">
+                    <i class="fas fa-edit"></i> Edit
+                </button>
+                <button type="button" class="dashboard-button cert-delete-btn" data-cert-id="${certId}" title="Delete">
+                    <i class="fas fa-trash"></i> Delete
+                </button>` : '';
+
+            return `
+            <div class="cert-row" data-cert-id="${certId}">
+                <div class="cert-row-left">
+                    <div class="cert-row-title">
+                        <i class="fas fa-file-pdf" style="color:var(--accent);margin-right:6px;"></i>${title}
+                        <span class="cert-row-id" style="margin-left:8px;">${escapeCertHtml(cert.certificateId || '')}</span>
+                    </div>
+                    <div class="cert-row-meta">
+                        <span><i class="fas fa-user" style="margin-right:3px;"></i><strong>Owner:</strong>&nbsp;${memberName}</span>
+                        <span><i class="fas fa-building" style="margin-right:3px;"></i><strong>Issuer:</strong>&nbsp;${org}</span>
+                        <span><i class="fas fa-tag" style="margin-right:3px;"></i>${catLabel}</span>
+                        <span><i class="fas fa-calendar-alt" style="margin-right:3px;"></i><strong>Issue Date:</strong>&nbsp;${issueDate}</span>
+                        <span><i class="fas fa-upload" style="margin-right:3px;"></i><strong>Uploaded by:</strong>&nbsp;${uploadedByName}${uploadedByRole ? ` (${uploadedByRole})` : ''}&nbsp;·&nbsp;${uploadDate}</span>
+                    </div>
+                    ${notes ? `<div class="cert-row-notes"><i class="fas fa-sticky-note" style="margin-right:4px;opacity:0.6;"></i>${notes}</div>` : ''}
+
+                    <!-- Inline edit form (hidden by default) -->
+                    <div class="cert-edit-form" id="cert-edit-form-${certId}">
+                        <div class="cert-form-grid">
+                            <div class="cert-form-field">
+                                <label>Title</label>
+                                <input type="text" class="cert-edit-title" value="${title}" maxlength="200">
+                            </div>
+                            <div class="cert-form-field">
+                                <label>Issuing Organization</label>
+                                <input type="text" class="cert-edit-org" value="${escapeCertHtml(cert.issuingOrganization || '')}" maxlength="200">
+                            </div>
+                            <div class="cert-form-field">
+                                <label>Issue Date</label>
+                                <input type="date" class="cert-edit-date" value="${cert.issuedDate ? new Date(cert.issuedDate).toISOString().slice(0,10) : ''}">
+                            </div>
+                            <div class="cert-form-field">
+                                <label>Category</label>
+                                <select class="cert-edit-category">
+                                    ${Object.entries(CERT_CATEGORY_LABELS).map(([val, lbl]) =>
+                                        `<option value="${val}" ${cert.category === val ? 'selected' : ''}>${lbl}</option>`
+                                    ).join('')}
+                                </select>
+                            </div>
+                            <div class="cert-form-field span-2">
+                                <label>Notes / Comments</label>
+                                <textarea class="cert-edit-notes cert-notes-textarea" maxlength="5000">${notes}</textarea>
+                            </div>
+                        </div>
+                        <div class="cert-form-actions">
+                            <button type="button" class="dashboard-button primary cert-save-edit-btn" data-cert-id="${certId}">Save</button>
+                            <button type="button" class="dashboard-button cert-cancel-edit-btn" data-cert-id="${certId}">Cancel</button>
+                        </div>
+                        <div class="cert-edit-status" id="cert-edit-status-${certId}" style="font-size:0.82rem;margin-top:0.4rem;"></div>
+                    </div>
+                </div>
+
+                <div class="cert-row-actions">
+                    <button type="button" class="dashboard-button cert-download-btn"
+                        data-cert-id="${certId}"
+                        data-cert-orig-name="${escapeCertHtml(origName)}"
+                        title="Download certificate">
+                        <i class="fas fa-download"></i> Download
+                    </button>
+                    ${adminActions}
+                </div>
+            </div>`;
+        }).join('');
+
+        /* ── Bind event handlers on the freshly rendered list ── */
+        bindCertificateActions(container);
+    }
+
+    /* ── Wire up all action buttons inside the cert container ── */
+    function bindCertificateActions(container) {
+        if (!container) return;
+
+        /* Download */
+        container.querySelectorAll('.cert-download-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                downloadCertificate(btn.dataset.certId, btn.dataset.certOrigName);
+            });
+        });
+
+        if (!isAdminRole()) return;
+
+        /* Delete */
+        container.querySelectorAll('.cert-delete-btn').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                if (!confirm('Delete this certificate? The file will be permanently removed.')) return;
+                const certId = btn.dataset.certId;
+                try {
+                    await apiRequest(`/certificates/${certId}`, { method: 'DELETE' });
+                    // remove from state
+                    if (state.enterprise && Array.isArray(state.enterprise.certificates)) {
+                        state.enterprise.certificates = state.enterprise.certificates.filter(
+                            c => getCertId(c) !== certId
+                        );
+                    }
+                    renderCertificates();
+                    showDashboardToast('Certificate deleted.', 'success');
+                } catch (err) {
+                    if (!handleAuthFailure(err)) showDashboardToast(err.message || 'Delete failed', 'error');
+                }
+            });
+        });
+
+        /* Edit — toggle inline form */
+        container.querySelectorAll('.cert-edit-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const form = document.getElementById(`cert-edit-form-${btn.dataset.certId}`);
+                if (!form) return;
+                const isOpen = form.classList.toggle('is-open');
+                btn.innerHTML = isOpen
+                    ? '<i class="fas fa-times"></i> Cancel'
+                    : '<i class="fas fa-edit"></i> Edit';
+            });
+        });
+
+        /* Cancel inline edit */
+        container.querySelectorAll('.cert-cancel-edit-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const form = document.getElementById(`cert-edit-form-${btn.dataset.certId}`);
+                if (form) form.classList.remove('is-open');
+                const editBtn = container.querySelector(`.cert-edit-btn[data-cert-id="${btn.dataset.certId}"]`);
+                if (editBtn) editBtn.innerHTML = '<i class="fas fa-edit"></i> Edit';
+            });
+        });
+
+        /* Save inline edit */
+        container.querySelectorAll('.cert-save-edit-btn').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const certId = btn.dataset.certId;
+                const form   = document.getElementById(`cert-edit-form-${certId}`);
+                const status = document.getElementById(`cert-edit-status-${certId}`);
+                if (!form) return;
+
+                const payload = {
+                    title:               form.querySelector('.cert-edit-title')   .value.trim(),
+                    issuingOrganization: form.querySelector('.cert-edit-org')     .value.trim(),
+                    issuedDate:          form.querySelector('.cert-edit-date')    .value || null,
+                    category:            form.querySelector('.cert-edit-category').value,
+                    adminNotes:          form.querySelector('.cert-edit-notes')   .value
+                };
+
+                if (!payload.title) {
+                    if (status) { status.textContent = 'Title is required.'; status.style.color = 'var(--accent)'; }
+                    return;
+                }
+
+                btn.disabled = true;
+                if (status) { status.textContent = 'Saving…'; status.style.color = 'var(--muted)'; }
+
+                try {
+                    const result = await apiRequest(`/certificates/${certId}`, { method: 'PATCH', body: payload });
+                    if (result && result.certificate) {
+                        // update state
+                        if (state.enterprise && Array.isArray(state.enterprise.certificates)) {
+                            const idx = state.enterprise.certificates.findIndex(c => getCertId(c) === certId);
+                            if (idx !== -1) state.enterprise.certificates[idx] = result.certificate;
+                        }
+                    }
+                    renderCertificates();
+                    showDashboardToast('Certificate updated.', 'success');
+                } catch (err) {
+                    btn.disabled = false;
+                    if (status) { status.textContent = err.message || 'Save failed.'; status.style.color = 'var(--accent)'; }
+                    if (!handleAuthFailure(err)) showDashboardToast(err.message || 'Save failed', 'error');
+                }
+            });
+        });
+    }
+
+    /* ── Upload form toggle + submit ── */
+    function bindCertUploadForm() {
+        const openBtn    = document.getElementById('openCertUploadForm');
+        const uploadForm = document.getElementById('cert-upload-form');
+        const cancelBtn  = document.getElementById('certUploadCancelBtn');
+        const formEl     = document.getElementById('certUploadFormEl');
+        const statusEl   = document.getElementById('certUploadStatus');
+        const submitBtn  = document.getElementById('certUploadSubmitBtn');
+
+        if (!openBtn || !uploadForm || !formEl) return;
+
+        openBtn.addEventListener('click', () => {
+            const isOpen = uploadForm.classList.toggle('is-open');
+            openBtn.innerHTML = isOpen
+                ? '<i class="fas fa-times"></i> Cancel'
+                : '<i class="fas fa-plus"></i> Upload Certificate';
+            if (isOpen) {
+                populateCertMemberSelect();
+                uploadForm.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+        });
+
+        if (cancelBtn) {
+            cancelBtn.addEventListener('click', () => {
+                uploadForm.classList.remove('is-open');
+                openBtn.innerHTML = '<i class="fas fa-plus"></i> Upload Certificate';
+                formEl.reset();
+                if (statusEl) statusEl.textContent = '';
+            });
+        }
+
+        formEl.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (statusEl) { statusEl.textContent = ''; statusEl.style.color = ''; }
+            if (submitBtn) submitBtn.disabled = true;
+
+            /* Validate member field for admins */
+            if (isAdminRole()) {
+                const memberSel = document.getElementById('certMemberId');
+                if (memberSel && !memberSel.value) {
+                    if (statusEl) { statusEl.textContent = 'Please select a member.'; statusEl.style.color = 'var(--accent)'; }
+                    if (submitBtn) submitBtn.disabled = false;
+                    return;
+                }
+            }
+
+            const fd = new FormData(formEl);
+
+            /* For member uploads, remove memberId field (backend ignores it for members) */
+            if (!isAdminRole()) fd.delete('memberId');
+
+            if (statusEl) { statusEl.textContent = 'Uploading…'; statusEl.style.color = 'var(--muted)'; }
+
+            try {
+                const result = await apiRequest('/certificates/upload', { method: 'POST', body: fd, isForm: true });
+                if (result && result.certificate) {
+                    if (!state.enterprise) state.enterprise = {};
+                    if (!Array.isArray(state.enterprise.certificates)) state.enterprise.certificates = [];
+                    state.enterprise.certificates.unshift(result.certificate);
+                }
+                formEl.reset();
+                uploadForm.classList.remove('is-open');
+                openBtn.innerHTML = '<i class="fas fa-plus"></i> Upload Certificate';
+                if (statusEl) statusEl.textContent = '';
+                renderCertificates();
+                showDashboardToast('Certificate uploaded successfully.', 'success');
+            } catch (err) {
+                if (statusEl) { statusEl.textContent = err.message || 'Upload failed.'; statusEl.style.color = 'var(--accent)'; }
+                if (!handleAuthFailure(err)) showDashboardToast(err.message || 'Upload failed', 'error');
+            } finally {
+                if (submitBtn) submitBtn.disabled = false;
+            }
+        });
+
+        /* ── Search + filter live updates ── */
+        const searchInput = document.getElementById('certSearch');
+        const catFilter   = document.getElementById('certFilterCategory');
+        const memFilter   = document.getElementById('certFilterMember');
+
+        if (searchInput) searchInput.addEventListener('input',  () => renderCertificates());
+        if (catFilter)   catFilter.addEventListener('change',   () => renderCertificates());
+        if (memFilter)   memFilter.addEventListener('change',   () => renderCertificates());
+    }
+
+    /* ═══════════════════════════════════════════════════════
+       END CERTIFICATE MANAGEMENT SYSTEM
+       ═══════════════════════════════════════════════════════ */
+
     function bindAdminVerificationNavigation() {
         if (!isAdminRole()) return;
 
@@ -7030,6 +7450,7 @@ function renderDashboardApp() {
         renderContributionAnalytics();
         renderAnnouncements();
         renderCollaborations();
+        renderCertificates();
         renderMemberProfile();
         renderRulesPortal();
         // Build and populate charts from freshest state
@@ -7042,6 +7463,8 @@ function renderDashboardApp() {
         } catch (e) { console.warn('Analytics update failed', e); }
         bindSidebarNavigation();
         bindActions();
+        bindCertUploadForm();
+        populateCertFilterMember();
         bindAdminVerificationNavigation();
         setDashboardLoadingState(false);
         if (dashboardRootEl) {

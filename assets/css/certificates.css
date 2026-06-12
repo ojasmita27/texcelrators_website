@@ -1,0 +1,417 @@
+/* ================================================================
+   CERTIFICATES MODULE — Texcelerators Dashboard
+   Matches the existing dark theme and component library exactly.
+   All variables, spacing, and component patterns mirror the
+   style.css design language (glass panels, status chips, etc.)
+   ================================================================ */
+
+/* ── KPI row at top of admin panel ── */
+.cert-kpi-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 1.25rem;
+}
+
+@media (max-width: 900px) { .cert-kpi-row { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 540px) { .cert-kpi-row { grid-template-columns: 1fr 1fr; } }
+
+/* ── Upload + filter controls ── */
+.cert-controls-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  align-items: flex-end;
+  margin-bottom: 1.25rem;
+}
+.cert-controls-row .search-input { min-width: 160px; flex: 1; }
+.cert-controls-row select { flex-shrink: 0; }
+
+/* ── Upload form (admin) ── */
+.cert-upload-form {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(148,163,184,0.1);
+  border-radius: 0.75rem;
+  padding: 1.25rem;
+  margin-bottom: 1.5rem;
+  display: none;
+}
+.cert-upload-form.is-open { display: block; }
+
+.cert-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+@media (max-width: 620px) { .cert-form-grid { grid-template-columns: 1fr; } }
+
+.cert-form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+.cert-form-field label {
+  font-size: 0.78rem;
+  color: var(--text-secondary, #94a3b8);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.cert-form-field input,
+.cert-form-field select,
+.cert-form-field textarea {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(148,163,184,0.15);
+  border-radius: 0.5rem;
+  color: var(--foreground, #f1f5f9);
+  padding: 0.55rem 0.8rem;
+  font-size: 0.9rem;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.2s;
+  width: 100%;
+}
+.cert-form-field input:focus,
+.cert-form-field select:focus,
+.cert-form-field textarea:focus {
+  border-color: var(--primary, #2563eb);
+}
+.cert-form-field input::placeholder,
+.cert-form-field textarea::placeholder { color: var(--muted, #94a3b8); }
+.cert-form-field select option { background: #1e293b; }
+
+.cert-form-field.span-2 { grid-column: span 2; }
+@media (max-width: 620px) { .cert-form-field.span-2 { grid-column: span 1; } }
+
+.cert-notes-textarea {
+  min-height: 90px;
+  resize: vertical;
+}
+
+.cert-form-actions {
+  display: flex;
+  gap: 0.6rem;
+  margin-top: 0.9rem;
+  flex-wrap: wrap;
+}
+
+/* ── Certificate card (admin table row style) ── */
+.cert-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.85rem 0;
+  border-bottom: 1px solid rgba(148,163,184,0.08);
+  flex-wrap: wrap;
+}
+.cert-row:last-child { border-bottom: none; }
+
+.cert-row-left { flex: 1; min-width: 0; }
+.cert-row-title {
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--foreground, #f1f5f9);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cert-row-meta {
+  font-size: 0.8rem;
+  color: var(--muted, #94a3b8);
+  margin-top: 0.2rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.cert-row-id {
+  font-family: monospace;
+  font-size: 0.75rem;
+  color: var(--primary, #2563eb);
+  background: rgba(37,99,235,0.1);
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
+  display: inline-block;
+}
+.cert-row-notes {
+  font-size: 0.78rem;
+  color: var(--muted, #94a3b8);
+  margin-top: 0.3rem;
+  white-space: pre-wrap;
+  max-height: 60px;
+  overflow: hidden;
+  line-height: 1.5;
+}
+
+.cert-row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: flex-start;
+  flex-shrink: 0;
+}
+
+/* ── Member-facing certificate cards ── */
+.cert-member-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 1rem;
+  margin-top: 0.75rem;
+}
+
+.cert-member-card {
+  background: linear-gradient(145deg, rgba(30,41,59,0.9), rgba(31,41,55,0.95));
+  border: 1px solid rgba(37,99,235,0.2);
+  border-radius: 0.9rem;
+  padding: 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  transition: transform 0.2s, box-shadow 0.2s;
+  position: relative;
+  overflow: hidden;
+}
+.cert-member-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 30px rgba(37,99,235,0.15);
+}
+
+.cert-member-card-icon {
+  width: 40px;
+  height: 40px;
+  background: linear-gradient(135deg, var(--primary, #2563eb), var(--purple, #8b5cf6));
+  border-radius: 0.6rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  color: #fff;
+  margin-bottom: 0.25rem;
+}
+
+.cert-member-card-title {
+  font-weight: 600;
+  font-size: 0.92rem;
+  color: var(--foreground, #f1f5f9);
+  line-height: 1.3;
+}
+.cert-member-card-org {
+  font-size: 0.8rem;
+  color: var(--muted, #94a3b8);
+}
+.cert-member-card-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  font-size: 0.78rem;
+  color: var(--muted, #94a3b8);
+  margin-top: 0.15rem;
+}
+.cert-member-card-meta span strong { color: var(--foreground, #f1f5f9); font-weight: 500; }
+
+.cert-member-card-notes {
+  font-size: 0.78rem;
+  color: var(--muted, #94a3b8);
+  white-space: pre-wrap;
+  max-height: 56px;
+  overflow: hidden;
+  line-height: 1.5;
+  border-top: 1px solid rgba(148,163,184,0.08);
+  padding-top: 0.4rem;
+  margin-top: 0.1rem;
+}
+
+.cert-member-card-actions {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  margin-top: 0.35rem;
+}
+
+/* verified badge ribbon on card top-right */
+.cert-verified-ribbon {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: linear-gradient(135deg, var(--secondary, #10b981), #0d9488);
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0.2rem 0.55rem;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  letter-spacing: 0.03em;
+}
+.cert-unverified-ribbon {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: rgba(245,158,11,0.18);
+  color: var(--amber, #f59e0b);
+  border: 1px solid rgba(245,158,11,0.3);
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 0.2rem 0.55rem;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+/* ── Edit inline form (admin) ── */
+.cert-edit-form {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(148,163,184,0.1);
+  border-radius: 0.6rem;
+  padding: 0.9rem;
+  margin-top: 0.5rem;
+  display: none;
+}
+.cert-edit-form.is-open { display: block; }
+
+/* ── Empty state ── */
+.cert-empty {
+  text-align: center;
+  padding: 2.5rem 1rem;
+  color: var(--muted, #94a3b8);
+  font-size: 0.95rem;
+}
+.cert-empty i { font-size: 2.5rem; margin-bottom: 0.75rem; opacity: 0.35; display: block; }
+
+/* ── category filter chips ── */
+.cert-filter-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+.cert-chip {
+  padding: 0.3rem 0.8rem;
+  border-radius: 20px;
+  font-size: 0.78rem;
+  font-weight: 500;
+  cursor: pointer;
+  border: 1px solid rgba(148,163,184,0.2);
+  background: rgba(255,255,255,0.04);
+  color: var(--muted, #94a3b8);
+  transition: all 0.2s;
+  user-select: none;
+}
+.cert-chip.active,
+.cert-chip:hover {
+  background: linear-gradient(135deg, var(--primary, #2563eb), var(--purple, #8b5cf6));
+  color: #fff;
+  border-color: transparent;
+}
+
+/* ── Modal overlay (detail view) ── */
+.cert-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.7);
+  backdrop-filter: blur(4px);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s;
+}
+.cert-modal-overlay.is-open {
+  opacity: 1;
+  pointer-events: all;
+}
+.cert-modal-box {
+  background: var(--surface, #1e293b);
+  border: 1px solid rgba(148,163,184,0.15);
+  border-radius: 1rem;
+  width: 100%;
+  max-width: 560px;
+  max-height: 90vh;
+  overflow-y: auto;
+  padding: 1.75rem;
+  box-shadow: 0 24px 60px rgba(0,0,0,0.5);
+  transform: scale(0.97);
+  transition: transform 0.2s;
+}
+.cert-modal-overlay.is-open .cert-modal-box { transform: scale(1); }
+
+.cert-modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+.cert-modal-header h3 { font-size: 1.1rem; font-weight: 700; line-height: 1.3; }
+.cert-modal-close {
+  background: none;
+  border: none;
+  color: var(--muted, #94a3b8);
+  font-size: 1.3rem;
+  cursor: pointer;
+  flex-shrink: 0;
+  padding: 0.1rem;
+  transition: color 0.15s;
+}
+.cert-modal-close:hover { color: var(--foreground, #f1f5f9); }
+
+.cert-modal-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+@media (max-width: 440px) { .cert-modal-grid { grid-template-columns: 1fr; } }
+
+.cert-modal-item {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(148,163,184,0.08);
+  border-radius: 0.5rem;
+  padding: 0.65rem 0.85rem;
+}
+.cert-modal-item.span-2 { grid-column: span 2; }
+@media (max-width: 440px) { .cert-modal-item.span-2 { grid-column: span 1; } }
+
+.cert-modal-label { font-size: 0.72rem; color: var(--muted, #94a3b8); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 0.2rem; }
+.cert-modal-value { font-size: 0.9rem; font-weight: 600; word-break: break-word; }
+.cert-modal-id    { font-family: monospace; color: var(--primary, #2563eb); }
+
+.cert-modal-notes {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(148,163,184,0.08);
+  border-radius: 0.5rem;
+  padding: 0.75rem 0.85rem;
+  font-size: 0.88rem;
+  color: var(--muted, #94a3b8);
+  white-space: pre-wrap;
+  line-height: 1.6;
+  margin-bottom: 1rem;
+}
+.cert-modal-notes-label {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted, #94a3b8);
+  margin-bottom: 0.4rem;
+}
+
+.cert-modal-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-top: 0.25rem;
+}
+
+/* ── Responsive adjustments for the section ── */
+@media (max-width: 600px) {
+  .cert-row { flex-direction: column; }
+  .cert-row-actions { width: 100%; }
+  .cert-controls-row { flex-direction: column; }
+  .cert-controls-row .search-input,
+  .cert-controls-row select,
+  .cert-controls-row button { width: 100%; }
+}

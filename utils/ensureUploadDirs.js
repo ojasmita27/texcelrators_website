@@ -5,7 +5,9 @@ const UPLOAD_DIRS = [
   path.join(process.cwd(), 'uploads'),
   path.join(process.cwd(), 'uploads', 'receipts'),
   path.join(process.cwd(), 'uploads', 'receipts', 'generated'),
-  path.join(process.cwd(), 'uploads', 'receipts', 'proofs')
+  path.join(process.cwd(), 'uploads', 'receipts', 'proofs'),
+  path.join(process.cwd(), 'uploads', 'certificates'),   // Certificate files
+  path.join(process.cwd(), 'uploads', 'profile')          // Profile pictures
 ];
 
 async function ensureUploadDirs() {

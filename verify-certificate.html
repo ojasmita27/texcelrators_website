@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Certificate Verification | Texcelerators Robotics Club</title>
+  <link rel="icon" href="Assets/images/Nav-Side-Footer/MainLogo.png" type="image/x-icon">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root {
+      --background: #0f172a;
+      --surface:    #1e293b;
+      --surface2:   #1F2937;
+      --primary:    #2563eb;
+      --secondary:  #10b981;
+      --accent:     #f43f5e;
+      --amber:      #f59e0b;
+      --purple:     #8b5cf6;
+      --foreground: #f1f5f9;
+      --muted:      #94a3b8;
+      --border:     rgba(148,163,184,0.12);
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Outfit', 'Segoe UI', sans-serif;
+      background: var(--background);
+      color: var(--foreground);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 2rem 1rem 4rem;
+    }
+
+    /* ── Brand bar ── */
+    .verify-brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 2.5rem;
+      text-decoration: none;
+      color: inherit;
+    }
+    .verify-brand img { width: 48px; height: 48px; object-fit: contain; }
+    .verify-brand-text strong {
+      display: block;
+      font-size: 1.25rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+    }
+    .verify-brand-text small { color: var(--muted); font-size: 0.75rem; }
+
+    /* ── Search box ── */
+    .verify-card {
+      width: 100%;
+      max-width: 560px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 1rem;
+      padding: 2rem;
+      box-shadow: 0 12px 40px rgba(0,0,0,0.35);
+    }
+    .verify-card h1 {
+      font-size: 1.35rem;
+      font-weight: 700;
+      margin-bottom: 0.35rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .verify-card h1 i { color: var(--primary); }
+    .verify-card p.subtitle { color: var(--muted); font-size: 0.9rem; margin-bottom: 1.5rem; }
+
+    .search-row {
+      display: flex;
+      gap: 0.6rem;
+    }
+    .search-row input {
+      flex: 1;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid var(--border);
+      border-radius: 0.5rem;
+      color: var(--foreground);
+      padding: 0.6rem 0.9rem;
+      font-size: 0.95rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .search-row input:focus { border-color: var(--primary); }
+    .search-row input::placeholder { color: var(--muted); }
+    .btn-verify {
+      padding: 0.6rem 1.2rem;
+      background: linear-gradient(135deg, var(--primary), var(--purple));
+      color: #fff;
+      border: none;
+      border-radius: 0.5rem;
+      cursor: pointer;
+      font-size: 0.95rem;
+      font-weight: 600;
+      transition: opacity 0.2s;
+      white-space: nowrap;
+    }
+    .btn-verify:hover { opacity: 0.88; }
+    .btn-verify:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* ── Result panel ── */
+    #resultPanel { margin-top: 1.75rem; display: none; }
+
+    .result-header {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 1rem 1.25rem;
+      border-radius: 0.75rem;
+      margin-bottom: 1.25rem;
+      font-weight: 700;
+      font-size: 1rem;
+    }
+    .result-header.verified {
+      background: rgba(16,185,129,0.12);
+      border: 1px solid rgba(16,185,129,0.3);
+      color: var(--secondary);
+    }
+    .result-header.unverified {
+      background: rgba(245,158,11,0.1);
+      border: 1px solid rgba(245,158,11,0.3);
+      color: var(--amber);
+    }
+    .result-header.not-found {
+      background: rgba(244,63,94,0.1);
+      border: 1px solid rgba(244,63,94,0.3);
+      color: var(--accent);
+    }
+    .result-header i { font-size: 1.3rem; }
+
+    .result-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.85rem;
+    }
+    @media (max-width: 480px) { .result-grid { grid-template-columns: 1fr; } }
+
+    .result-item {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 0.6rem;
+      padding: 0.75rem 1rem;
+    }
+    .result-item .ri-label { font-size: 0.75rem; color: var(--muted); margin-bottom: 0.2rem; text-transform: uppercase; letter-spacing: 0.04em; }
+    .result-item .ri-value { font-size: 0.95rem; font-weight: 600; word-break: break-word; }
+
+    .result-item.span-2 { grid-column: span 2; }
+    @media (max-width: 480px) { .result-item.span-2 { grid-column: span 1; } }
+
+    .notes-box {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 0.6rem;
+      padding: 0.85rem 1rem;
+      margin-top: 0.85rem;
+      white-space: pre-wrap;
+      font-size: 0.9rem;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+    .notes-label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); margin-bottom: 0.4rem; }
+
+    /* spinner */
+    .spin { animation: spin 0.8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .verify-footer {
+      margin-top: 3rem;
+      font-size: 0.8rem;
+      color: var(--muted);
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <a href="index.html" class="verify-brand" aria-label="Texcelerators home">
+    <img src="Assets/images/Nav-Side-Footer/MainLogo.png" alt="Texcelerators Logo">
+    <div class="verify-brand-text">
+      <strong>TEXCELERATORS</strong>
+      <small>Robo Club · Certificate Verification</small>
+    </div>
+  </a>
+
+  <div class="verify-card">
+    <h1><i class="fas fa-certificate"></i> Verify Certificate</h1>
+    <p class="subtitle">Enter a Texcelerators certificate ID (e.g. TXC-CERT-2026-00001) to check its authenticity.</p>
+
+    <div class="search-row">
+      <input
+        type="text"
+        id="certIdInput"
+        placeholder="TXC-CERT-YYYY-NNNNN"
+        autocomplete="off"
+        spellcheck="false"
+        maxlength="30"
+        aria-label="Certificate ID"
+      >
+      <button class="btn-verify" id="verifyBtn" type="button">
+        <i class="fas fa-search"></i> Verify
+      </button>
+    </div>
+
+    <div id="resultPanel" role="region" aria-live="polite"></div>
+  </div>
+
+  <div class="verify-footer">
+    &copy; <span id="footerYear"></span> Texcelerators Robotics Club &mdash; All certificates are verified against our live MongoDB database.
+  </div>
+
+  <script>
+    document.getElementById('footerYear').textContent = new Date().getFullYear();
+
+    const input     = document.getElementById('certIdInput');
+    const verifyBtn = document.getElementById('verifyBtn');
+    const panel     = document.getElementById('resultPanel');
+
+    // Pre-fill from URL  ?id=TXC-CERT-2026-00001
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlId = urlParams.get('id') || urlParams.get('certificateId') || '';
+    if (urlId) { input.value = urlId.trim(); verify(); }
+
+    input.addEventListener('keydown', (e) => { if (e.key === 'Enter') verify(); });
+    verifyBtn.addEventListener('click', verify);
+
+    function showPanel(html) {
+      panel.style.display = 'block';
+      panel.innerHTML = html;
+    }
+
+    function formatDate(dateStr) {
+      if (!dateStr) return '—';
+      try {
+        return new Date(dateStr).toLocaleDateString('en-IN', {
+          year: 'numeric', month: 'long', day: 'numeric'
+        });
+      } catch (_) { return dateStr; }
+    }
+
+    function categoryLabel(cat) {
+      const map = {
+        competition_win:          'Competition Win',
+        competition_participation: 'Competition Participation',
+        workshop_completion:      'Workshop Completion',
+        training:                 'Training',
+        skill_certification:      'Skill Certification',
+        appreciation:             'Appreciation',
+        other:                    'Other'
+      };
+      return map[cat] || cat || '—';
+    }
+
+    async function verify() {
+      const id = input.value.trim().toUpperCase();
+      if (!id) { input.focus(); return; }
+
+      verifyBtn.disabled = true;
+      verifyBtn.innerHTML = '<i class="fas fa-circle-notch spin"></i> Checking…';
+      showPanel('');
+
+      try {
+        const res  = await fetch(`/certificates/verify/${encodeURIComponent(id)}`);
+        const data = await res.json();
+
+        if (!res.ok || !data) {
+          showPanel(`
+            <div class="result-header not-found">
+              <i class="fas fa-times-circle"></i>
+              Certificate Not Found
+            </div>
+            <p style="color:var(--muted);font-size:0.9rem;">${data && data.message ? data.message : 'No certificate found with that ID.'}</p>
+          `);
+          return;
+        }
+
+        const headerClass = data.isVerified ? 'verified' : 'unverified';
+        const headerIcon  = data.isVerified ? 'fas fa-shield-check' : 'fas fa-exclamation-triangle';
+        const headerText  = data.isVerified ? '✓ Certificate Verified' : '⚠ Certificate Not Yet Verified';
+
+        const notesHtml = data.adminNotes
+          ? `<div class="notes-label">Admin Notes</div>
+             <div class="notes-box">${data.adminNotes.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>`
+          : '';
+
+        showPanel(`
+          <div class="result-header ${headerClass}">
+            <i class="${headerIcon}"></i>
+            ${headerText}
+          </div>
+          <div class="result-grid">
+            <div class="result-item span-2">
+              <div class="ri-label">Certificate ID</div>
+              <div class="ri-value" style="font-family:monospace;color:var(--primary)">${data.certificateId}</div>
+            </div>
+            <div class="result-item span-2">
+              <div class="ri-label">Certificate Title</div>
+              <div class="ri-value">${data.title || '—'}</div>
+            </div>
+            <div class="result-item">
+              <div class="ri-label">Member Name</div>
+              <div class="ri-value">${data.memberName || '—'}</div>
+            </div>
+            <div class="result-item">
+              <div class="ri-label">Issuing Organization</div>
+              <div class="ri-value">${data.issuingOrganization || '—'}</div>
+            </div>
+            <div class="result-item">
+              <div class="ri-label">Issue Date</div>
+              <div class="ri-value">${formatDate(data.issuedDate)}</div>
+            </div>
+            <div class="result-item">
+              <div class="ri-label">Category</div>
+              <div class="ri-value">${categoryLabel(data.category)}</div>
+            </div>
+            <div class="result-item">
+              <div class="ri-label">Verification Status</div>
+              <div class="ri-value" style="color:${data.isVerified ? 'var(--secondary)' : 'var(--amber)'}">
+                ${data.isVerified ? 'Verified' : 'Pending Verification'}
+              </div>
+            </div>
+            ${data.verifiedBy ? `
+            <div class="result-item">
+              <div class="ri-label">Verified By</div>
+              <div class="ri-value">${data.verifiedBy} · ${formatDate(data.verifiedAt)}</div>
+            </div>` : ''}
+          </div>
+          ${notesHtml}
+        `);
+      } catch (err) {
+        showPanel(`
+          <div class="result-header not-found">
+            <i class="fas fa-times-circle"></i>
+            Verification Failed
+          </div>
+          <p style="color:var(--muted);font-size:0.9rem;">Unable to reach the server. Please try again shortly.</p>
+        `);
+      } finally {
+        verifyBtn.disabled = false;
+        verifyBtn.innerHTML = '<i class="fas fa-search"></i> Verify';
+      }
+    }
+  </script>
+</body>
+</html>

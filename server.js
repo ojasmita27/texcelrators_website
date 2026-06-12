@@ -26,6 +26,9 @@ const { projectRoutes } = require('./routes/project.routes');
 const { eventRoutes } = require('./routes/event.routes');
 const { reportRoutes } = require('./routes/reports.routes');
 
+// Certificate Management System
+const { certificateRoutes } = require('./routes/certificate.routes');
+
 const app = express();
 
 let httpServer = null;
@@ -58,6 +61,9 @@ app.use('/reimbursements', reimbursementRoutes);
 app.use('/projects', projectRoutes);
 app.use('/events', eventRoutes);
 app.use('/reports', reportRoutes);
+
+// Certificate Management System
+app.use('/certificates', certificateRoutes);
 
 // Explicit HTML entry points
 app.get('/', (req, res) => {

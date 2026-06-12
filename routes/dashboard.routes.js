@@ -6,7 +6,7 @@ const { Expense } = require('../models/Expense');
 
 // NEW: Import enterprise financial models
 const mongoose = require('mongoose');
-let MemberTransaction, Reimbursement, Project, Event, Collaboration;
+let MemberTransaction, Reimbursement, Project, Event, Collaboration, Certificate;
 
 try {
   MemberTransaction = require('../models/MemberTransaction').MemberTransaction;
@@ -14,6 +14,7 @@ try {
   Project = require('../models/Project').Project;
   Event = require('../models/Event').Event;
   Collaboration = require('../models/Collaboration');
+  Certificate = require('../models/Certificate').Certificate;
 } catch (err) {
   // Models might not be loaded yet in some scenarios
   console.log('Note: Enterprise models not fully available');
@@ -58,7 +59,8 @@ async function loadEnterpriseData(user, isAdmin) {
     reimbursements: [],
     projects: [],
     events: [],
-    contributionStats: {}
+    contributionStats: {},
+    certificates: []
   };
 
   try {
@@ -168,6 +170,23 @@ async function loadEnterpriseData(user, isAdmin) {
     }
   } catch (err) {
     console.log('Note: Some enterprise features may not be available yet');
+  }
+
+  // Load certificates outside the admin-only block — all users see all certs
+  try {
+    if (Certificate) {
+      enterpriseData.certificates = await Certificate
+        .find({})
+        .populate([
+          { path: 'member',     select: 'name email' },
+          { path: 'uploadedBy', select: 'name email role' }
+        ])
+        .sort({ createdAt: -1 })
+        .limit(500)
+        .lean();
+    }
+  } catch (_) {
+    // certificates are non-critical; don't break dashboard load
   }
 
   return enterpriseData;
