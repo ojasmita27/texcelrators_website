@@ -2,6 +2,7 @@ const { Router } = require('express');
 const { asyncHandler } = require('../utils/asyncHandler');
 const { receiptUploader } = require('../utils/upload');
 const { Reimbursement } = require('../models/Reimbursement');
+const { Expense } = require('../models/Expense');
 const { User } = require('../models/User');
 const { requireAuth, requireRole, blockIfMustChangePassword } = require('../middleware/auth');
 
@@ -191,8 +192,11 @@ router.post(
 
 /**
  * POST /reimbursements/:id/approve
- * 
- * Admin approves a reimbursement claim
+ *
+ * Admin approves a reimbursement claim.
+ * Idempotently creates a linked Expense record in the expenses collection
+ * so the approved amount is counted in Total Expenses automatically.
+ * A second approval call will NOT create a duplicate expense.
  */
 router.post(
   '/:id/approve',
@@ -223,6 +227,37 @@ router.post(
     }
 
     await reimbursement.save();
+
+    // ── Auto-create linked Expense (idempotent) ───────────────────────────────
+    // Never create a duplicate: check if an Expense already references this reimbursement.
+    const existingExpense = await Expense.findOne({ linkedReimbursement: reimbursement._id });
+    if (!existingExpense) {
+      const categoryMap = {
+        component: 'parts',
+        material:  'materials',
+        tool:      'tools',
+        sensor:    'parts',
+        motor:     'parts',
+        structural: 'materials',
+        electronics: 'parts',
+        other:     'other'
+      };
+      await Expense.create({
+        title:               `[Reimbursement] ${reimbursement.itemName}`,
+        amount:              finalAmount,
+        category:            categoryMap[reimbursement.category] || 'other',
+        date:                reimbursement.purchaseDate || new Date(),
+        notes:               adminNotes
+                               ? `Approved reimbursement claim. Admin notes: ${adminNotes}`
+                               : 'Automatically created from approved reimbursement claim.',
+        addedBy:             req.user._id,
+        isComponentPurchase: true,
+        linkedReimbursement: reimbursement._id,
+        linkedProject:       reimbursement.linkedProject || null
+      });
+    }
+    // ─────────────────────────────────────────────────────────────────────────
+
     await reimbursement.populate(['member', 'linkedProject', 'reviewedBy']);
 
     return res.json({

@@ -229,6 +229,14 @@ router.get(
         ? await Collaboration.find().sort({ submittedAt: -1 }).limit(500).lean()
         : [];
 
+      // Reimbursement summary counts for dashboard KPIs
+      const pendingReimbursementsCount = Reimbursement
+        ? await Reimbursement.countDocuments({ status: { $in: ['submitted', 'under_review'] } })
+        : 0;
+      const approvedReimbursementsCount = Reimbursement
+        ? await Reimbursement.countDocuments({ status: { $in: ['approved', 'reimbursed'] } })
+        : 0;
+
       return res.json({
         user: req.user.toSafeJSON(),
         settings: {
@@ -242,7 +250,9 @@ router.get(
         summary: {
           paymentsApprovedTotal: paymentsTotal,
           expensesTotal,
-          balance: paymentsTotal - expensesTotal
+          balance: paymentsTotal - expensesTotal,
+          pendingReimbursementsCount,
+          approvedReimbursementsCount
         },
         enterprise: enterpriseData
       });
@@ -273,6 +283,14 @@ router.get(
     const expensesTotal = totalExpenses[0]?.total || 0;
     const enterpriseData = await loadEnterpriseData(req.user, false);
 
+    // Reimbursement summary counts for member dashboard KPIs
+    const pendingReimbursementsCount = Reimbursement
+      ? await Reimbursement.countDocuments({ status: { $in: ['submitted', 'under_review'] } })
+      : 0;
+    const approvedReimbursementsCount = Reimbursement
+      ? await Reimbursement.countDocuments({ status: { $in: ['approved', 'reimbursed'] } })
+      : 0;
+
     return res.json({
       user: req.user.toSafeJSON(),
       settings: {
@@ -285,7 +303,9 @@ router.get(
         myApprovedPaymentsTotal: approvedSum[0]?.total || 0,
         paymentsApprovedTotal: paymentsTotal,
         expensesTotal,
-        balance: paymentsTotal - expensesTotal
+        balance: paymentsTotal - expensesTotal,
+        pendingReimbursementsCount,
+        approvedReimbursementsCount
       },
       enterprise: enterpriseData
     });

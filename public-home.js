@@ -777,25 +777,40 @@ function initializeAnimations() {
 function initializeFormHandling() {
   const contactForm = document.getElementById('contact-form');
   const submitButton = contactForm ? contactForm.querySelector('.form-submit') : null;
+  const statusEl = contactForm ? document.getElementById('contact-form-status') : null;
 
   if (!contactForm) return;
+
+  function setStatus(msg, isError) {
+    if (!statusEl) return;
+    statusEl.textContent = msg;
+    statusEl.style.color = isError ? '#f43f5e' : '#10b981';
+  }
 
   contactForm.addEventListener('submit', async function(e) {
     e.preventDefault();
 
     if (contactForm.classList.contains('is-submitting')) return;
 
-    const name = (contactForm.querySelector('#name') || {}).value || '';
-    const email = (contactForm.querySelector('#email') || {}).value || '';
-    const message = (contactForm.querySelector('#message') || {}).value || '';
+    const name            = (contactForm.querySelector('#name')            || {}).value || '';
+    const email           = (contactForm.querySelector('#email')           || {}).value || '';
+    const phone           = (contactForm.querySelector('#phone')           || {}).value || '';
+    const college         = (contactForm.querySelector('#college')         || {}).value || '';
+    const roleInterested  = (contactForm.querySelector('#roleInterested')  || {}).value || '';
+    const skills          = (contactForm.querySelector('#skills')          || {}).value || '';
+    const message         = (contactForm.querySelector('#message')         || {}).value || '';
+    const portfolioLink   = (contactForm.querySelector('#portfolioLink')   || {}).value || '';
 
-    if (!name.trim() || !email.trim() || !message.trim()) {
+    if (!name.trim() || !email.trim() || !phone.trim() || !college.trim() ||
+        !roleInterested.trim() || !skills.trim() || !message.trim()) {
+      setStatus('Please fill in all required fields.', true);
       if (window.NavSystem) {
-        window.NavSystem.showNotification('Please fill in all fields before sending.', 'error');
+        window.NavSystem.showNotification('Please fill in all required fields.', 'error');
       }
       return;
     }
 
+    if (statusEl) statusEl.textContent = '';
     contactForm.classList.add('is-submitting');
     if (submitButton) {
       submitButton.disabled = true;
@@ -804,14 +819,14 @@ function initializeFormHandling() {
 
     try {
       const payload = {
-        fullName: name.trim(),
-        email: email.trim(),
-        phone: 'Not provided',
-        college: 'General Inquiry',
-        roleInterested: 'Other',
-        skills: 'General',
+        fullName:            name.trim(),
+        email:               email.trim(),
+        phone:               phone.trim(),
+        college:             college.trim(),
+        roleInterested:      roleInterested.trim(),
+        skills:              skills.trim(),
         collaborationReason: message.trim(),
-        portfolioLink: ''
+        portfolioLink:       portfolioLink.trim() || null
       };
 
       const response = await fetch('/api/collaboration', {
@@ -826,12 +841,14 @@ function initializeFormHandling() {
         throw new Error(result.message || 'Failed to submit message');
       }
 
-      const successMessage = 'Thank you for your message! We will get back to you soon.';
+      const successMessage = 'Thank you! Your message has been received. We\'ll get back to you soon.';
+      setStatus(successMessage, false);
       if (window.NavSystem) {
         window.NavSystem.showNotification(successMessage, 'success');
       }
       contactForm.reset();
     } catch (error) {
+      setStatus(error.message || 'An error occurred. Please try again.', true);
       if (window.NavSystem) {
         window.NavSystem.showNotification(error.message || 'An error occurred. Please try again.', 'error');
       }
