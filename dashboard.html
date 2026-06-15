@@ -449,172 +449,149 @@
                 </section>
 
                 <!-- FUND MANAGEMENT SECTION -->
-                <section class="panel glass-panel premium-panel fund-management-section" id="fund-management-section" data-dashboard-section data-for-roles="admin">
+                <section class="panel glass-panel premium-panel" id="fund-management-section" data-dashboard-section data-for-roles="admin">
 
-                    <!-- Section header -->
                     <div class="panel-header premium-header">
-                        <div class="header-left">
-                            <h3><i class="fas fa-piggy-bank"></i> Fund Management</h3>
-                            <p>Track all club income sources — opening balance, contributions, sponsorships, donations, and other income.</p>
-                        </div>
+                        <h3><i class="fas fa-piggy-bank"></i> Fund Management</h3>
                     </div>
 
-                    <!-- ── 6 KPI cards ─────────────────────────────────────────── -->
-                    <div class="fund-kpi-row" id="fund-kpi-row">
+                    <div class="expense-management-layout">
 
-                        <!-- Total Funds — primary, accent-highlighted -->
-                        <div class="kpi-card premium-kpi-card fund-kpi-card fund-kpi-primary">
-                            <div class="kpi-icon fund-kpi-icon-accent"><i class="fas fa-wallet"></i></div>
-                            <div class="kpi-content">
-                                <div class="kpi-label">Total Funds</div>
-                                <div class="kpi-value fund-kpi-val-accent" id="fundKpiBalance">₹0</div>
-                            </div>
-                        </div>
+                        <!-- ── Row 1: KPI cards (identical structure to Expenses section) ── -->
+                        <div class="expense-kpi-grid fund-kpi-row" id="fund-kpi-row">
 
-                        <!-- Opening Balance -->
-                        <div class="kpi-card premium-kpi-card fund-kpi-card">
-                            <div class="kpi-icon"><i class="fas fa-building-columns"></i></div>
-                            <div class="kpi-content">
-                                <div class="kpi-label">Opening Balance</div>
-                                <div class="kpi-value" id="fundKpiOpening">₹0</div>
-                            </div>
-                        </div>
-
-                        <!-- Member Fee Income -->
-                        <div class="kpi-card premium-kpi-card fund-kpi-card">
-                            <div class="kpi-icon"><i class="fas fa-id-card-clip"></i></div>
-                            <div class="kpi-content">
-                                <div class="kpi-label">Member Fee Income</div>
-                                <div class="kpi-value" id="fundKpiMemberFee">₹0</div>
-                            </div>
-                        </div>
-
-                        <!-- External Funding -->
-                        <div class="kpi-card premium-kpi-card fund-kpi-card">
-                            <div class="kpi-icon"><i class="fas fa-hand-holding-dollar"></i></div>
-                            <div class="kpi-content">
-                                <div class="kpi-label">External Funding</div>
-                                <div class="kpi-value" id="fundKpiExternal">₹0</div>
-                            </div>
-                        </div>
-
-                        <!-- Total Expenses -->
-                        <div class="kpi-card premium-kpi-card fund-kpi-card">
-                            <div class="kpi-icon fund-kpi-icon-red"><i class="fas fa-arrow-trend-down"></i></div>
-                            <div class="kpi-content">
-                                <div class="kpi-label">Total Expenses</div>
-                                <div class="kpi-value fund-kpi-val-red" id="fundKpiTotalExpenses">₹0</div>
-                            </div>
-                        </div>
-
-                        <!-- Reimbursements Paid -->
-                        <div class="kpi-card premium-kpi-card fund-kpi-card">
-                            <div class="kpi-icon fund-kpi-icon-amber"><i class="fas fa-receipt"></i></div>
-                            <div class="kpi-content">
-                                <div class="kpi-label">Reimbursements Paid</div>
-                                <div class="kpi-value fund-kpi-val-amber" id="fundKpiReimbursed">₹0</div>
-                            </div>
-                        </div>
-
-                    </div><!-- /.fund-kpi-row -->
-                    <!-- Legacy shim: fundKpiCount kept for JS compatibility (hidden) -->
-                    <span id="fundKpiCount" style="display:none;" aria-hidden="true">0</span>
-
-                    <!-- ── Two-column body: form left · table right ──────────── -->
-                    <div class="fund-body-grid">
-
-                        <!-- LEFT: Add / Edit form -->
-                        <aside class="fund-form-panel">
-                            <div class="fund-form-panel-header">
-                                <h4 class="fund-panel-title"><i class="fas fa-plus-circle"></i> <span id="fundFormHeading">Add Fund Entry</span></h4>
-                            </div>
-
-                            <form id="fundEntryForm" class="fund-entry-form" novalidate>
-                                <input type="hidden" id="fundEditId" value="">
-
-                                <div class="fund-field">
-                                    <label for="fundSourceType">Source Type</label>
-                                    <select id="fundSourceType" required>
-                                        <option value="">Select type</option>
-                                        <option value="opening_balance">Opening Balance</option>
-                                        <option value="principal_contribution">Principal Contribution</option>
-                                        <option value="sponsorship">Sponsorship</option>
-                                        <option value="donation">Donation</option>
-                                        <option value="other_income">Other Income</option>
-                                    </select>
+                            <!-- Total Funds: highlighted primary card -->
+                            <div class="kpi-card premium-kpi-card expense-kpi-card fund-kpi-primary">
+                                <div class="kpi-icon fund-kpi-icon-accent"><i class="fas fa-wallet"></i></div>
+                                <div class="kpi-content">
+                                    <div class="kpi-label">Total Funds</div>
+                                    <div class="kpi-value fund-kpi-val-accent" id="fundKpiBalance">₹0</div>
                                 </div>
-
-                                <div class="fund-field">
-                                    <label for="fundAmount">Amount (₹)</label>
-                                    <input type="number" id="fundAmount" placeholder="0.00" min="1" step="0.01" required>
-                                </div>
-
-                                <div class="fund-field">
-                                    <label for="fundDescription">Description</label>
-                                    <input type="text" id="fundDescription" placeholder="e.g. Cummins sponsorship 2026" required>
-                                </div>
-
-                                <div class="fund-field">
-                                    <label for="fundDate">Date</label>
-                                    <input type="date" id="fundDate" required>
-                                </div>
-
-                                <div class="fund-form-actions">
-                                    <button type="submit" class="dashboard-button primary fund-submit-btn" id="fundSubmitBtn">
-                                        <i class="fas fa-plus"></i>
-                                        <span id="fundSubmitLabel">Add Entry</span>
-                                    </button>
-                                    <button type="button" class="dashboard-button fund-cancel-btn" id="fundCancelEdit" style="display:none;">
-                                        <i class="fas fa-times"></i> Cancel
-                                    </button>
-                                </div>
-                                <!-- fundCancelEditWrapper shim — kept for JS compat (JS toggles display on this div) -->
-                                <div id="fundCancelEditWrapper" style="display:none;"></div>
-                            </form>
-
-                            <!-- Source-type legend -->
-                            <div class="fund-legend">
-                                <div class="fund-legend-title">Source Types</div>
-                                <ul class="fund-legend-list">
-                                    <li><span class="fund-badge fund-badge-opening">Opening Balance</span> Initial club funds</li>
-                                    <li><span class="fund-badge fund-badge-principal">Principal Contribution</span> College/institute</li>
-                                    <li><span class="fund-badge fund-badge-sponsorship">Sponsorship</span> Corporate sponsors</li>
-                                    <li><span class="fund-badge fund-badge-donation">Donation</span> Individual donors</li>
-                                    <li><span class="fund-badge fund-badge-other">Other Income</span> Miscellaneous</li>
-                                </ul>
                             </div>
-                        </aside><!-- /.fund-form-panel -->
 
-                        <!-- RIGHT: Fund history table -->
-                        <div class="fund-history-panel">
+                            <div class="kpi-card premium-kpi-card expense-kpi-card">
+                                <div class="kpi-icon"><i class="fas fa-building-columns"></i></div>
+                                <div class="kpi-content">
+                                    <div class="kpi-label">Opening Balance</div>
+                                    <div class="kpi-value" id="fundKpiOpening">₹0</div>
+                                </div>
+                            </div>
 
-                            <!-- History header with search/filter inline -->
+                            <div class="kpi-card premium-kpi-card expense-kpi-card">
+                                <div class="kpi-icon"><i class="fas fa-id-card-clip"></i></div>
+                                <div class="kpi-content">
+                                    <div class="kpi-label">Member Fee Income</div>
+                                    <div class="kpi-value" id="fundKpiMemberFee">₹0</div>
+                                </div>
+                            </div>
+
+                            <div class="kpi-card premium-kpi-card expense-kpi-card">
+                                <div class="kpi-icon"><i class="fas fa-hand-holding-dollar"></i></div>
+                                <div class="kpi-content">
+                                    <div class="kpi-label">External Funding</div>
+                                    <div class="kpi-value" id="fundKpiExternal">₹0</div>
+                                </div>
+                            </div>
+
+                            <div class="kpi-card premium-kpi-card expense-kpi-card">
+                                <div class="kpi-icon fund-kpi-icon-red"><i class="fas fa-arrow-trend-down"></i></div>
+                                <div class="kpi-content">
+                                    <div class="kpi-label">Total Expenses</div>
+                                    <div class="kpi-value fund-kpi-val-red" id="fundKpiTotalExpenses">₹0</div>
+                                </div>
+                            </div>
+
+                            <div class="kpi-card premium-kpi-card expense-kpi-card">
+                                <div class="kpi-icon fund-kpi-icon-amber"><i class="fas fa-receipt"></i></div>
+                                <div class="kpi-content">
+                                    <div class="kpi-label">Reimbursements Paid</div>
+                                    <div class="kpi-value fund-kpi-val-amber" id="fundKpiReimbursed">₹0</div>
+                                </div>
+                            </div>
+
+                        </div>
+                        <!-- JS compat shim -->
+                        <span id="fundKpiCount" style="display:none;" aria-hidden="true">0</span>
+
+                        <!-- ── Row 2: Add / Edit form (same pattern as #addMemberForm / #expenseForm) ── -->
+                        <form id="fundEntryForm" class="card-form compact fund-entry-form">
+                            <input type="hidden" id="fundEditId" value="">
+
+                            <div class="expenses-admin-field">
+                                <label for="fundSourceType">Source Type</label>
+                                <select id="fundSourceType" required>
+                                    <option value="">Select type</option>
+                                    <option value="opening_balance">Opening Balance</option>
+                                    <option value="principal_contribution">Principal Contribution</option>
+                                    <option value="sponsorship">Sponsorship</option>
+                                    <option value="donation">Donation</option>
+                                    <option value="other_income">Other Income</option>
+                                </select>
+                            </div>
+
+                            <div class="expenses-admin-field">
+                                <label for="fundAmount">Amount (₹)</label>
+                                <input type="number" id="fundAmount" placeholder="0.00" min="1" step="0.01" required>
+                            </div>
+
+                            <div class="expenses-admin-field fund-desc-field">
+                                <label for="fundDescription">Description</label>
+                                <input type="text" id="fundDescription" placeholder="e.g. Cummins sponsorship 2026" required>
+                            </div>
+
+                            <div class="expenses-admin-field">
+                                <label for="fundDate">Date</label>
+                                <input type="date" id="fundDate" required>
+                            </div>
+
+                            <div class="expenses-admin-field expenses-admin-submit-field">
+                                <span class="field-label field-label-spacer" aria-hidden="true">&nbsp;</span>
+                                <button type="submit" class="dashboard-button primary expense-submit-btn" id="fundSubmitBtn">
+                                    <i class="fas fa-plus"></i>
+                                    <span id="fundSubmitLabel">Add Entry</span>
+                                </button>
+                            </div>
+
+                            <div id="fundCancelEditWrapper" class="expenses-admin-field" style="display:none;">
+                                <span class="field-label field-label-spacer" aria-hidden="true">&nbsp;</span>
+                                <button type="button" class="dashboard-button" id="fundCancelEdit">
+                                    <i class="fas fa-times"></i> Cancel
+                                </button>
+                            </div>
+
+                            <!-- form heading for JS to update (hidden, read by JS) -->
+                            <span id="fundFormHeading" style="display:none;">Add Fund Entry</span>
+                        </form>
+
+                        <!-- ── Row 3: Fund History table — full width, primary content ── -->
+                        <div class="expense-table-area">
                             <div class="fund-history-header">
-                                <h4 class="fund-panel-title"><i class="fas fa-clock-rotate-left"></i> Fund History</h4>
-                                <div class="fund-search-bar">
-                                    <input type="text" id="fundSearchInput" class="fund-search-input" placeholder="Search…" autocomplete="off" aria-label="Search fund entries">
-                                    <select id="fundFilterType" class="fund-filter-select" aria-label="Filter by type">
-                                        <option value="">All Types</option>
-                                        <option value="opening_balance">Opening Balance</option>
-                                        <option value="principal_contribution">Principal Contribution</option>
-                                        <option value="sponsorship">Sponsorship</option>
-                                        <option value="donation">Donation</option>
-                                        <option value="other_income">Other Income</option>
-                                    </select>
+                                <div class="fund-history-title-row">
+                                    <span class="fund-history-label"><i class="fas fa-clock-rotate-left"></i> Fund History</span>
+                                    <div class="fund-search-bar">
+                                        <input type="text" id="fundSearchInput" class="fund-search-input search-input" placeholder="Search entries…" autocomplete="off" aria-label="Search fund entries">
+                                        <select id="fundFilterType" class="fund-filter-select search-input" aria-label="Filter by source type">
+                                            <option value="">All Types</option>
+                                            <option value="opening_balance">Opening Balance</option>
+                                            <option value="principal_contribution">Principal Contribution</option>
+                                            <option value="sponsorship">Sponsorship</option>
+                                            <option value="donation">Donation</option>
+                                            <option value="other_income">Other Income</option>
+                                        </select>
+                                    </div>
                                 </div>
                             </div>
 
-                            <!-- Table -->
-                            <div id="fund-table-wrapper" class="table-card compact expense-table-shell fund-table-shell">
-                                <table class="transaction-table members-table expense-table fund-table" aria-label="Fund entries">
+                            <div id="fund-table-wrapper" class="table-card compact expense-table-shell">
+                                <table class="expense-table fund-table" aria-label="Fund entries">
                                     <thead>
                                         <tr>
-                                            <th data-sort="sourceType" class="fund-th sortable" tabindex="0">Type <i class="fas fa-sort fund-sort-icon"></i></th>
+                                            <th data-sort="sourceType" class="fund-th sortable" tabindex="0">Source Type <i class="fas fa-sort fund-sort-icon"></i></th>
                                             <th data-sort="description" class="fund-th sortable" tabindex="0">Description <i class="fas fa-sort fund-sort-icon"></i></th>
                                             <th data-sort="amount" class="fund-th sortable" tabindex="0">Amount <i class="fas fa-sort fund-sort-icon"></i></th>
                                             <th data-sort="date" class="fund-th sortable" tabindex="0">Date <i class="fas fa-sort fund-sort-icon"></i></th>
-                                            <th class="fund-th fund-th-addedby">Added By</th>
-                                            <th class="fund-th">Actions</th>
+                                            <th>Added By</th>
+                                            <th>Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody id="fund-table-body"></tbody>
@@ -623,12 +600,10 @@
                                 <div id="fund-loading-state" class="table-empty-state">Loading…</div>
                             </div>
 
-                            <!-- Pagination -->
                             <div class="fund-pagination" id="fund-pagination" aria-label="Fund entries pagination"></div>
+                        </div>
 
-                        </div><!-- /.fund-history-panel -->
-
-                    </div><!-- /.fund-body-grid -->
+                    </div><!-- /.expense-management-layout -->
 
                 </section>
 
