@@ -6,7 +6,7 @@ const { Expense } = require('../models/Expense');
 
 // NEW: Import enterprise financial models
 const mongoose = require('mongoose');
-let MemberTransaction, Reimbursement, Project, Event, Collaboration, Certificate;
+let MemberTransaction, Reimbursement, Project, Event, Collaboration, Certificate, FundEntry;
 
 try {
   MemberTransaction = require('../models/MemberTransaction').MemberTransaction;
@@ -15,6 +15,7 @@ try {
   Event = require('../models/Event').Event;
   Collaboration = require('../models/Collaboration');
   Certificate = require('../models/Certificate').Certificate;
+  FundEntry = require('../models/FundEntry').FundEntry;
 } catch (err) {
   // Models might not be loaded yet in some scenarios
   console.log('Note: Enterprise models not fully available');
@@ -224,6 +225,21 @@ router.get(
       const paymentsTotal = totalApprovedPayments[0]?.total || 0;
       const expensesTotal = totalExpenses[0]?.total || 0;
 
+      // ── Fund Entries: extend balance formula ──────────────────────────────
+      // balance = fundEntriesTotal + approvedPayments − expenses
+      // Wrapped in try/catch so a FundEntry DB issue never breaks the dashboard.
+      let fundEntriesTotal = 0;
+      try {
+        if (FundEntry) {
+          const fundAgg = await FundEntry.aggregate([
+            { $group: { _id: null, total: { $sum: '$amount' } } }
+          ]);
+          fundEntriesTotal = fundAgg[0]?.total || 0;
+        }
+      } catch (_) {
+        // non-critical: fallback to 0 preserves existing balance behaviour
+      }
+
       const enterpriseData = await loadEnterpriseData(req.user, true);
       const collaborations = Collaboration
         ? await Collaboration.find().sort({ submittedAt: -1 }).limit(500).lean()
@@ -250,7 +266,8 @@ router.get(
         summary: {
           paymentsApprovedTotal: paymentsTotal,
           expensesTotal,
-          balance: paymentsTotal - expensesTotal,
+          fundEntriesTotal,
+          balance: fundEntriesTotal + paymentsTotal - expensesTotal,
           pendingReimbursementsCount,
           approvedReimbursementsCount
         },
@@ -283,6 +300,20 @@ router.get(
     const expensesTotal = totalExpenses[0]?.total || 0;
     const enterpriseData = await loadEnterpriseData(req.user, false);
 
+    // ── Fund Entries: extend balance formula ──────────────────────────────
+    // balance = fundEntriesTotal + approvedPayments − expenses
+    let fundEntriesTotal = 0;
+    try {
+      if (FundEntry) {
+        const fundAgg = await FundEntry.aggregate([
+          { $group: { _id: null, total: { $sum: '$amount' } } }
+        ]);
+        fundEntriesTotal = fundAgg[0]?.total || 0;
+      }
+    } catch (_) {
+      // non-critical: fallback to 0
+    }
+
     // Reimbursement summary counts for member dashboard KPIs
     const pendingReimbursementsCount = Reimbursement
       ? await Reimbursement.countDocuments({ status: { $in: ['submitted', 'under_review'] } })
@@ -303,7 +334,8 @@ router.get(
         myApprovedPaymentsTotal: approvedSum[0]?.total || 0,
         paymentsApprovedTotal: paymentsTotal,
         expensesTotal,
-        balance: paymentsTotal - expensesTotal,
+        fundEntriesTotal,
+        balance: fundEntriesTotal + paymentsTotal - expensesTotal,
         pendingReimbursementsCount,
         approvedReimbursementsCount
       },

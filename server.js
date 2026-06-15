@@ -29,6 +29,9 @@ const { reportRoutes } = require('./routes/reports.routes');
 // Certificate Management System
 const { certificateRoutes } = require('./routes/certificate.routes');
 
+// Fund Management System
+const { fundRoutes } = require('./routes/fund.routes');
+
 const app = express();
 
 let httpServer = null;
@@ -64,6 +67,9 @@ app.use('/reports', reportRoutes);
 
 // Certificate Management System
 app.use('/certificates', certificateRoutes);
+
+// Fund Management System
+app.use('/funds', fundRoutes);
 
 // Explicit HTML entry points
 app.get('/', (req, res) => {
