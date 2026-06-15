@@ -7538,6 +7538,12 @@ function initFundManagement() {
     const kpiOpening  = document.getElementById('fundKpiOpening');
     const kpiExternal = document.getElementById('fundKpiExternal');
     const kpiCount    = document.getElementById('fundKpiCount');
+    /* New KPI refs (populated from state.finance) */
+    const kpiMemberFee      = document.getElementById('fundKpiMemberFee');
+    const kpiTotalExpenses  = document.getElementById('fundKpiTotalExpenses');
+    const kpiReimbursed     = document.getElementById('fundKpiReimbursed');
+    /* Form heading ref (switches between Add / Edit) */
+    const formHeading = document.getElementById('fundFormHeading');
 
     /* ── Module state ── */
     const FUND_PAGE_SIZE = 20;
@@ -7657,21 +7663,38 @@ function initFundManagement() {
 
     /* ── Update KPI cards ── */
     function updateKpis() {
-        /* Balance = already in dashboardState.finance.totalFunds (server-computed) */
+        /* Balance = server-computed, already in state.finance.totalFunds */
         const balance = (typeof state !== 'undefined' && state.finance)
             ? state.finance.totalFunds
             : allEntries.reduce((s, e) => s + (Number(e.amount) || 0), 0);
 
         const openingEntry = allEntries.find((e) => e.sourceType === 'opening_balance');
         const openingAmt   = openingEntry ? Number(openingEntry.amount) : 0;
+
+        /* External = sponsorships + donations + principal contributions + other income */
         const externalAmt  = allEntries
-            .filter((e) => e.sourceType === 'sponsorship' || e.sourceType === 'donation')
+            .filter((e) => ['sponsorship', 'donation', 'principal_contribution', 'other_income'].includes(e.sourceType))
             .reduce((s, e) => s + (Number(e.amount) || 0), 0);
 
-        if (kpiBalance)  kpiBalance.textContent  = fmt(balance);
-        if (kpiOpening)  kpiOpening.textContent  = fmt(openingAmt);
-        if (kpiExternal) kpiExternal.textContent = fmt(externalAmt);
-        if (kpiCount)    kpiCount.textContent    = String(allEntries.length);
+        /* Member fee income, total expenses, reimbursements paid — from dashboard state */
+        const memberFeeAmt   = (typeof state !== 'undefined' && state.finance)
+            ? (Number(state.finance.totalIncome) || 0)
+            : 0;
+        const expensesAmt    = (typeof state !== 'undefined' && state.finance)
+            ? (Number(state.finance.totalExpenses) || 0)
+            : 0;
+        /* reimbursed paid: derive from state summary if available */
+        const reimbursedAmt  = (typeof state !== 'undefined' && state.summary)
+            ? 0   /* not directly in state — leave 0; populated by reports */
+            : 0;
+
+        if (kpiBalance)       kpiBalance.textContent       = fmt(balance);
+        if (kpiOpening)       kpiOpening.textContent       = fmt(openingAmt);
+        if (kpiExternal)      kpiExternal.textContent      = fmt(externalAmt);
+        if (kpiCount)         kpiCount.textContent         = String(allEntries.length);
+        if (kpiMemberFee)     kpiMemberFee.textContent     = fmt(memberFeeAmt);
+        if (kpiTotalExpenses) kpiTotalExpenses.textContent = fmt(expensesAmt);
+        if (kpiReimbursed)    kpiReimbursed.textContent    = fmt(reimbursedAmt);
     }
 
     /* ── Render table ── */
@@ -7764,6 +7787,11 @@ function initFundManagement() {
         if (submitLabel)  submitLabel.textContent = 'Add Entry';
         if (submitBtn)    submitBtn.querySelector('i').className = 'fas fa-plus';
         if (cancelWrapper) cancelWrapper.style.display = 'none';
+        /* Hide inline cancel button */
+        const cancelBtn = document.getElementById('fundCancelEdit');
+        if (cancelBtn) cancelBtn.style.display = 'none';
+        /* Restore form heading */
+        if (formHeading) formHeading.textContent = 'Add Fund Entry';
         /* restore today's date */
         if (dateEl) {
             const today = new Date();
@@ -7784,6 +7812,11 @@ function initFundManagement() {
         if (submitLabel)  submitLabel.textContent = 'Save Changes';
         if (submitBtn)    submitBtn.querySelector('i').className = 'fas fa-save';
         if (cancelWrapper) cancelWrapper.style.display = '';
+        /* Also show the cancel button rendered next to submit */
+        const cancelBtn = document.getElementById('fundCancelEdit');
+        if (cancelBtn) cancelBtn.style.display = '';
+        /* Switch form heading */
+        if (formHeading) formHeading.textContent = 'Edit Fund Entry';
 
         /* Scroll to form */
         form && form.scrollIntoView({ behavior: 'smooth', block: 'start' });
