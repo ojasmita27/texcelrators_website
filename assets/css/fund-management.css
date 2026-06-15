@@ -1,50 +1,66 @@
 /* ═══════════════════════════════════════════════════════════════════════
-   fund-management.css  —  Fund Management section overrides
-   
-   Strategy: Re-use every base class from style.css verbatim.
-   This file only adds:
-     1.  6-card KPI grid override (expense-kpi-grid is 3-col by default)
-     2.  "Total Funds" primary card accent
-     3.  Red / amber colour modifiers for Expenses / Reimbursements cards
-     4.  Fund entry form grid column widths
-     5.  Fund History header (search + filter bar)
-     6.  Source-type badge colours
-     7.  Sort icons, amount colour, action button danger variant
-     8.  Pagination strip
-     9.  Mobile responsive stacking
+   fund-management.css — Fund Management section (UI only)
+   Scoped to #fund-management-section
    ═══════════════════════════════════════════════════════════════════════ */
 
-/* ── 1. KPI grid: 6 equal columns on desktop ─────────────────────────
-   Overrides .expense-kpi-grid which defaults to repeat(3, 1fr).
-   Using .fund-kpi-row as the additional selector for specificity.       */
-.expense-kpi-grid.fund-kpi-row {
+#fund-management-section .fund-management-layout {
+    display: grid;
+    gap: 1.25rem;
+    width: 100%;
+    min-width: 0;
+}
+
+/* ── KPI row: 6 equal cards ─────────────────────────────────────────── */
+#fund-management-section .expense-kpi-grid.fund-kpi-row {
+    display: grid;
     grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 0.85rem;
+    width: 100%;
 }
 
-/* Ensure all fund KPI cards match the expense-kpi-card min-height */
-.expense-kpi-grid.fund-kpi-row .kpi-card {
-    min-height: 108px;
+#fund-management-section .expense-kpi-grid.fund-kpi-row .kpi-card {
+    min-height: 112px;
+    height: 100%;
+    align-items: flex-start;
 }
 
-/* ── 2. "Total Funds" primary card ───────────────────────────────────
-   Override only border and background — padding, flex, icon remain
-   identical to .kpi-card.premium-kpi-card in style.css.               */
+#fund-management-section .expense-kpi-grid.fund-kpi-row .kpi-label {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: 0.72rem;
+    letter-spacing: 0.06em;
+}
+
+#fund-management-section .expense-kpi-grid.fund-kpi-row .kpi-value {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: clamp(1rem, 1.1vw, 1.35rem);
+    font-variant-numeric: tabular-nums;
+}
+
+#fund-management-section .expense-kpi-grid.fund-kpi-row .kpi-content {
+    min-width: 0;
+    flex: 1 1 auto;
+}
+
 .fund-kpi-primary {
     border-color: rgba(99, 102, 241, 0.38) !important;
     background: linear-gradient(135deg,
         rgba(99, 102, 241, 0.13),
-        rgba(79,  70, 229, 0.05)) !important;
-    box-shadow: 0 12px 28px rgba(0,0,0,0.26),
-                0 0 0 1px rgba(99,102,241,0.22),
-                inset 0 1px 0 rgba(255,255,255,0.05) !important;
+        rgba(79, 70, 229, 0.05)) !important;
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.26),
+                0 0 0 1px rgba(99, 102, 241, 0.22),
+                inset 0 1px 0 rgba(255, 255, 255, 0.05) !important;
 }
 
-/* ── 3. Colour modifier classes ──────────────────────────────────────  */
 .fund-kpi-icon-accent {
-    background: rgba(99,  102, 241, 0.14) !important;
-    border-color: rgba(99,  102, 241, 0.26) !important;
+    background: rgba(99, 102, 241, 0.14) !important;
+    border-color: rgba(99, 102, 241, 0.26) !important;
     color: #818cf8 !important;
 }
+
 .fund-kpi-val-accent { color: #818cf8 !important; }
 
 .fund-kpi-icon-red {
@@ -52,6 +68,7 @@
     border-color: rgba(239, 68, 68, 0.20) !important;
     color: #f87171 !important;
 }
+
 .fund-kpi-val-red { color: #f87171 !important; }
 
 .fund-kpi-icon-amber {
@@ -59,33 +76,83 @@
     border-color: rgba(245, 158, 11, 0.20) !important;
     color: #fbbf24 !important;
 }
+
 .fund-kpi-val-amber { color: #fbbf24 !important; }
 
-/* ── 4. Fund entry form grid ─────────────────────────────────────────
-   Mirrors the pattern of #expenseForm in style.css.
-   Source-type col is slightly wider; Description is 2× wider.         */
-.fund-entry-form {
-    grid-template-columns:
-        minmax(0, 1.15fr)   /* Source Type   */
-        minmax(0, 0.80fr)   /* Amount        */
-        minmax(0, 2fr)      /* Description   */
-        minmax(0, 0.85fr)   /* Date          */
-        auto                /* Submit button */
-        auto;               /* Cancel button (hidden by default) */
+/* ── Form: 3-row finance layout ─────────────────────────────────────── */
+#fund-management-section .fund-entry-form-v2 {
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+    padding: 1rem 1.1rem;
+    border-radius: 14px;
+    border: 1px solid rgba(0, 212, 255, 0.12);
+    background: linear-gradient(135deg, rgba(0, 99, 255, 0.05), rgba(0, 153, 255, 0.02));
 }
 
-/* Description field: allow it to be wider without wrapping */
-.fund-desc-field {
-    /* no extra override needed — grid column handles width */
+#fund-management-section .fund-form-row {
+    display: grid;
+    gap: 0.85rem;
+    width: 100%;
+    min-width: 0;
 }
 
-/* ── 5. Fund History header ──────────────────────────────────────────
-   Sits between the form and the table inside .expense-table-area.      */
-.fund-history-header {
+#fund-management-section .fund-form-row-1,
+#fund-management-section .fund-form-row-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+#fund-management-section .fund-form-row-3 {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.65rem;
+    padding-top: 0.15rem;
+}
+
+#fund-management-section .fund-form-row .expenses-admin-field {
+    display: grid;
+    gap: 0.35rem;
+    min-width: 0;
+}
+
+#fund-management-section .fund-form-row .expenses-admin-field label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-secondary, #b0b5c1);
+}
+
+#fund-management-section .fund-form-row input,
+#fund-management-section .fund-form-row select {
+    width: 100%;
+    min-width: 0;
+    min-height: 48px;
+    padding: 12px 14px;
+    border-radius: 12px;
+    border: 1.5px solid rgba(0, 212, 255, 0.12);
+    background: rgba(0, 99, 255, 0.08);
+    color: var(--text-primary, #fff);
+    font-size: 0.95rem;
+    box-sizing: border-box;
+}
+
+#fund-management-section .fund-form-actions-row .expense-submit-btn {
+    min-width: 160px;
+    min-height: 48px;
+}
+
+#fund-management-section .fund-cancel-wrap .dashboard-button {
+    min-height: 48px;
+}
+
+/* ── Fund History header ──────────────────────────────────────────────── */
+#fund-management-section .fund-history-header {
     margin-bottom: 0;
 }
 
-.fund-history-title-row {
+#fund-management-section .fund-history-title-row {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -94,7 +161,7 @@
     flex-wrap: wrap;
 }
 
-.fund-history-label {
+#fund-management-section .fund-history-label {
     font-size: 0.80rem;
     font-weight: 700;
     text-transform: uppercase;
@@ -106,33 +173,42 @@
     white-space: nowrap;
 }
 
-.fund-history-label i {
+#fund-management-section .fund-history-label i {
     color: var(--secondary-color, #00d4ff);
     opacity: 0.75;
     font-size: 0.78rem;
 }
 
-/* Search + filter bar — reuses .search-input base styles */
-.fund-search-bar {
+#fund-management-section .fund-search-bar {
     display: flex;
     gap: 8px;
     align-items: center;
     flex-wrap: nowrap;
 }
 
-.fund-search-input {
-    width: 210px;
+#fund-management-section .fund-search-input {
+    width: min(240px, 100%);
     min-width: 0;
-    /* .search-input base gives height, padding, border, bg, font */
 }
 
-.fund-filter-select {
-    width: 170px;
+#fund-management-section .fund-filter-select {
+    width: min(190px, 100%);
     min-width: 0;
-    /* .search-input base gives height, padding, border, bg, font */
 }
 
-/* ── 6. Source-type badges ───────────────────────────────────────────  */
+/* ── Table ────────────────────────────────────────────────────────────── */
+#fund-management-section .expense-table-shell {
+    border: 1px solid rgba(0, 212, 255, 0.1);
+    border-radius: 14px;
+    overflow: hidden;
+    background: rgba(0, 99, 255, 0.03);
+}
+
+#fund-management-section .fund-table {
+    width: 100%;
+    table-layout: auto;
+}
+
 .fund-badge {
     display: inline-block;
     padding: 3px 10px;
@@ -144,18 +220,13 @@
     border: 1px solid transparent;
 }
 
-.fund-badge-opening     { background: rgba(99,  102, 241, 0.14); color: #818cf8; border-color: rgba(99, 102,241,0.24); }
-.fund-badge-principal   { background: rgba(16,  185, 129, 0.14); color: #34d399; border-color: rgba(16,185,129,0.24); }
-.fund-badge-sponsorship { background: rgba(245, 158, 11,  0.14); color: #fbbf24; border-color: rgba(245,158,11, 0.24); }
-.fund-badge-donation    { background: rgba(236, 72,  153, 0.14); color: #f472b6; border-color: rgba(236,72, 153,0.24); }
-.fund-badge-other       { background: rgba(148, 163, 184, 0.10); color: #94a3b8; border-color: rgba(148,163,184,0.18); }
+.fund-badge-opening     { background: rgba(99, 102, 241, 0.14); color: #818cf8; border-color: rgba(99, 102, 241, 0.24); }
+.fund-badge-principal   { background: rgba(16, 185, 129, 0.14); color: #34d399; border-color: rgba(16, 185, 129, 0.24); }
+.fund-badge-sponsorship { background: rgba(245, 158, 11, 0.14); color: #fbbf24; border-color: rgba(245, 158, 11, 0.24); }
+.fund-badge-donation    { background: rgba(236, 72, 153, 0.14); color: #f472b6; border-color: rgba(236, 72, 153, 0.24); }
+.fund-badge-other       { background: rgba(148, 163, 184, 0.10); color: #94a3b8; border-color: rgba(148, 163, 184, 0.18); }
 
-/* ── 7. Table: sort icons, amount colour, actions ────────────────────
-   Table itself uses .expense-table from style.css — no override needed
-   for thead/tbody base styles.                                         */
 .fund-th {
-    /* Inherits .expense-table thead th fully.
-       Only add cursor for sortable columns.  */
     white-space: nowrap;
     user-select: none;
 }
@@ -169,7 +240,6 @@
     opacity: 0.55;
 }
 
-/* Amount: green tabular numerals */
 .fund-amount {
     font-weight: 800;
     font-variant-numeric: tabular-nums;
@@ -177,15 +247,13 @@
     white-space: nowrap;
 }
 
-/* Description: ellipsis */
 .fund-desc {
-    max-width: 320px;
+    max-width: 420px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
 
-/* Date / Added-by: muted */
 .fund-date,
 .fund-addedby {
     white-space: nowrap;
@@ -193,16 +261,13 @@
     font-size: 0.85rem;
 }
 
-/* Action buttons container */
 .fund-actions {
     display: flex;
     gap: 6px;
     white-space: nowrap;
 }
 
-/* Inherits .expense-table .dashboard-button sizing from style.css.
-   Danger variant is fund-specific.                                     */
-.dashboard-button.small {
+#fund-management-section .dashboard-button.small {
     padding: 6px 10px;
     font-size: 0.80rem;
     min-height: 32px;
@@ -212,17 +277,17 @@
     gap: 4px;
 }
 
-.dashboard-button.small.danger {
+#fund-management-section .dashboard-button.small.danger {
     background: rgba(239, 68, 68, 0.10);
     border-color: rgba(239, 68, 68, 0.28);
     color: #f87171;
 }
-.dashboard-button.small.danger:hover {
+
+#fund-management-section .dashboard-button.small.danger:hover {
     background: rgba(239, 68, 68, 0.22);
     border-color: rgba(239, 68, 68, 0.45);
 }
 
-/* ── 8. Pagination strip ─────────────────────────────────────────────  */
 .fund-pagination {
     display: flex;
     align-items: center;
@@ -254,70 +319,76 @@
     pointer-events: none;
 }
 
-/* ══════════════════════════════════════════════════════════════════════
-   9. RESPONSIVE
-   ══════════════════════════════════════════════════════════════════════ */
+/* ── Responsive ───────────────────────────────────────────────────────── */
+@media (max-width: 1366px) {
+    #fund-management-section .expense-kpi-grid.fund-kpi-row .kpi-value {
+        font-size: clamp(0.95rem, 1vw, 1.2rem);
+    }
+}
 
-/* KPI: 3 cols at medium, 2 at small, 1 at mobile */
 @media (max-width: 1260px) {
-    .expense-kpi-grid.fund-kpi-row {
+    #fund-management-section .expense-kpi-grid.fund-kpi-row {
         grid-template-columns: repeat(3, minmax(0, 1fr));
     }
 }
-@media (max-width: 860px) {
-    .expense-kpi-grid.fund-kpi-row {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-}
-@media (max-width: 480px) {
-    .expense-kpi-grid.fund-kpi-row {
+
+@media (max-width: 900px) {
+    #fund-management-section .fund-form-row-1,
+    #fund-management-section .fund-form-row-2 {
         grid-template-columns: 1fr;
     }
 }
 
-/* Form: 2 cols on medium screens */
-@media (max-width: 1100px) {
-    .fund-entry-form {
+@media (max-width: 860px) {
+    #fund-management-section .expense-kpi-grid.fund-kpi-row {
         grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-    /* Description spans full row width so it has room */
-    .fund-desc-field {
-        grid-column: 1 / -1;
     }
 }
 
 @media (max-width: 640px) {
-    .fund-entry-form {
-        grid-template-columns: 1fr;
+    #fund-management-section .fund-search-bar {
+        flex-wrap: wrap;
+        width: 100%;
     }
-    .fund-desc-field {
-        grid-column: 1;
+
+    #fund-management-section .fund-search-input,
+    #fund-management-section .fund-filter-select {
+        width: 100%;
     }
-    /* search/filter bar stacks */
-    .fund-search-bar { flex-wrap: wrap; }
-    .fund-search-input { width: 100%; }
-    .fund-filter-select { width: 100%; }
-    .fund-history-title-row { flex-direction: column; align-items: flex-start; }
+
+    #fund-management-section .fund-history-title-row {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    #fund-management-section .fund-form-actions-row .dashboard-button {
+        width: 100%;
+    }
 }
 
-/* Mobile card-style table rows */
-@media (max-width: 720px) {
-    .fund-table thead { display: none; }
+@media (max-width: 480px) {
+    #fund-management-section .expense-kpi-grid.fund-kpi-row {
+        grid-template-columns: 1fr;
+    }
+}
 
-    .fund-table,
-    .fund-table tbody,
-    .fund-table tr,
-    .fund-table td {
+@media (max-width: 720px) {
+    #fund-management-section .fund-table thead { display: none; }
+
+    #fund-management-section .fund-table,
+    #fund-management-section .fund-table tbody,
+    #fund-management-section .fund-table tr,
+    #fund-management-section .fund-table td {
         display: block;
         width: 100%;
     }
 
-    .fund-table tr {
-        border-bottom: 1px solid rgba(255,255,255,0.06);
+    #fund-management-section .fund-table tr {
+        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
         padding: 8px 0;
     }
 
-    .fund-table td {
+    #fund-management-section .fund-table td {
         display: flex;
         justify-content: space-between;
         align-items: center;
@@ -327,7 +398,7 @@
         border: none;
     }
 
-    .fund-table td::before {
+    #fund-management-section .fund-table td::before {
         content: attr(data-label);
         font-weight: 700;
         font-size: 0.72rem;
@@ -339,6 +410,12 @@
         text-align: left;
     }
 
-    .fund-desc { max-width: none; text-align: right; }
-    .fund-actions { justify-content: flex-end; }
+    #fund-management-section .fund-desc {
+        max-width: none;
+        text-align: right;
+    }
+
+    #fund-management-section .fund-actions {
+        justify-content: flex-end;
+    }
 }

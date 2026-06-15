@@ -131,46 +131,55 @@
                 </div>
             </section>
 
-            <section class="panel glass-panel premium-panel full-width-section admin-overview-section" id="admin-overview-section" data-dashboard-section data-for-roles="admin" data-dashboard-show-with="analytics">
+            <section class="panel glass-panel premium-panel full-width-section admin-overview-section executive-overview" id="admin-overview-section" data-dashboard-section data-for-roles="admin" data-dashboard-show-with="analytics">
                 <div class="panel-header premium-header">
                     <div class="header-left">
-                        <h3><i class="fas fa-gauge-high"></i> Overview Dashboard</h3>
-                        <p>Live club metrics from MongoDB.</p>
+                        <h3><i class="fas fa-gauge-high"></i> Executive Overview</h3>
                     </div>
                 </div>
-                <div class="admin-overview-kpi-grid">
-                    <article class="metric-card premium-metric-card overview-kpi-card">
-                        <div class="metric-top"><i class="fas fa-users metric-icon" aria-hidden="true"></i><div class="metric-label">Total Members</div></div>
-                        <strong id="overviewTotalMembersCard" class="metric-value">0</strong>
+
+                <div class="executive-kpi-grid admin-overview-kpi-grid">
+                    <article class="executive-kpi-card kpi-card premium-kpi-card">
+                        <div class="kpi-icon"><i class="fas fa-wallet" aria-hidden="true"></i></div>
+                        <div class="kpi-content">
+                            <div class="kpi-label">Total Available Funds</div>
+                            <div class="kpi-value tabular-nums" id="totalFundsCard">₹0</div>
+                        </div>
                     </article>
-                    <article class="metric-card premium-metric-card overview-kpi-card">
-                        <div class="metric-top"><i class="fas fa-user-check metric-icon" aria-hidden="true"></i><div class="metric-label">Active Members</div></div>
-                        <strong id="activeMembersCard" class="metric-value">0</strong>
+                    <article class="executive-kpi-card kpi-card premium-kpi-card">
+                        <div class="kpi-icon"><i class="fas fa-user-check" aria-hidden="true"></i></div>
+                        <div class="kpi-content">
+                            <div class="kpi-label">Active Members</div>
+                            <div class="kpi-value tabular-nums" id="activeMembersCard">0</div>
+                        </div>
                     </article>
-                    <article class="metric-card premium-metric-card overview-kpi-card">
-                        <div class="metric-top"><i class="fas fa-wallet metric-icon" aria-hidden="true"></i><div class="metric-label">Total Funds</div></div>
-                        <strong id="totalFundsCard" class="metric-value">₹0</strong>
+                    <article class="executive-kpi-card kpi-card premium-kpi-card">
+                        <div class="kpi-icon"><i class="fas fa-robot" aria-hidden="true"></i></div>
+                        <div class="kpi-content">
+                            <div class="kpi-label">Projects</div>
+                            <div class="kpi-value tabular-nums" id="overviewProjectsCard">0</div>
+                        </div>
                     </article>
-                    <article class="metric-card premium-metric-card overview-kpi-card">
-                        <div class="metric-top"><i class="fas fa-clock metric-icon" aria-hidden="true"></i><div class="metric-label">Pending Payments</div></div>
-                        <strong id="pendingVerificationsCard" class="metric-value">0</strong>
+                    <article class="executive-kpi-card kpi-card premium-kpi-card">
+                        <div class="kpi-icon"><i class="fas fa-calendar" aria-hidden="true"></i></div>
+                        <div class="kpi-content">
+                            <div class="kpi-label">Events</div>
+                            <div class="kpi-value tabular-nums" id="overviewEventsCard">0</div>
+                        </div>
                     </article>
-                    <article class="metric-card premium-metric-card overview-kpi-card">
-                        <div class="metric-top"><i class="fas fa-robot metric-icon" aria-hidden="true"></i><div class="metric-label">Projects</div></div>
-                        <strong id="overviewProjectsCard" class="metric-value">0</strong>
-                    </article>
-                    <article class="metric-card premium-metric-card overview-kpi-card">
-                        <div class="metric-top"><i class="fas fa-calendar metric-icon" aria-hidden="true"></i><div class="metric-label">Events</div></div>
-                        <strong id="overviewEventsCard" class="metric-value">0</strong>
-                    </article>
-                    <article class="metric-card premium-metric-card overview-kpi-card">
-                        <div class="metric-top"><i class="fas fa-handshake metric-icon" aria-hidden="true"></i><div class="metric-label">Collaborations</div></div>
-                        <strong id="overviewCollaborationsCard" class="metric-value">0</strong>
-                    </article>
-                    <article class="metric-card premium-metric-card overview-kpi-card">
-                        <div class="metric-top"><i class="fas fa-receipt metric-icon" aria-hidden="true"></i><div class="metric-label">Pending Reimbursements</div></div>
-                        <strong id="overviewPendingReimbursementsCard" class="metric-value">0</strong>
-                    </article>
+                </div>
+
+                <!-- Preserved IDs for existing JS bindings (not displayed) -->
+                <span id="overviewTotalMembersCard" hidden aria-hidden="true">0</span>
+                <span id="pendingVerificationsCard" hidden aria-hidden="true">0</span>
+                <span id="overviewCollaborationsCard" hidden aria-hidden="true">0</span>
+                <span id="overviewPendingReimbursementsCard" hidden aria-hidden="true">0</span>
+
+                <div class="active-members-panel">
+                    <div class="active-members-panel-header">
+                        <h4><i class="fas fa-users"></i> Active Members</h4>
+                    </div>
+                    <div class="active-members-list" id="overviewActiveMembersList" aria-live="polite"></div>
                 </div>
             </section>
 
@@ -362,7 +371,7 @@
 
                 <!-- GROUP 2: Financial Management (Expenses + Verification) -->
                 <!-- EXPENSE MANAGEMENT SECTION (Redesigned) -->
-                <section class="panel glass-panel premium-panel expense-section" id="expenses-section" data-dashboard-section data-for-roles="admin">
+                <section class="panel glass-panel premium-panel full-width-section expense-section" id="expenses-section" data-dashboard-section data-for-roles="admin">
                     <div class="panel-header premium-header">
                         <h3><i class="fas fa-receipt"></i> Expense Management</h3>
                     </div>
@@ -392,42 +401,55 @@
                             </div>
                         </div>
 
-                        <form id="expenseForm" class="card-form compact expenses-admin-form expense-form-row">
-                            <div class="expenses-admin-field">
-                                <label for="expenseTitle">Title</label>
-                                <input type="text" id="expenseTitle" placeholder="Expense title" required>
+                        <form id="expenseForm" class="card-form compact expenses-admin-form expense-admin-form-v2">
+                            <div class="expense-form-row expense-form-row-1">
+                                <div class="expenses-admin-field">
+                                    <label for="expenseTitle">Title</label>
+                                    <input type="text" id="expenseTitle" placeholder="Expense title" required>
+                                </div>
+                                <div class="expenses-admin-field">
+                                    <label for="expenseAmount">Amount</label>
+                                    <input type="number" id="expenseAmount" placeholder="Amount" min="1" required>
+                                </div>
+                                <div class="expenses-admin-field">
+                                    <label for="expenseCategory">Category</label>
+                                    <select id="expenseCategory">
+                                        <option value="">Category</option>
+                                        <option value="parts">Parts</option>
+                                        <option value="materials">Materials</option>
+                                        <option value="tools">Tools</option>
+                                        <option value="transport">Transport</option>
+                                        <option value="venue">Venue</option>
+                                        <option value="other">Other</option>
+                                    </select>
+                                </div>
                             </div>
-                            <div class="expenses-admin-field">
-                                <label for="expenseAmount">Amount</label>
-                                <input type="number" id="expenseAmount" placeholder="Amount" min="1" required>
+                            <div class="expense-form-row expense-form-row-2">
+                                <div class="expenses-admin-field">
+                                    <label for="expenseDate">Date</label>
+                                    <input type="date" id="expenseDate" required>
+                                </div>
+                                <div class="expenses-admin-field expense-notes-field">
+                                    <label for="expenseNotes">Notes</label>
+                                    <input type="text" id="expenseNotes" placeholder="Optional notes">
+                                </div>
                             </div>
-                            <div class="expenses-admin-field">
-                                <label for="expenseCategory">Category</label>
-                                <select id="expenseCategory">
-                                    <option value="">Category</option>
-                                    <option value="parts">Parts</option>
-                                    <option value="materials">Materials</option>
-                                    <option value="tools">Tools</option>
-                                    <option value="transport">Transport</option>
-                                    <option value="venue">Venue</option>
-                                    <option value="other">Other</option>
-                                </select>
-                            </div>
-                            <div class="expenses-admin-field">
-                                <label for="expenseNotes">Notes</label>
-                                <input type="text" id="expenseNotes" placeholder="Optional notes">
-                            </div>
-                            <div class="expenses-admin-field expenses-admin-submit-field">
-                                <span class="field-label field-label-spacer" aria-hidden="true">&nbsp;</span>
+                            <div class="expense-form-row expense-form-row-3">
                                 <button type="submit" class="dashboard-button primary expense-submit-btn"><i class="fas fa-plus"></i> Add Expense</button>
-                            </div>
-                            <div class="expenses-admin-field expenses-admin-date-field">
-                                <label for="expenseDate">Date</label>
-                                <input type="date" id="expenseDate" required>
                             </div>
                         </form>
 
+                        <div class="expense-recent-section">
+                            <div class="expense-recent-header">
+                                <span class="expense-section-label"><i class="fas fa-clock"></i> Recent Expenses</span>
+                            </div>
+                            <div id="expense-recent-list" class="expense-recent-list" aria-live="polite"></div>
+                        </div>
+
                         <div class="expense-table-area">
+                            <div class="expense-history-header">
+                                <span class="expense-section-label"><i class="fas fa-list"></i> Expense History</span>
+                            </div>
                             <div id="member-expenses-container" class="table-card compact expense-table-shell">
                                 <table class="transaction-table members-table expense-table">
                                     <thead>
@@ -449,15 +471,14 @@
                 </section>
 
                 <!-- FUND MANAGEMENT SECTION -->
-                <section class="panel glass-panel premium-panel" id="fund-management-section" data-dashboard-section data-for-roles="admin">
+                <section class="panel glass-panel premium-panel full-width-section" id="fund-management-section" data-dashboard-section data-for-roles="admin">
 
                     <div class="panel-header premium-header">
                         <h3><i class="fas fa-piggy-bank"></i> Fund Management</h3>
                     </div>
 
-                    <div class="expense-management-layout">
+                    <div class="expense-management-layout fund-management-layout">
 
-                        <!-- ── Row 1: KPI cards (identical structure to Expenses section) ── -->
                         <div class="expense-kpi-grid fund-kpi-row" id="fund-kpi-row">
 
                             <!-- Total Funds: highlighted primary card -->
@@ -513,54 +534,51 @@
                         <!-- JS compat shim -->
                         <span id="fundKpiCount" style="display:none;" aria-hidden="true">0</span>
 
-                        <!-- ── Row 2: Add / Edit form (same pattern as #addMemberForm / #expenseForm) ── -->
-                        <form id="fundEntryForm" class="card-form compact fund-entry-form">
+                        <form id="fundEntryForm" class="card-form compact fund-entry-form fund-entry-form-v2">
                             <input type="hidden" id="fundEditId" value="">
 
-                            <div class="expenses-admin-field">
-                                <label for="fundSourceType">Source Type</label>
-                                <select id="fundSourceType" required>
-                                    <option value="">Select type</option>
-                                    <option value="opening_balance">Opening Balance</option>
-                                    <option value="principal_contribution">Principal Contribution</option>
-                                    <option value="sponsorship">Sponsorship</option>
-                                    <option value="donation">Donation</option>
-                                    <option value="other_income">Other Income</option>
-                                </select>
+                            <div class="fund-form-row fund-form-row-1">
+                                <div class="expenses-admin-field fund-field-source">
+                                    <label for="fundSourceType">Source Type</label>
+                                    <select id="fundSourceType" required>
+                                        <option value="">Select type</option>
+                                        <option value="opening_balance">Opening Balance</option>
+                                        <option value="principal_contribution">Principal Contribution</option>
+                                        <option value="sponsorship">Sponsorship</option>
+                                        <option value="donation">Donation</option>
+                                        <option value="other_income">Other Income</option>
+                                    </select>
+                                </div>
+                                <div class="expenses-admin-field fund-field-amount">
+                                    <label for="fundAmount">Amount (₹)</label>
+                                    <input type="number" id="fundAmount" placeholder="0.00" min="1" step="0.01" required>
+                                </div>
                             </div>
 
-                            <div class="expenses-admin-field">
-                                <label for="fundAmount">Amount (₹)</label>
-                                <input type="number" id="fundAmount" placeholder="0.00" min="1" step="0.01" required>
+                            <div class="fund-form-row fund-form-row-2">
+                                <div class="expenses-admin-field fund-field-date">
+                                    <label for="fundDate">Date</label>
+                                    <input type="date" id="fundDate" required>
+                                </div>
+                                <div class="expenses-admin-field fund-desc-field fund-field-description">
+                                    <label for="fundDescription">Description</label>
+                                    <input type="text" id="fundDescription" placeholder="e.g. Cummins sponsorship 2026" required>
+                                </div>
                             </div>
 
-                            <div class="expenses-admin-field fund-desc-field">
-                                <label for="fundDescription">Description</label>
-                                <input type="text" id="fundDescription" placeholder="e.g. Cummins sponsorship 2026" required>
-                            </div>
-
-                            <div class="expenses-admin-field">
-                                <label for="fundDate">Date</label>
-                                <input type="date" id="fundDate" required>
-                            </div>
-
-                            <div class="expenses-admin-field expenses-admin-submit-field">
-                                <span class="field-label field-label-spacer" aria-hidden="true">&nbsp;</span>
+                            <div class="fund-form-row fund-form-row-3 fund-form-actions-row">
                                 <button type="submit" class="dashboard-button primary expense-submit-btn" id="fundSubmitBtn">
                                     <i class="fas fa-plus"></i>
                                     <span id="fundSubmitLabel">Add Entry</span>
                                 </button>
+                                <div id="fundCancelEditWrapper" class="fund-cancel-wrap" style="display:none;">
+                                    <button type="button" class="dashboard-button" id="fundCancelEdit">
+                                        <i class="fas fa-times"></i> Cancel
+                                    </button>
+                                </div>
                             </div>
 
-                            <div id="fundCancelEditWrapper" class="expenses-admin-field" style="display:none;">
-                                <span class="field-label field-label-spacer" aria-hidden="true">&nbsp;</span>
-                                <button type="button" class="dashboard-button" id="fundCancelEdit">
-                                    <i class="fas fa-times"></i> Cancel
-                                </button>
-                            </div>
-
-                            <!-- form heading for JS to update (hidden, read by JS) -->
-                            <span id="fundFormHeading" style="display:none;">Add Fund Entry</span>
+                            <span id="fundFormHeading" hidden aria-hidden="true">Add Fund Entry</span>
                         </form>
 
                         <!-- ── Row 3: Fund History table — full width, primary content ── -->

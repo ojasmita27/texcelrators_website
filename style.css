@@ -11209,3 +11209,442 @@ html::before {
         grid-template-columns: 1fr;
     }
 }
+
+/* ============================================================
+   STEP 1 — Admin workspace full-width layout foundation
+   Ensures Overview-linked panels and financial admin sections
+   use the full main workspace width (not half of a 2-col grid).
+   ============================================================ */
+.dashboard-page .workspace-content-grid > .full-width-section {
+    grid-column: 1 / -1;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+.dashboard-page #admin-overview-section,
+.dashboard-page #analytics,
+.dashboard-page #expenses-section,
+.dashboard-page #fund-management-section {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+.dashboard-page #expenses-section .expense-management-layout,
+.dashboard-page #fund-management-section .expense-management-layout {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+}
+
+.dashboard-page #expenses-section .expense-kpi-grid,
+.dashboard-page #fund-management-section .expense-kpi-grid.fund-kpi-row {
+    width: 100%;
+    min-width: 0;
+}
+
+.dashboard-page #expenses-section .expense-table-area,
+.dashboard-page #fund-management-section .expense-table-area {
+    width: 100%;
+    min-width: 0;
+    overflow: hidden;
+}
+
+.dashboard-page #expenses-section .expense-table-shell,
+.dashboard-page #fund-management-section .expense-table-shell,
+.dashboard-page #fund-management-section #fund-table-wrapper {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+/* ============================================================
+   Admin UI — Executive Overview, Expenses, Fund Management
+   Scoped to #admin-overview-section, #expenses-section,
+   #fund-management-section only.
+   ============================================================ */
+
+/* ── Executive Overview ─────────────────────────────────────── */
+.dashboard-page #admin-overview-section.executive-overview {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.dashboard-page #admin-overview-section .executive-kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.85rem;
+    width: 100%;
+}
+
+.dashboard-page #admin-overview-section .executive-kpi-card {
+    min-height: 112px;
+    height: 100%;
+}
+
+.dashboard-page #admin-overview-section .executive-kpi-card .kpi-label {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: 0.72rem;
+    letter-spacing: 0.06em;
+}
+
+.dashboard-page #admin-overview-section .executive-kpi-card .kpi-value {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-variant-numeric: tabular-nums;
+}
+
+.dashboard-page #admin-overview-section .tabular-nums {
+    font-variant-numeric: tabular-nums;
+}
+
+.dashboard-page #admin-overview-section .active-members-panel {
+    border: 1px solid rgba(0, 212, 255, 0.12);
+    border-radius: 14px;
+    background: linear-gradient(135deg, rgba(0, 99, 255, 0.05), rgba(0, 153, 255, 0.02));
+    overflow: hidden;
+}
+
+.dashboard-page #admin-overview-section .active-members-panel-header {
+    padding: 0.85rem 1rem;
+    border-bottom: 1px solid rgba(0, 212, 255, 0.08);
+}
+
+.dashboard-page #admin-overview-section .active-members-panel-header h4 {
+    margin: 0;
+    font-size: 0.92rem;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--text-primary);
+}
+
+.dashboard-page #admin-overview-section .active-members-panel-header h4 i {
+    color: var(--secondary-color);
+}
+
+.dashboard-page #admin-overview-section .active-members-list {
+    max-height: 240px;
+    overflow-y: auto;
+}
+
+.dashboard-page #admin-overview-section .active-member-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1.4fr) minmax(0, 0.9fr) auto;
+    gap: 0.75rem;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.dashboard-page #admin-overview-section .active-member-row:last-child {
+    border-bottom: none;
+}
+
+.dashboard-page #admin-overview-section .active-member-row:hover {
+    background: rgba(0, 212, 255, 0.04);
+}
+
+.dashboard-page #admin-overview-section .active-member-name {
+    font-weight: 700;
+    color: var(--text-primary);
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.dashboard-page #admin-overview-section .active-member-role {
+    color: var(--text-secondary);
+    font-size: 0.88rem;
+    text-transform: capitalize;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.dashboard-page #admin-overview-section .active-members-empty {
+    padding: 1.25rem 1rem;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+/* ── Expense Management ─────────────────────────────────────── */
+.dashboard-page #expenses-section .expense-management-layout {
+    display: grid;
+    gap: 1.25rem;
+    width: 100%;
+    min-width: 0;
+}
+
+.dashboard-page #expenses-section .expense-kpi-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.dashboard-page #expenses-section .expense-admin-form-v2 {
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+    padding: 1rem 1.1rem;
+    border-radius: 14px;
+    border: 1px solid rgba(0, 212, 255, 0.12);
+    background: linear-gradient(135deg, rgba(0, 99, 255, 0.05), rgba(0, 153, 255, 0.02));
+}
+
+.dashboard-page #expenses-section .expense-form-row {
+    display: grid;
+    gap: 0.85rem;
+    width: 100%;
+    min-width: 0;
+}
+
+.dashboard-page #expenses-section .expense-form-row-1 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.dashboard-page #expenses-section .expense-form-row-2 {
+    grid-template-columns: minmax(0, 0.45fr) minmax(0, 1fr);
+}
+
+.dashboard-page #expenses-section .expense-form-row-3 {
+    display: flex;
+    align-items: center;
+    padding-top: 0.15rem;
+}
+
+.dashboard-page #expenses-section .expense-form-row .expenses-admin-field {
+    display: grid;
+    gap: 0.35rem;
+    min-width: 0;
+}
+
+.dashboard-page #expenses-section .expense-form-row .expenses-admin-field label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+}
+
+.dashboard-page #expenses-section .expense-form-row input,
+.dashboard-page #expenses-section .expense-form-row select {
+    width: 100%;
+    min-width: 0;
+    min-height: 48px;
+    padding: 12px 14px;
+    border-radius: 12px;
+    border: 1.5px solid rgba(0, 212, 255, 0.12);
+    background: rgba(0, 99, 255, 0.08);
+    color: var(--text-primary);
+    font-size: 0.95rem;
+    box-sizing: border-box;
+}
+
+.dashboard-page #expenses-section .expense-form-row-3 .expense-submit-btn {
+    min-width: 180px;
+    min-height: 48px;
+}
+
+.dashboard-page #expenses-section .expense-section-label {
+    font-size: 0.80rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-secondary);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+}
+
+.dashboard-page #expenses-section .expense-section-label i {
+    color: var(--secondary-color);
+    opacity: 0.8;
+}
+
+.dashboard-page #expenses-section .expense-recent-section {
+    border: 1px solid rgba(0, 212, 255, 0.1);
+    border-radius: 14px;
+    overflow: hidden;
+    background: rgba(0, 99, 255, 0.03);
+}
+
+.dashboard-page #expenses-section .expense-recent-header,
+.dashboard-page #expenses-section .expense-history-header {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid rgba(0, 212, 255, 0.08);
+}
+
+.dashboard-page #expenses-section .expense-recent-list {
+    display: grid;
+    gap: 0;
+}
+
+.dashboard-page #expenses-section .expense-recent-item {
+    display: grid;
+    grid-template-columns: minmax(0, 1.5fr) minmax(0, 0.8fr) auto auto;
+    gap: 0.75rem;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.dashboard-page #expenses-section .expense-recent-item:last-child {
+    border-bottom: none;
+}
+
+.dashboard-page #expenses-section .expense-recent-item:hover {
+    background: rgba(0, 212, 255, 0.04);
+}
+
+.dashboard-page #expenses-section .expense-recent-title {
+    font-weight: 700;
+    color: var(--text-primary);
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.dashboard-page #expenses-section .expense-recent-meta {
+    color: var(--text-secondary);
+    font-size: 0.86rem;
+    text-transform: capitalize;
+}
+
+.dashboard-page #expenses-section .expense-recent-amount {
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.dashboard-page #expenses-section .expense-recent-date {
+    color: var(--text-secondary);
+    font-size: 0.84rem;
+    white-space: nowrap;
+}
+
+.dashboard-page #expenses-section .expense-recent-empty {
+    padding: 1rem;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+.dashboard-page #expenses-section .expense-table-shell {
+    border: 1px solid rgba(0, 212, 255, 0.1);
+    border-radius: 14px;
+    overflow: hidden;
+    background: rgba(0, 99, 255, 0.03);
+}
+
+.dashboard-page #expenses-section .expense-table {
+    width: 100%;
+    table-layout: auto;
+}
+
+.dashboard-page #expenses-section .expense-table tbody td {
+    white-space: normal;
+}
+
+.dashboard-page #expenses-section .expense-table .member-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* ── Responsive: three admin sections ───────────────────────── */
+@media (max-width: 1100px) {
+    .dashboard-page #admin-overview-section .executive-kpi-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .dashboard-page #expenses-section .expense-form-row-1 {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .dashboard-page #expenses-section .expense-form-row-2 {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 768px) {
+    .dashboard-page #admin-overview-section .executive-kpi-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .dashboard-page #admin-overview-section .active-member-row {
+        grid-template-columns: 1fr;
+        gap: 0.35rem;
+    }
+
+    .dashboard-page #expenses-section .expense-kpi-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .dashboard-page #expenses-section .expense-form-row-1,
+    .dashboard-page #expenses-section .expense-form-row-2 {
+        grid-template-columns: 1fr;
+    }
+
+    .dashboard-page #expenses-section .expense-form-row-3 .expense-submit-btn {
+        width: 100%;
+    }
+
+    .dashboard-page #expenses-section .expense-recent-item {
+        grid-template-columns: 1fr;
+        gap: 0.35rem;
+    }
+
+    .dashboard-page #expenses-section .expense-table {
+        min-width: 0;
+    }
+
+    .dashboard-page #expenses-section .expense-table thead {
+        display: none;
+    }
+
+    .dashboard-page #expenses-section .expense-table,
+    .dashboard-page #expenses-section .expense-table tbody,
+    .dashboard-page #expenses-section .expense-table tr,
+    .dashboard-page #expenses-section .expense-table td {
+        display: block;
+        width: 100%;
+    }
+
+    .dashboard-page #expenses-section .expense-table tr {
+        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+        padding: 8px 0;
+    }
+
+    .dashboard-page #expenses-section .expense-table td {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 5px 1rem;
+        font-size: 0.86rem;
+        border: none;
+    }
+
+    .dashboard-page #expenses-section .expense-table td::before {
+        content: attr(data-label);
+        font-weight: 700;
+        font-size: 0.72rem;
+        color: var(--text-secondary);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        flex-shrink: 0;
+        margin-right: 10px;
+    }
+
+    .dashboard-page #expenses-section .expense-table .expense-actions {
+        justify-content: flex-end;
+    }
+}

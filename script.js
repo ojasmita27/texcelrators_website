@@ -5063,6 +5063,7 @@ function renderDashboardApp() {
         if (!Array.isArray(state.expenses) || state.expenses.length === 0) {
             elements.expenseTableBody.innerHTML = '';
             if (elements.expenseEmptyState) elements.expenseEmptyState.style.display = 'block';
+            renderRecentExpenses();
             return;
         }
 
@@ -5070,23 +5071,80 @@ function renderDashboardApp() {
 
         elements.expenseTableBody.innerHTML = state.expenses.map((expense) => `
             <tr>
-                <td>
+                <td data-label="Expense Name">
                     <div class="member-cell">
                         <span class="member-avatar" aria-hidden="true">${String(expense.title || 'E').trim().charAt(0).toUpperCase()}</span>
                         <span class="member-name">${expense.title || 'Untitled Expense'}</span>
                     </div>
                 </td>
-                <td><span class="status-chip status-pending">${expense.category || 'Other'}</span></td>
-                <td>${formatCurrency(expense.amount)}</td>
-                <td>${formatDate(expense.date)}</td>
-                <td><span class="status-chip status-active">Recorded</span></td>
-                <td class="expense-actions">
+                <td data-label="Category"><span class="status-chip status-pending">${expense.category || 'Other'}</span></td>
+                <td data-label="Amount">${formatCurrency(expense.amount)}</td>
+                <td data-label="Date">${formatDate(expense.date)}</td>
+                <td data-label="Status"><span class="status-chip status-active">Recorded</span></td>
+                <td data-label="Actions" class="expense-actions">
                     ${isAdminRole() && expense.id
                         ? `<button type="button" class="dashboard-button delete-club-expense-btn" data-expense-id="${expense.id}">Delete</button>`
                         : '<button type="button" class="dashboard-button">View</button>'}
                 </td>
             </tr>
         `).join('');
+
+        renderRecentExpenses();
+    }
+
+    function renderRecentExpenses() {
+        const container = document.getElementById('expense-recent-list');
+        if (!container) return;
+
+        const recent = [...(state.expenses || [])]
+            .sort((a, b) => {
+                const aTime = a.date ? new Date(a.date).getTime() : 0;
+                const bTime = b.date ? new Date(b.date).getTime() : 0;
+                return bTime - aTime;
+            })
+            .slice(0, 5);
+
+        if (!recent.length) {
+            container.innerHTML = '<div class="expense-recent-empty">No recent expenses recorded yet.</div>';
+            return;
+        }
+
+        container.innerHTML = recent.map((expense) => `
+            <div class="expense-recent-item">
+                <span class="expense-recent-title">${expense.title || 'Untitled Expense'}</span>
+                <span class="expense-recent-meta">${expense.category || 'Other'}</span>
+                <span class="expense-recent-amount">${formatCurrency(expense.amount)}</span>
+                <span class="expense-recent-date">${formatDate(expense.date)}</span>
+            </div>
+        `).join('');
+    }
+
+    function renderOverviewActiveMembers() {
+        const container = document.getElementById('overviewActiveMembersList');
+        if (!container) return;
+
+        const activeList = (state.members || []).filter(
+            (member) => member.active !== false && member.status !== 'inactive' && member.status !== 'removed'
+        );
+
+        if (!activeList.length) {
+            container.innerHTML = '<div class="active-members-empty">No active members at the moment.</div>';
+            return;
+        }
+
+        container.innerHTML = activeList.map((member) => {
+            const userRecord = (state.users || []).find((user) => String(user.id) === String(member.id));
+            const roleLabel = userRecord && userRecord.role === 'admin' ? 'Admin' : 'Member';
+            const status = member.status || 'active';
+
+            return `
+                <div class="active-member-row">
+                    <span class="active-member-name">${member.name || 'Member'}</span>
+                    <span class="active-member-role">${roleLabel}</span>
+                    <span class="status-chip status-${status}">${formatMemberStatus(status)}</span>
+                </div>
+            `;
+        }).join('');
     }
 
     function renderMemberReceiptStatus() {
@@ -5400,6 +5458,8 @@ function renderDashboardApp() {
         if (elements.incomeBar) elements.incomeBar.style.width = `${Math.min(100, (state.finance.totalIncome / financeMax) * 100)}%`;
         if (elements.expenseBar) elements.expenseBar.style.width = `${Math.min(100, (state.finance.totalExpenses / financeMax) * 100)}%`;
         if (elements.netBar) elements.netBar.style.width = `${Math.min(100, Math.max(0, (state.finance.totalFunds / financeMax) * 100))}%`;
+
+        renderOverviewActiveMembers();
     }
 
     async function submitReceiptForVerification(file) {
