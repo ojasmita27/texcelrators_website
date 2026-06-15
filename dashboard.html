@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="project-management-styles.css">
     <link rel="stylesheet" href="assets/css/certificates.css">
+    <link rel="stylesheet" href="assets/css/fund-management.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style id="club-summary-overrides">
     /* Compact Club Summary overrides - scoped to club summary section */
@@ -447,6 +448,121 @@
                     </div>
                 </section>
 
+                <!-- FUND MANAGEMENT SECTION -->
+                <section class="panel glass-panel premium-panel fund-management-section" id="fund-management-section" data-dashboard-section data-for-roles="admin">
+                    <div class="panel-header premium-header">
+                        <div class="header-left">
+                            <h3><i class="fas fa-piggy-bank"></i> Fund Management</h3>
+                            <p>Manage club income: opening balance, principal contributions, sponsorships, donations, and other income.</p>
+                        </div>
+                    </div>
+
+                    <!-- Finance KPI cards -->
+                    <div class="expense-kpi-grid expense-kpi-row fund-kpi-row" id="fund-kpi-row">
+                        <div class="kpi-card premium-kpi-card expense-kpi-card">
+                            <div class="kpi-icon"><i class="fas fa-wallet"></i></div>
+                            <div class="kpi-content">
+                                <div class="kpi-label">Total Funds (Balance)</div>
+                                <div class="kpi-value" id="fundKpiBalance">₹0</div>
+                            </div>
+                        </div>
+                        <div class="kpi-card premium-kpi-card expense-kpi-card">
+                            <div class="kpi-icon"><i class="fas fa-building-columns"></i></div>
+                            <div class="kpi-content">
+                                <div class="kpi-label">Opening Balance</div>
+                                <div class="kpi-value" id="fundKpiOpening">₹0</div>
+                            </div>
+                        </div>
+                        <div class="kpi-card premium-kpi-card expense-kpi-card">
+                            <div class="kpi-icon"><i class="fas fa-hand-holding-dollar"></i></div>
+                            <div class="kpi-content">
+                                <div class="kpi-label">Sponsorships &amp; Donations</div>
+                                <div class="kpi-value" id="fundKpiExternal">₹0</div>
+                            </div>
+                        </div>
+                        <div class="kpi-card premium-kpi-card expense-kpi-card">
+                            <div class="kpi-icon"><i class="fas fa-list-ol"></i></div>
+                            <div class="kpi-content">
+                                <div class="kpi-label">Total Entries</div>
+                                <div class="kpi-value" id="fundKpiCount">0</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Add Fund Entry form -->
+                    <form id="fundEntryForm" class="card-form compact expenses-admin-form expense-form-row fund-entry-form">
+                        <div class="expenses-admin-field">
+                            <label for="fundSourceType">Source Type</label>
+                            <select id="fundSourceType" required>
+                                <option value="">Select type</option>
+                                <option value="opening_balance">Opening Balance</option>
+                                <option value="principal_contribution">Principal Contribution</option>
+                                <option value="sponsorship">Sponsorship</option>
+                                <option value="donation">Donation</option>
+                                <option value="other_income">Other Income</option>
+                            </select>
+                        </div>
+                        <div class="expenses-admin-field">
+                            <label for="fundAmount">Amount (₹)</label>
+                            <input type="number" id="fundAmount" placeholder="Amount" min="1" step="0.01" required>
+                        </div>
+                        <div class="expenses-admin-field fund-desc-field">
+                            <label for="fundDescription">Description</label>
+                            <input type="text" id="fundDescription" placeholder="e.g. Cummins sponsorship 2026" required>
+                        </div>
+                        <div class="expenses-admin-field">
+                            <label for="fundDate">Date</label>
+                            <input type="date" id="fundDate" required>
+                        </div>
+                        <div class="expenses-admin-field expenses-admin-submit-field">
+                            <span class="field-label field-label-spacer" aria-hidden="true">&nbsp;</span>
+                            <button type="submit" class="dashboard-button primary expense-submit-btn" id="fundSubmitBtn"><i class="fas fa-plus"></i> <span id="fundSubmitLabel">Add Entry</span></button>
+                        </div>
+                        <!-- hidden field used during edit mode -->
+                        <input type="hidden" id="fundEditId" value="">
+                        <div class="expenses-admin-field" id="fundCancelEditWrapper" style="display:none;">
+                            <span class="field-label field-label-spacer" aria-hidden="true">&nbsp;</span>
+                            <button type="button" class="dashboard-button" id="fundCancelEdit">Cancel Edit</button>
+                        </div>
+                    </form>
+
+                    <!-- Search bar -->
+                    <div class="fund-search-bar">
+                        <input type="text" id="fundSearchInput" class="fund-search-input" placeholder="Search entries…" autocomplete="off" aria-label="Search fund entries">
+                        <select id="fundFilterType" class="fund-filter-select" aria-label="Filter by source type">
+                            <option value="">All Types</option>
+                            <option value="opening_balance">Opening Balance</option>
+                            <option value="principal_contribution">Principal Contribution</option>
+                            <option value="sponsorship">Sponsorship</option>
+                            <option value="donation">Donation</option>
+                            <option value="other_income">Other Income</option>
+                        </select>
+                    </div>
+
+                    <!-- Fund entries table -->
+                    <div class="expense-table-area">
+                        <div id="fund-table-wrapper" class="table-card compact expense-table-shell">
+                            <table class="transaction-table members-table expense-table fund-table" aria-label="Fund entries">
+                                <thead>
+                                    <tr>
+                                        <th data-sort="sourceType" class="fund-th sortable" tabindex="0">Source Type <i class="fas fa-sort fund-sort-icon"></i></th>
+                                        <th data-sort="description" class="fund-th sortable" tabindex="0">Description <i class="fas fa-sort fund-sort-icon"></i></th>
+                                        <th data-sort="amount" class="fund-th sortable" tabindex="0">Amount <i class="fas fa-sort fund-sort-icon"></i></th>
+                                        <th data-sort="date" class="fund-th sortable" tabindex="0">Date <i class="fas fa-sort fund-sort-icon"></i></th>
+                                        <th class="fund-th">Added By</th>
+                                        <th class="fund-th">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="fund-table-body"></tbody>
+                            </table>
+                            <div id="fund-empty-state" class="table-empty-state" style="display:none;">No fund entries recorded yet.</div>
+                            <div id="fund-loading-state" class="table-empty-state">Loading…</div>
+                        </div>
+                        <!-- Pagination -->
+                        <div class="fund-pagination" id="fund-pagination" aria-label="Fund entries pagination"></div>
+                    </div>
+                </section>
+
                 <section class="panel glass-panel premium-panel" id="collaborations-section" data-dashboard-section data-for-roles="admin">
                     <div class="panel-header premium-header">
                         <div class="header-left">
@@ -468,8 +584,6 @@
                                 <div class="kpi-label">Pending</div>
                                 <div class="kpi-value" id="collaborationPendingKpi">0</div>
                             </div>
-                        </div>
-                        <div class="kpi-card premium-kpi-card">
                             <div class="kpi-icon"><i class="fas fa-check"></i></div>
                             <div class="kpi-content">
                                 <div class="kpi-label">Approved</div>
@@ -502,6 +616,7 @@
                         <button type="button" class="dashboard-button primary" data-report-export="club-expenses"><i class="fas fa-coins"></i> Export Club Expenses</button>
                         <button type="button" class="dashboard-button primary" data-report-export="projects"><i class="fas fa-robot"></i> Export Projects</button>
                         <button type="button" class="dashboard-button primary" data-report-export="events"><i class="fas fa-calendar"></i> Export Events</button>
+                        <button type="button" class="dashboard-button primary" data-report-export="fund-entries"><i class="fas fa-piggy-bank"></i> Export Fund Entries</button>
                         <button type="button" class="dashboard-button" data-report-export="full"><i class="fas fa-book"></i> Export Full Club Report</button>
                     </div>
                 </section>

@@ -2585,6 +2585,7 @@ function renderDashboardApp() {
         'club-expenses': 'texcelerators-club-expenses.xlsx',
         projects: 'texcelerators-projects.xlsx',
         events: 'texcelerators-events.xlsx',
+        'fund-entries': 'texcelerators-fund-entries.xlsx',
         full: 'texcelerators-full-club-report.xlsx'
     };
 
@@ -7466,6 +7467,7 @@ function renderDashboardApp() {
         bindCertUploadForm();
         populateCertFilterMember();
         bindAdminVerificationNavigation();
+        initFundManagement();   /* ← Fund Management module */
         setDashboardLoadingState(false);
         if (dashboardRootEl) {
             dashboardRootEl.removeAttribute('aria-busy');
@@ -7499,5 +7501,415 @@ function renderDashboardApp() {
     init();
 }
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   FUND MANAGEMENT MODULE
+   Handles: add / edit / delete FundEntry records via /funds API.
+   Renders a searchable, sortable, paginated table inside #fund-management-section.
+   Does NOT touch payments, expenses, reimbursements, or the balance formula.
+   Balance is computed server-side and already includes fund entries.
+   ═══════════════════════════════════════════════════════════════════════════ */
+function initFundManagement() {
+    /* Only mount for admin */
+    if (typeof isAdminRole === 'function' && !isAdminRole()) return;
+
+    /* ── DOM refs ── */
+    const section       = document.getElementById('fund-management-section');
+    if (!section) return;  /* section not in DOM → do nothing */
+
+    const form          = document.getElementById('fundEntryForm');
+    const sourceTypeEl  = document.getElementById('fundSourceType');
+    const amountEl      = document.getElementById('fundAmount');
+    const descEl        = document.getElementById('fundDescription');
+    const dateEl        = document.getElementById('fundDate');
+    const editIdEl      = document.getElementById('fundEditId');
+    const submitBtn     = document.getElementById('fundSubmitBtn');
+    const submitLabel   = document.getElementById('fundSubmitLabel');
+    const cancelEditBtn = document.getElementById('fundCancelEdit');
+    const cancelWrapper = document.getElementById('fundCancelEditWrapper');
+    const searchInput   = document.getElementById('fundSearchInput');
+    const filterType    = document.getElementById('fundFilterType');
+    const tableBody     = document.getElementById('fund-table-body');
+    const emptyState    = document.getElementById('fund-empty-state');
+    const loadingState  = document.getElementById('fund-loading-state');
+    const pagination    = document.getElementById('fund-pagination');
+
+    /* KPI refs */
+    const kpiBalance  = document.getElementById('fundKpiBalance');
+    const kpiOpening  = document.getElementById('fundKpiOpening');
+    const kpiExternal = document.getElementById('fundKpiExternal');
+    const kpiCount    = document.getElementById('fundKpiCount');
+
+    /* ── Module state ── */
+    const FUND_PAGE_SIZE = 20;
+    let allEntries   = [];   /* full list from API */
+    let sortKey      = 'date';
+    let sortDir      = 'desc';
+    let currentPage  = 1;
+
+    const SOURCE_LABELS = {
+        opening_balance:        'Opening Balance',
+        principal_contribution: 'Principal Contribution',
+        sponsorship:            'Sponsorship',
+        donation:               'Donation',
+        other_income:           'Other Income'
+    };
+
+    const SOURCE_BADGE_CLASS = {
+        opening_balance:        'fund-badge-opening',
+        principal_contribution: 'fund-badge-principal',
+        sponsorship:            'fund-badge-sponsorship',
+        donation:               'fund-badge-donation',
+        other_income:           'fund-badge-other'
+    };
+
+    /* ── Helpers ── */
+    function fmt(amount) {
+        return typeof formatCurrency === 'function'
+            ? formatCurrency(amount)
+            : `₹${Number(amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
+    }
+
+    function fmtDate(val) {
+        if (!val) return '—';
+        const d = new Date(val);
+        if (isNaN(d.getTime())) return '—';
+        return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+    }
+
+    function escHtml(str) {
+        return String(str || '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+    }
+
+    function setLoading(on) {
+        if (loadingState) loadingState.style.display = on ? '' : 'none';
+        if (tableBody)    tableBody.style.display    = on ? 'none' : '';
+    }
+
+    /* ── API calls ── */
+    async function apiFundRequest(path, options = {}) {
+        const token = localStorage.getItem('authToken');
+        const headers = { 'Content-Type': 'application/json' };
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+        const res = await fetch(`${typeof API_BASE !== 'undefined' ? API_BASE : ''}/funds${path}`, {
+            headers,
+            ...options
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw Object.assign(new Error(data.message || 'Request failed'), { status: res.status });
+        return data;
+    }
+
+    async function loadFundEntries() {
+        setLoading(true);
+        try {
+            const data = await apiFundRequest('/');
+            allEntries = Array.isArray(data.entries) ? data.entries : [];
+            renderAll();
+        } catch (err) {
+            if (typeof handleAuthFailure === 'function' && handleAuthFailure(err)) return;
+            if (typeof showDashboardToast === 'function') showDashboardToast('Failed to load fund entries', 'error');
+            console.error('[FundManagement] load failed:', err);
+        } finally {
+            setLoading(false);
+        }
+    }
+
+    /* ── Filter + sort + paginate ── */
+    function getFiltered() {
+        const q       = (searchInput ? searchInput.value : '').toLowerCase().trim();
+        const typeVal = filterType ? filterType.value : '';
+
+        return allEntries.filter((e) => {
+            if (typeVal && e.sourceType !== typeVal) return false;
+            if (!q) return true;
+            const label = (SOURCE_LABELS[e.sourceType] || e.sourceType || '').toLowerCase();
+            const desc  = (e.description || '').toLowerCase();
+            const addedBy = e.addedBy && e.addedBy.name ? e.addedBy.name.toLowerCase() : '';
+            return label.includes(q) || desc.includes(q) || addedBy.includes(q);
+        });
+    }
+
+    function getSorted(list) {
+        return [...list].sort((a, b) => {
+            let va, vb;
+            if (sortKey === 'amount') {
+                va = Number(a.amount) || 0;
+                vb = Number(b.amount) || 0;
+            } else if (sortKey === 'date') {
+                va = new Date(a.date || a.createdAt).getTime() || 0;
+                vb = new Date(b.date || b.createdAt).getTime() || 0;
+            } else if (sortKey === 'sourceType') {
+                va = (SOURCE_LABELS[a.sourceType] || '').toLowerCase();
+                vb = (SOURCE_LABELS[b.sourceType] || '').toLowerCase();
+            } else {
+                va = String(a[sortKey] || '').toLowerCase();
+                vb = String(b[sortKey] || '').toLowerCase();
+            }
+            if (va < vb) return sortDir === 'asc' ? -1 : 1;
+            if (va > vb) return sortDir === 'asc' ?  1 : -1;
+            return 0;
+        });
+    }
+
+    /* ── Update KPI cards ── */
+    function updateKpis() {
+        /* Balance = already in dashboardState.finance.totalFunds (server-computed) */
+        const balance = (typeof state !== 'undefined' && state.finance)
+            ? state.finance.totalFunds
+            : allEntries.reduce((s, e) => s + (Number(e.amount) || 0), 0);
+
+        const openingEntry = allEntries.find((e) => e.sourceType === 'opening_balance');
+        const openingAmt   = openingEntry ? Number(openingEntry.amount) : 0;
+        const externalAmt  = allEntries
+            .filter((e) => e.sourceType === 'sponsorship' || e.sourceType === 'donation')
+            .reduce((s, e) => s + (Number(e.amount) || 0), 0);
+
+        if (kpiBalance)  kpiBalance.textContent  = fmt(balance);
+        if (kpiOpening)  kpiOpening.textContent  = fmt(openingAmt);
+        if (kpiExternal) kpiExternal.textContent = fmt(externalAmt);
+        if (kpiCount)    kpiCount.textContent    = String(allEntries.length);
+    }
+
+    /* ── Render table ── */
+    function renderTable(list) {
+        if (!tableBody) return;
+
+        const total = list.length;
+        const totalPages = Math.max(1, Math.ceil(total / FUND_PAGE_SIZE));
+        if (currentPage > totalPages) currentPage = totalPages;
+
+        const start = (currentPage - 1) * FUND_PAGE_SIZE;
+        const pageItems = list.slice(start, start + FUND_PAGE_SIZE);
+
+        if (!total) {
+            tableBody.innerHTML = '';
+            if (emptyState) emptyState.style.display = '';
+            renderPagination(0, 1);
+            return;
+        }
+        if (emptyState) emptyState.style.display = 'none';
+
+        tableBody.innerHTML = pageItems.map((entry) => {
+            const id        = String(entry._id);
+            const typeLabel = SOURCE_LABELS[entry.sourceType] || entry.sourceType || '—';
+            const badgeCls  = SOURCE_BADGE_CLASS[entry.sourceType] || 'fund-badge-other';
+            const addedName = entry.addedBy && entry.addedBy.name ? escHtml(entry.addedBy.name) : '—';
+            return `
+            <tr class="fund-row" data-entry-id="${escHtml(id)}">
+                <td data-label="Source Type"><span class="fund-badge ${badgeCls}">${escHtml(typeLabel)}</span></td>
+                <td class="fund-desc" data-label="Description">${escHtml(entry.description || '—')}</td>
+                <td class="fund-amount" data-label="Amount">${fmt(entry.amount)}</td>
+                <td class="fund-date" data-label="Date">${fmtDate(entry.date || entry.createdAt)}</td>
+                <td class="fund-addedby" data-label="Added By">${addedName}</td>
+                <td class="fund-actions" data-label="Actions">
+                    <button type="button" class="dashboard-button small fund-edit-btn"
+                            data-entry-id="${escHtml(id)}"
+                            aria-label="Edit fund entry">
+                        <i class="fas fa-pencil"></i>
+                    </button>
+                    <button type="button" class="dashboard-button small danger fund-delete-btn"
+                            data-entry-id="${escHtml(id)}"
+                            data-entry-desc="${escHtml(entry.description || typeLabel)}"
+                            aria-label="Delete fund entry">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </td>
+            </tr>`;
+        }).join('');
+
+        renderPagination(total, totalPages);
+    }
+
+    /* ── Pagination ── */
+    function renderPagination(total, totalPages) {
+        if (!pagination) return;
+        if (totalPages <= 1) { pagination.innerHTML = ''; return; }
+
+        let html = `<span class="fund-page-info">Page ${currentPage} of ${totalPages} (${total} entries)</span>`;
+        html += `<button class="dashboard-button small fund-page-btn" data-page="${currentPage - 1}" ${currentPage === 1 ? 'disabled' : ''}><i class="fas fa-chevron-left"></i></button>`;
+        html += `<button class="dashboard-button small fund-page-btn" data-page="${currentPage + 1}" ${currentPage === totalPages ? 'disabled' : ''}><i class="fas fa-chevron-right"></i></button>`;
+        pagination.innerHTML = html;
+    }
+
+    /* ── Update sort header icons ── */
+    function updateSortIcons() {
+        section.querySelectorAll('.fund-th.sortable').forEach((th) => {
+            const icon = th.querySelector('.fund-sort-icon');
+            if (!icon) return;
+            if (th.dataset.sort === sortKey) {
+                icon.className = `fas fa-sort-${sortDir === 'asc' ? 'up' : 'down'} fund-sort-icon`;
+            } else {
+                icon.className = 'fas fa-sort fund-sort-icon';
+            }
+        });
+    }
+
+    /* ── Render everything ── */
+    function renderAll() {
+        updateKpis();
+        updateSortIcons();
+        const filtered = getFiltered();
+        const sorted   = getSorted(filtered);
+        renderTable(sorted);
+    }
+
+    /* ── Reset form to Add mode ── */
+    function resetFormToAddMode() {
+        if (form)         form.reset();
+        if (editIdEl)     editIdEl.value = '';
+        if (submitLabel)  submitLabel.textContent = 'Add Entry';
+        if (submitBtn)    submitBtn.querySelector('i').className = 'fas fa-plus';
+        if (cancelWrapper) cancelWrapper.style.display = 'none';
+        /* restore today's date */
+        if (dateEl) {
+            const today = new Date();
+            dateEl.value = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+        }
+    }
+
+    /* ── Populate form for Edit mode ── */
+    function populateFormForEdit(entry) {
+        if (!entry) return;
+        if (sourceTypeEl) sourceTypeEl.value = entry.sourceType || '';
+        if (amountEl)     amountEl.value     = entry.amount     || '';
+        if (descEl)       descEl.value       = entry.description || '';
+        if (dateEl)       dateEl.value       = entry.date
+            ? new Date(entry.date).toISOString().slice(0, 10)
+            : '';
+        if (editIdEl)     editIdEl.value     = String(entry._id);
+        if (submitLabel)  submitLabel.textContent = 'Save Changes';
+        if (submitBtn)    submitBtn.querySelector('i').className = 'fas fa-save';
+        if (cancelWrapper) cancelWrapper.style.display = '';
+
+        /* Scroll to form */
+        form && form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    /* ── Submit: Add or Edit ── */
+    async function handleFormSubmit(e) {
+        e.preventDefault();
+        const id         = editIdEl ? editIdEl.value.trim() : '';
+        const sourceType = sourceTypeEl ? sourceTypeEl.value.trim() : '';
+        const amount     = amountEl     ? Number(amountEl.value)    : NaN;
+        const description = descEl      ? descEl.value.trim()       : '';
+        const date       = dateEl       ? dateEl.value              : '';
+
+        if (!sourceType || !Number.isFinite(amount) || amount <= 0 || !description || !date) {
+            if (typeof showDashboardToast === 'function') showDashboardToast('All fields are required and amount must be positive.', 'error');
+            return;
+        }
+
+        const payload = { sourceType, amount, description, date };
+
+        try {
+            if (submitBtn) submitBtn.disabled = true;
+            if (id) {
+                await apiFundRequest(`/${id}`, { method: 'PUT', body: JSON.stringify(payload) });
+                if (typeof showDashboardToast === 'function') showDashboardToast('Fund entry updated.', 'success');
+            } else {
+                await apiFundRequest('/add', { method: 'POST', body: JSON.stringify(payload) });
+                if (typeof showDashboardToast === 'function') showDashboardToast('Fund entry added.', 'success');
+            }
+            resetFormToAddMode();
+            await loadFundEntries();
+            /* Refresh the dashboard balance KPIs silently */
+            if (typeof refreshDashboardFromApi === 'function') refreshDashboardFromApi().catch(() => {});
+        } catch (err) {
+            if (typeof handleAuthFailure === 'function' && handleAuthFailure(err)) return;
+            const msg = err.message || 'Operation failed';
+            if (typeof showDashboardToast === 'function') showDashboardToast(msg, 'error');
+            else alert(msg);
+        } finally {
+            if (submitBtn) submitBtn.disabled = false;
+        }
+    }
+
+    /* ── Delete ── */
+    async function handleDeleteEntry(id, desc) {
+        const confirmed = window.confirm(`Delete fund entry "${desc}"?\nThis will reduce Total Funds by the entry amount.`);
+        if (!confirmed) return;
+        try {
+            await apiFundRequest(`/${id}`, { method: 'DELETE' });
+            if (typeof showDashboardToast === 'function') showDashboardToast('Fund entry deleted.', 'success');
+            await loadFundEntries();
+            if (typeof refreshDashboardFromApi === 'function') refreshDashboardFromApi().catch(() => {});
+        } catch (err) {
+            if (typeof handleAuthFailure === 'function' && handleAuthFailure(err)) return;
+            const msg = err.message || 'Delete failed';
+            if (typeof showDashboardToast === 'function') showDashboardToast(msg, 'error');
+            else alert(msg);
+        }
+    }
+
+    /* ── Bind events ── */
+    if (form) form.addEventListener('submit', handleFormSubmit);
+
+    if (cancelEditBtn) {
+        cancelEditBtn.addEventListener('click', resetFormToAddMode);
+    }
+
+    if (searchInput) {
+        searchInput.addEventListener('input', () => { currentPage = 1; renderAll(); });
+    }
+    if (filterType) {
+        filterType.addEventListener('change', () => { currentPage = 1; renderAll(); });
+    }
+
+    /* Sort headers */
+    section.querySelectorAll('.fund-th.sortable').forEach((th) => {
+        th.addEventListener('click', () => {
+            const key = th.dataset.sort;
+            if (sortKey === key) {
+                sortDir = sortDir === 'asc' ? 'desc' : 'asc';
+            } else {
+                sortKey = key;
+                sortDir = 'desc';
+            }
+            currentPage = 1;
+            renderAll();
+        });
+        th.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') th.click(); });
+    });
+
+    /* Table button delegation (edit + delete) */
+    if (tableBody) {
+        tableBody.addEventListener('click', (e) => {
+            const editBtn   = e.target.closest('.fund-edit-btn');
+            const deleteBtn = e.target.closest('.fund-delete-btn');
+
+            if (editBtn) {
+                const id    = editBtn.getAttribute('data-entry-id');
+                const entry = allEntries.find((en) => String(en._id) === id);
+                if (entry) populateFormForEdit(entry);
+            }
+
+            if (deleteBtn) {
+                const id   = deleteBtn.getAttribute('data-entry-id');
+                const desc = deleteBtn.getAttribute('data-entry-desc') || id;
+                handleDeleteEntry(id, desc);
+            }
+        });
+    }
+
+    /* Pagination delegation */
+    if (pagination) {
+        pagination.addEventListener('click', (e) => {
+            const btn = e.target.closest('.fund-page-btn');
+            if (!btn || btn.disabled) return;
+            const page = Number(btn.dataset.page);
+            if (page >= 1) { currentPage = page; renderAll(); }
+        });
+    }
+
+    /* Set today's date as default */
+    resetFormToAddMode();
+
+    /* Initial load */
+    loadFundEntries();
+}
 renderDashboardApp();
 

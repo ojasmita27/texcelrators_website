@@ -13,6 +13,7 @@ const VALID_TYPES = new Set([
   'club-expenses',
   'projects',
   'events',
+  'fund-entries',
   'full'
 ]);
 
