@@ -696,3 +696,13 @@ body {
         display: none;
     }
 }
+.support-links {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.support-link {
+    width: fit-content;
+    min-width: 200px;
+}

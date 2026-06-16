@@ -25,21 +25,19 @@ let pendingLogin = null; // { token, oldPassword }
 // ===========================
 if (backButton) {
     const goBack = (event) => {
-        const canUseHistory = window.history.length > 1 && document.referrer;
+        //const canUseHistory = window.history.length > 1 && document.referrer;
 
-        if (canUseHistory) {
+        //if (canUseHistory) 
             event.preventDefault();
 
-            const currentUrl = window.location.href;
-            window.history.back();
+           // const currentUrl = window.location.href;
+           // window.history.back();
 
-            window.setTimeout(() => {
-                if (window.location.href === currentUrl) {
+            //window.setTimeout(() => {
+                //window.location.href === currentUrl) {
                     window.location.href = 'index.html';
-                }
-            }, 200);
-        }
-    };
+                };
+            
 
     backButton.addEventListener('click', goBack);
     backButton.addEventListener('keydown', (event) => {

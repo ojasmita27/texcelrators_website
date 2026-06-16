@@ -81,7 +81,9 @@
       <!-- Desktop Right: Club Logo -->
       <div class="navbar-logo right-logo">
         <div class="logo-image">
-          <img src="Assets/images/Nav-Side-Footer/MainLogo.png" alt="Texcelerators">
+          <a href="#home" aria-label="Back to top" class="logo-home-link">
+            <img src="Assets/images/Nav-Side-Footer/MainLogo.png" alt="Texcelerators">
+          </a>
         </div>
       </div>
     </div>
@@ -131,9 +133,10 @@
 <aside id="sidebar" class="sidebar">
   <div class="sidebar-content">
     <div class="sidebar-header">
-      <div class="sidebar-logo">
+      <a href="index.html#home"
+      class="sidebar-logo">
         <img src="Assets/images/Nav-Side-Footer/MainLogo.png" alt="Texcelerators">
-      </div>
+    </a>
       <div class="sidebar-brand font-addition">
         <span class="sidebar-title">TEXCELERATORS</span>
         <span class="sidebar-subtitle">Robo Club</span>
@@ -779,7 +782,7 @@ Secured 2nd Place in Robo Race, demonstrating speed, precision, and engineering 
                 <div class="bot-card-badge purple">
                   <i class="fas fa-mountain"></i> Climber
                 </div>
-                <img src="Assets/images/Team/Behind The Scenes/coming.webp" alt="VerticalEdge" loading="lazy">
+                <img src="Assets/images/HomePage/Robots/RC_Robot.webp" alt="VerticalEdge" loading="lazy">
                 <div class="bot-card-overlay">
                   <button class="bot-details-button">
                     <i class="fas fa-info-circle"></i> Details
@@ -928,7 +931,7 @@ Secured 2nd Place in Robo Race, demonstrating speed, precision, and engineering 
         <!-- Story 1: Breakthrough Moment -->
         <div class="story-card" data-story="breakthrough">
           <div class="story-image">
-            <img src="Assets/images/Robots/Story/Sail.jpg" alt="Breakthrough moment" loading="lazy">
+            <img src="Assets/images/Robots/Story/Sail.webp" alt="Breakthrough moment" loading="lazy">
             <div class="story-overlay"></div>
           </div> 
           <div class="story-content">
@@ -945,7 +948,7 @@ Secured 2nd Place in Robo Race, demonstrating speed, precision, and engineering 
         <!-- Story 2: Learning Experience -->
         <div class="story-card" data-story="learning">
           <div class="story-image">
-            <img src="Assets/images/Robots/Story/Acrylic.png" alt="Learning experience" loading="lazy">
+            <img src="Assets/images/Robots/Story/Acrylic.webp" alt="Learning experience" loading="lazy">
             <div class="story-overlay">
             </div>
           </div>
@@ -963,7 +966,7 @@ Secured 2nd Place in Robo Race, demonstrating speed, precision, and engineering 
         <!-- Story 3: Team Collaboration -->
         <div class="story-card" data-story="teamwork">
           <div class="story-image">
-            <img src="Assets/images/Robots/Story/Quark.jpg" alt="Team collaboration" loading="lazy">
+            <img src="Assets/images/Robots/Story/Quark.webp" alt="Team collaboration" loading="lazy">
             <div class="story-overlay">
             </div>
           </div>
@@ -978,10 +981,40 @@ Secured 2nd Place in Robo Race, demonstrating speed, precision, and engineering 
             </div>
           </div>
         </div>
-      </div>
+      
+
+<!-- Story 4: RoboWars Hyderabad -->
+<div class="story-card" data-story="hyderabad">
+    <div class="story-image">
+        <img src="Assets/images/Robots/Story/robowars-hyderabad.webp"
+             alt="RoboWars Hyderabad"
+             loading="lazy">
+        <div class="story-overlay"></div>
+    </div>
+
+    <div class="story-content">
+        <h4>⚙️ Every Battle Leaves an Upgrade</h4>
+
+        <p class="story-author">
+            RoboWars 2026 • Mahindra University Hyderabad
+        </p>
+
+        <p class="story-preview">
+            Two victories. One bot destroyed in flames. A semi-final run cut short by time. The battle upgraded more than our machine...
+        </p>
+
+        <div class="story-tags">
+            <span class="tag">#RoboWars2026</span>
+            <span class="tag">#Hyderabad</span>
+            <span class="tag">#15kgBot</span>
+        </div>
+    </div>
+</div>
+</div>
    </div> 
 </div>
 </section>
+
 
   <!-- About Section -->
   <section id="about" class="about">
@@ -1286,6 +1319,7 @@ Secured 2nd Place in Robo Race, demonstrating speed, precision, and engineering 
     <div class="container">
       <div class="footer-grid">
         <div>
+          <a href="#home" class="footer-logo-link">
           <div class="footer-logo">
             <div class="footer-logo-image">
               <img src="Assets/images/Nav-Side-Footer/MainLogo.png" alt="Texcelerators Logo" loading="lazy">
@@ -1294,18 +1328,17 @@ Secured 2nd Place in Robo Race, demonstrating speed, precision, and engineering 
               <span>TEX</span>CELERATORS
             </h3>
           </div>
+        </a>
           <p class="footer-description">
             Pioneering the future of robotics through innovation, collaboration, and excellence.
           </p>
           <p class="footer-copyright">
             © <script>document.write(new Date().getFullYear())</script> Texcelerators Robotics Club. All rights reserved.
           </p>
-          <pre >Built, not bought.
-Coded with caffeine ☕ & curiosity.
-Made with ❤️ by Pranay Gourkar and Team 🚀
-            <a href="https://www.instagram.com/not_pratikkk/" target="_blank" rel="noopener noreferrer" class="social-link bg-instagram" aria-label="Instagram">
+          <pre >
+            <!--a href="https://www.instagram.com/not_pratikkk/" target="_blank" rel="noopener noreferrer" class="social-link bg-instagram" aria-label="Instagram">
             <i class="fab fa-instagram"></i>
-          </a> </pre>
+          </a>--></pre>
           
         </div>
         
@@ -1342,9 +1375,9 @@ Made with ❤️ by Pranay Gourkar and Team 🚀
         <div>
           <h4 class="footer-section-title">Programs</h4>
           <ul class="footer-links">
-            <li class="footer-link-item">
+            <!--li class="footer-link-item">
               <a href="workshop.html" class="footer-link">Workshops</a>
-            </li>
+            </li>-->
             <li class="footer-link-item">
               <a href="#" class="footer-link">Competitions</a>
             </li>

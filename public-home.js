@@ -1502,7 +1502,7 @@ It didn't just handle better — it flipped our mindset.
 While we were working to fix a problem, they had quietly reimagined the solution.
 That boat didn't just corner tight.
 It cornered everything we thought we knew. 🌊⚙️`,
-      image: "Assets/images/Robots/Story/Sail.jpg",
+      image: "Assets/images/Robots/Story/Sail.webp",
       timestamp: "9:00 PM - March 15th, 2024",
       tags: ["Debugging", "Breakthrough", "Teamwork"]
     },
@@ -1520,7 +1520,7 @@ That night, a few of us stayed up working tirelessly, trying to salvage what we 
 We couldn't give our best at Overdrive. And we didn't win.
 
 But that loss became a turning point. It taught us what no victory ever could: that reliability isn't just built — it's maintained. And that behind every successful run lies discipline, foresight, and a team that learns from its setbacks.`,
-      image: "Assets/images/Robots/Story/Acrylic.png",
+      image: "Assets/images/Robots/Story/Acrylic.webp",
       timestamp: "8:00 PM - January 19th, 2025",
       tags: ["Learning", "Failure", "Growth"]
     },
@@ -1543,10 +1543,56 @@ We fought hard in Race and Soccer. But in Robo Sumo, our bot stood its ground �
 
 We didn't just build machines that night.
 We built trust, confidence — and a team we could finally be proud of 💪.`,
-      image: "assets/images/Robots/Story/Quark.jpg",
+      image: "assets/images/Robots/Story/Quark.webp",
       timestamp: "4:45 PM - February 10th, 2025",
       tags: ["Collaboration", "Team Spirit", "Success"]   
-    }
+    },
+    
+hyderabad: {
+  title: "⚙️ Every Battle Leaves an Upgrade",
+  author: "Texcelerators Team",
+
+  fullText: `Mahindra University Hyderabad – RoboWars 2026 ⚙️🔥
+
+Our second RoboWars journey took us to Mahindra University, Hyderabad — where we entered the 15kg RoboWars arena with confidence, preparation, and a machine built through months of hard work.
+
+From the very first match, our bot proved what we had built together. Every collision tested our design. Every round tested our determination.
+
+We fought aggressively, secured two victories, and created a moment we will always remember — one of our opponents' bots caught fire during battle. The arena erupted with energy, and our machine stood strong.
+
+But the arena always has another challenge waiting.
+
+In our next battle, our bot faced a devastating impact. The damage was massive — the base plate cracked and several structural components were destroyed.
+
+Thankfully, the heart of the bot — the electronics — remained safe.
+
+With no spare body parts available except our wedge, we had only one option: rebuild.
+
+The entire team came together. Every member took responsibility. Some repaired damaged sections, some redesigned parts, others prepared tools and materials.
+
+For every broken piece, we found a fix.
+For every setback, we found a way forward.
+
+But this time, the final enemy wasn't another bot — it was time.
+
+Our last assembly was still being completed when the repair window ended, and we couldn't get the bot ready before the next round.
+
+We were eliminated in the semi-finals, not because our machine stopped fighting, but because we ran out of time.
+
+Still, we left Hyderabad with something greater than a result.
+
+We discovered the strength of our team — the ability to stay calm under pressure, adapt when everything goes wrong, and keep moving forward together.
+
+Because every battle leaves behind an upgrade.
+
+And this one upgraded us. 🚀`,
+
+  image: "assets/images/Robots/Story/Hyderabad.jpg",
+
+  timestamp: "RoboWars 2026",
+
+  tags: ["RoboWars", "Hyderabad", "Teamwork", "Resilience"]
+}
   };
   
   const story = stories[storyId];
