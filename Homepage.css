@@ -35,7 +35,7 @@
 /* Custom Font Definition - Fixed naming */
 @font-face {
   font-family: 'Equinox';
-  src: url('Assets/fonts/Equinox\ Bold.woff2') format('woff2');
+  src: url('assets/fonts/Equinox\ Bold.woff2') format('woff2');
   font-weight: normal;
   font-style: normal;
 }

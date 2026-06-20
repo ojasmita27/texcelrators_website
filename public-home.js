@@ -1502,7 +1502,7 @@ It didn't just handle better — it flipped our mindset.
 While we were working to fix a problem, they had quietly reimagined the solution.
 That boat didn't just corner tight.
 It cornered everything we thought we knew. 🌊⚙️`,
-      image: "Assets/images/Robots/Story/Sail.webp",
+      image: "assets/images/Robots/Story/Sail.webp",
       timestamp: "9:00 PM - March 15th, 2024",
       tags: ["Debugging", "Breakthrough", "Teamwork"]
     },
@@ -1520,7 +1520,7 @@ That night, a few of us stayed up working tirelessly, trying to salvage what we 
 We couldn't give our best at Overdrive. And we didn't win.
 
 But that loss became a turning point. It taught us what no victory ever could: that reliability isn't just built — it's maintained. And that behind every successful run lies discipline, foresight, and a team that learns from its setbacks.`,
-      image: "Assets/images/Robots/Story/Acrylic.webp",
+      image: "assets/images/Robots/Story/Acrylic.webp",
       timestamp: "8:00 PM - January 19th, 2025",
       tags: ["Learning", "Failure", "Growth"]
     },

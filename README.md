@@ -30,7 +30,7 @@ The project combines a public-facing club website with a private member and admi
 ```
 texcelrators_website/
 │
-├── Assets/                          # Public static assets (capital A — used by HTML pages)
+├── assets/                          # Public static assets (capital A — used by HTML pages)
 │   ├── fonts/                       # Custom woff2 fonts (Equinox Bold, Aquire, BEYNO)
 │   ├── images/
 │   │   ├── HomePage/                # Homepage images (slideshow, achievements, robots, testimonials)
@@ -426,7 +426,7 @@ First run: navigate to `/setup-admin` to create the initial admin account. This 
 | `utils/receiptSequence.js` | Receipt number allocation |
 | `.env` | Runtime secrets and connection string — never commit |
 | `assets/images/` | All images used by live pages |
-| `Assets/` | All images, fonts, SOP PDF used by live pages |
+| `assets/` | All images, fonts, SOP PDF used by live pages |
 | `uploads/` | User-uploaded files — deleting removes real member data |
 
 ---

@@ -62,7 +62,7 @@ texcelrators_website/
 │  └────────────────────────────────────────────────────────────────────────
 │
 │  ┌─ STATIC ASSETS ───────────────────────────────────────────────────────┐
-├── Assets/                 Images + fonts + SOP PDF (used by public pages)
+├── assets/                 Images + fonts + SOP PDF (used by public pages)
 ├── assets/                 Dashboard CSS + images (logo, QR, SOP card CSS)
 │  └────────────────────────────────────────────────────────────────────────
 │
@@ -553,7 +553,7 @@ state = {
 | `utils/ensureUploadDirs.js` | Upload directories not created on fresh deploy |
 | `utils/excelReports.js` | All report exports fail |
 | `utils/membershipInstallments.js` | Installment validation breaks — no payments possible |
-| `Assets/` | All public page images disappear |
+| `assets/` | All public page images disappear |
 | `assets/images/logo.png` | Dashboard sidebar logo broken |
 | `assets/images/payment-qr.png` | QR payment section broken |
 | `uploads/` (folder) | All uploaded files become inaccessible |

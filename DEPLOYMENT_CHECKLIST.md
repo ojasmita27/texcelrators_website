@@ -51,7 +51,7 @@ Open Graph image tags should be absolute URLs for Facebook, WhatsApp, Twitter pr
 | `workshop.html` | 19 | `<meta property="og:image" content="https://via.placeholder.com/200x200/2563eb/ffffff?text=TEX">` | Placeholder image service URL |
 
 **Fix:** Replace with absolute URLs pointing to real images on your production domain.
-Example: `https://texcelerators.com/Assets/images/Nav-Side-Footer/MainLogo.png`
+Example: `https://texcelerators.com/assets/images/Nav-Side-Footer/MainLogo.png`
 
 ---
 
@@ -210,7 +210,7 @@ In production, `express.static` serves:
 If deploying behind **Nginx or Apache**, configure it to:
 1. Serve static files directly (bypass Node for assets)
 2. Proxy `/auth`, `/members`, `/payments`, `/dashboard` etc. to Node
-3. Set `Cache-Control` headers for `Assets/` images
+3. Set `Cache-Control` headers for `assets/` images
 
 ---
 
@@ -254,7 +254,7 @@ All Open Graph `og:url` and `canonical` tags reference `https://`. The app must 
 ### Optional (post-launch improvements)
 - [ ] Set `<meta name="api-base" content="https://texcelerators.com">` in `dashboard.html` for explicit API URL (currently works without it via `window.location.origin`)
 - [ ] Add `sitemap.xml` for SEO
-- [ ] Configure CDN for `Assets/images/` to reduce server load
+- [ ] Configure CDN for `assets/images/` to reduce server load
 - [ ] Set long-cache headers for static assets
 
 ---

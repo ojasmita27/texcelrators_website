@@ -494,7 +494,7 @@ That boat didn’t just corner tight.
 It cornered everything we thought we knew. 🌊⚙️
 
 `,
-      image: "Assets/images/Robots/Story/Sail.webp",
+      image: "assets/images/Robots/Story/Sail.webp",
       timestamp: "9:00 PM - March 15th, 2024",
       tags: ["Debugging", "Breakthrough", "Teamwork"]
     },
