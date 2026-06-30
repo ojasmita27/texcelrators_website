@@ -1502,7 +1502,7 @@ It didn't just handle better — it flipped our mindset.
 While we were working to fix a problem, they had quietly reimagined the solution.
 That boat didn't just corner tight.
 It cornered everything we thought we knew. 🌊⚙️`,
-      image: "Assets/images/Robots/Story/Sail.webp",
+      image: "assets/images/Robots/Story/Sail.webp",
       timestamp: "9:00 PM - March 15th, 2024",
       tags: ["Debugging", "Breakthrough", "Teamwork"]
     },
@@ -1520,7 +1520,7 @@ That night, a few of us stayed up working tirelessly, trying to salvage what we 
 We couldn't give our best at Overdrive. And we didn't win.
 
 But that loss became a turning point. It taught us what no victory ever could: that reliability isn't just built — it's maintained. And that behind every successful run lies discipline, foresight, and a team that learns from its setbacks.`,
-      image: "Assets/images/Robots/Story/Acrylic.webp",
+      image: "assets/images/Robots/Story/Acrylic.webp",
       timestamp: "8:00 PM - January 19th, 2025",
       tags: ["Learning", "Failure", "Growth"]
     },
@@ -1587,7 +1587,7 @@ Because every battle leaves behind an upgrade.
 
 And this one upgraded us. 🚀`,
 
-  image: "assets/images/Robots/Story/Hyd.webp",
+  image: "assets/images/Robots/Story/Hyderabad.jpg",
 
   timestamp: "RoboWars 2026",
 
@@ -1714,54 +1714,3 @@ function initializeCardSpotlight() {
     });
   });
 }
-
-/* ── Local drone video: click to fullscreen ── */
-(function () {
-  const tile  = document.getElementById('drone-local-tile');
-  const video = document.getElementById('drone-local-video');
-  if (!tile || !video) return;
-
-  tile.style.cursor = 'pointer';
-
-  tile.addEventListener('click', function () {
-    if (video.requestFullscreen) {
-      video.requestFullscreen();
-    } else if (video.webkitRequestFullscreen) {
-      video.webkitRequestFullscreen();       /* Safari */
-    } else if (video.mozRequestFullScreen) {
-      video.mozRequestFullScreen();          /* Firefox */
-    } else if (video.msRequestFullscreen) {
-      video.msRequestFullscreen();           /* IE/Edge */
-    }
-  });
-
-  /* When user exits fullscreen, keep it muted and playing */
-  document.addEventListener('fullscreenchange', function () {
-    if (!document.fullscreenElement) {
-      video.muted = true;
-      video.play();
-    }
-  });
-})();
-
-/* ===============================
-   0. SPLASH SCREEN
-   =============================== */
-(function() {
-  const splash = document.getElementById('splash-screen');
-  if (!splash) return;
-
-  // Prevent scrolling while splash is visible
-  document.body.style.overflow = 'hidden';
-
-  // Hide splash after 2.8 seconds (bar animation completes at ~2.7s)
-  setTimeout(function() {
-    splash.classList.add('splash-hidden');
-    document.body.style.overflow = '';
-
-    // Remove from DOM after fade-out completes (saves memory)
-    setTimeout(function() {
-      if (splash.parentNode) splash.parentNode.removeChild(splash);
-    }, 900);
-  }, 2800);
-})();

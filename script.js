@@ -6,6 +6,62 @@
     const navbar = document.querySelector('.navbar');
     const sections = document.querySelectorAll('section');
 
+    // Dashboard mobile menu toggle
+    const mobileMenuToggle = document.getElementById('mobileMenuToggle');
+    const mobileMenuOverlay = document.getElementById('mobileMenuOverlay');
+    const dashboardSidebar = document.querySelector('.dashboard-sidebar');
+
+    if (mobileMenuToggle && mobileMenuOverlay && dashboardSidebar) {
+        mobileMenuToggle.addEventListener('click', () => {
+            dashboardSidebar.classList.toggle('mobile-open');
+            mobileMenuOverlay.classList.toggle('active');
+            const icon = mobileMenuToggle.querySelector('i');
+            if (icon) {
+                icon.classList.toggle('fa-bars');
+                icon.classList.toggle('fa-times');
+            }
+        });
+
+        mobileMenuOverlay.addEventListener('click', () => {
+            dashboardSidebar.classList.remove('mobile-open');
+            mobileMenuOverlay.classList.remove('active');
+            const icon = mobileMenuToggle.querySelector('i');
+            if (icon) {
+                icon.classList.remove('fa-times');
+                icon.classList.add('fa-bars');
+            }
+        });
+
+        // Close sidebar when clicking a nav link on mobile
+        const sidebarLinks = document.querySelectorAll('.sidebar-nav a');
+        sidebarLinks.forEach(link => {
+            link.addEventListener('click', () => {
+                if (window.innerWidth <= 820) {
+                    dashboardSidebar.classList.remove('mobile-open');
+                    mobileMenuOverlay.classList.remove('active');
+                    const icon = mobileMenuToggle.querySelector('i');
+                    if (icon) {
+                        icon.classList.remove('fa-times');
+                        icon.classList.add('fa-bars');
+                    }
+                }
+            });
+        });
+
+        // Close mobile menu on window resize to desktop
+        window.addEventListener('resize', () => {
+            if (window.innerWidth > 820) {
+                dashboardSidebar.classList.remove('mobile-open');
+                mobileMenuOverlay.classList.remove('active');
+                const icon = mobileMenuToggle.querySelector('i');
+                if (icon) {
+                    icon.classList.remove('fa-times');
+                    icon.classList.add('fa-bars');
+                }
+            }
+        });
+    }
+
     if (hamburger && navMenu) {
         hamburger.addEventListener('click', () => {
             hamburger.classList.toggle('active');

@@ -34,6 +34,12 @@
     </style>
 </head>
 <body class="dashboard-page">
+    <!-- Mobile menu toggle button -->
+    <button class="mobile-menu-toggle" id="mobileMenuToggle" aria-label="Toggle menu">
+        <i class="fas fa-bars"></i>
+    </button>
+    <div class="mobile-menu-overlay" id="mobileMenuOverlay"></div>
+    
     <div class="dashboard-layout" data-dashboard-root>
         <!-- LEFT SIDEBAR -->
         <aside class="dashboard-sidebar compact">
@@ -646,6 +652,8 @@
                                 <div class="kpi-label">Pending</div>
                                 <div class="kpi-value" id="collaborationPendingKpi">0</div>
                             </div>
+                        </div>
+                        <div class="kpi-card premium-kpi-card">
                             <div class="kpi-icon"><i class="fas fa-check"></i></div>
                             <div class="kpi-content">
                                 <div class="kpi-label">Approved</div>
