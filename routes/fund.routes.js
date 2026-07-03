@@ -3,6 +3,8 @@ const mongoose         = require('mongoose');
 const { asyncHandler } = require('../utils/asyncHandler');
 const { requireAuth, requireRole, blockIfMustChangePassword } = require('../middleware/auth');
 const { FundEntry }    = require('../models/FundEntry');
+const { Payment }      = require('../models/Payment');
+const { Expense }      = require('../models/Expense');
 const { logInfo, logWarn } = require('../utils/logger');
 
 const router = Router();
@@ -114,6 +116,53 @@ router.get(
     const total = entries.reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
 
     return res.json({ entries, total });
+  })
+);
+
+/* ═══════════════════════════════════════════════════════
+   GET /funds/balance
+   Admin-only — returns synchronized balance calculation.
+   Uses the same formula as Dashboard Overview for consistency.
+   balance = fundEntriesTotal + approvedPayments - expenses
+   ═══════════════════════════════════════════════════════ */
+router.get(
+  '/balance',
+  requireAuth,
+  requireRole('admin'),
+  blockIfMustChangePassword,
+  asyncHandler(async (req, res) => {
+    // Calculate fund entries total
+    let fundEntriesTotal = 0;
+    try {
+      const fundAgg = await FundEntry.aggregate([
+        { $group: { _id: null, total: { $sum: '$amount' } } }
+      ]);
+      fundEntriesTotal = fundAgg[0]?.total || 0;
+    } catch (_) {
+      fundEntriesTotal = 0;
+    }
+
+    // Calculate approved payments total
+    const paymentAgg = await Payment.aggregate([
+      { $match: { status: 'approved' } },
+      { $group: { _id: null, total: { $sum: '$amount' } } }
+    ]);
+    const paymentsTotal = paymentAgg[0]?.total || 0;
+
+    // Calculate expenses total
+    const expenseAgg = await Expense.aggregate([
+      { $group: { _id: null, total: { $sum: '$amount' } } }
+    ]);
+    const expensesTotal = expenseAgg[0]?.total || 0;
+
+    const balance = fundEntriesTotal + paymentsTotal - expensesTotal;
+
+    return res.json({
+      fundEntriesTotal,
+      paymentsTotal,
+      expensesTotal,
+      balance
+    });
   })
 );
 
