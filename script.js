@@ -2779,6 +2779,7 @@ function renderDashboardApp() {
             totalExpenses: 0,
             totalFunds: 0
         },
+        fundEntries: [], /* Single source of truth for fund entries */
         paymentFlow: {
             qrScanned: false,
             amountToPay: 0
@@ -3338,6 +3339,22 @@ function renderDashboardApp() {
             state.finance.totalIncome = Number(summary.paymentsApprovedTotal) || 0;
             state.finance.totalExpenses = Number(summary.expensesTotal) || 0;
             state.finance.totalFunds = Number(summary.balance) || 0;
+        }
+
+        // Load fund entries as part of unified state refresh
+        try {
+            const token = localStorage.getItem('authToken');
+            const headers = { 'Content-Type': 'application/json' };
+            if (token) headers['Authorization'] = `Bearer ${token}`;
+            const API_BASE = localStorage.getItem('API_BASE') || window.location.origin;
+            const fundRes = await fetch(`${API_BASE}/funds`, { headers });
+            if (fundRes.ok) {
+                const fundData = await fundRes.json();
+                state.fundEntries = Array.isArray(fundData.entries) ? fundData.entries : [];
+            }
+        } catch (err) {
+            console.error('Failed to load fund entries during dashboard refresh:', err);
+            state.fundEntries = [];
         }
     }
 
@@ -5557,6 +5574,7 @@ function renderDashboardApp() {
             renderMemberReceiptStatus();
             renderVerificationQueue();
             updatePaymentFlowUI();
+            if (typeof window.renderAllFundManagement === 'function') window.renderAllFundManagement();
             if (elements.receiptInput) elements.receiptInput.value = '';
             if (elements.memberReceiptPreview) elements.memberReceiptPreview.innerHTML = 'No receipt selected';
             if (elements.paymentFlowMessage) {
@@ -5596,6 +5614,7 @@ function renderDashboardApp() {
             renderMemberReceiptStatus();
             renderVerificationQueue();
             renderFinance();
+            if (typeof window.renderAllFundManagement === 'function') window.renderAllFundManagement();
             showDashboardToast('Payment approved successfully.', 'success');
         }).catch((err) => {
             console.error('Verify payment failed:', err);
@@ -5625,6 +5644,7 @@ function renderDashboardApp() {
             renderMemberReceiptStatus();
             renderVerificationQueue();
             renderFinance();
+            if (typeof window.renderAllFundManagement === 'function') window.renderAllFundManagement();
             showDashboardToast('Payment rejected.', 'success');
         }).catch((err) => {
             console.error('Reject payment failed:', err);
@@ -5668,6 +5688,7 @@ function renderDashboardApp() {
             renderMembers();
             renderFinance();
             renderVerificationQueue();
+            if (typeof window.renderAllFundManagement === 'function') window.renderAllFundManagement();
             showDashboardToast('Payment added and approved.', 'success');
             alert('Payment added and auto-approved.');
         }).catch((err) => {
@@ -5705,6 +5726,7 @@ function renderDashboardApp() {
             renderExpenses();
             renderMemberExpenses();
             renderFinance();
+            if (typeof window.renderAllFundManagement === 'function') window.renderAllFundManagement();
             showDashboardToast('Expense added successfully.', 'success');
         }).catch((err) => {
             console.error('Add expense failed:', err);
@@ -5932,6 +5954,7 @@ function renderDashboardApp() {
             await refreshDashboardFromApi();
             renderReimbursements();
             renderMemberReceiptStatus();
+            if (typeof window.renderAllFundManagement === 'function') window.renderAllFundManagement();
             showDashboardToast('Reimbursement approved.', 'success');
         } catch (err) {
             console.error('Approve reimbursement failed:', err);
@@ -5955,6 +5978,7 @@ function renderDashboardApp() {
             await refreshDashboardFromApi();
             renderReimbursements();
             renderMemberReceiptStatus();
+            if (typeof window.renderAllFundManagement === 'function') window.renderAllFundManagement();
             showDashboardToast('Reimbursement rejected.', 'success');
         } catch (err) {
             console.error('Reject reimbursement failed:', err);
@@ -5973,6 +5997,7 @@ function renderDashboardApp() {
             await refreshDashboardFromApi();
             renderReimbursements();
             renderMemberReceiptStatus();
+            if (typeof window.renderAllFundManagement === 'function') window.renderAllFundManagement();
             showDashboardToast('Reimbursement marked as paid.', 'success');
         } catch (err) {
             console.error('Mark reimbursement paid failed:', err);
@@ -5992,6 +6017,7 @@ function renderDashboardApp() {
             await refreshDashboardFromApi();
             renderReimbursements();
             renderMemberReceiptStatus();
+            if (typeof window.renderAllFundManagement === 'function') window.renderAllFundManagement();
             showDashboardToast('Reimbursement deleted.', 'success');
         } catch (err) {
             console.error('Delete reimbursement failed:', err);
@@ -6037,6 +6063,7 @@ function renderDashboardApp() {
             await refreshDashboardFromApi();
             renderReimbursements();
             renderContributionAnalytics();
+            if (typeof window.renderAllFundManagement === 'function') window.renderAllFundManagement();
             showDashboardToast('Reimbursement submitted successfully.', 'success');
         } catch (err) {
             console.error('Create reimbursement failed:', err);
@@ -6434,6 +6461,7 @@ function renderDashboardApp() {
             await loadProjectExpenses(currentProjectId);
             await refreshDashboardFromApi();
             renderProjects();
+            if (typeof window.renderAllFundManagement === 'function') window.renderAllFundManagement();
 
             showDashboardToast('Expense added successfully', 'success');
         } catch (err) {
@@ -6454,6 +6482,7 @@ function renderDashboardApp() {
             renderMemberExpenses();
             renderExpenses();
             renderFinance();
+            if (typeof window.renderAllFundManagement === 'function') window.renderAllFundManagement();
             showDashboardToast('Expense deleted.', 'success');
         } catch (err) {
             console.error('Delete expense failed:', err);
@@ -7583,7 +7612,7 @@ function renderDashboardApp() {
         bindCertUploadForm();
         populateCertFilterMember();
         bindAdminVerificationNavigation();
-        initFundManagement();   /* ← Fund Management module */
+        initFundManagement();   /* ← Fund Management module (uses state.fundEntries populated by refreshDashboardFromApi) */
         setDashboardLoadingState(false);
         if (dashboardRootEl) {
             dashboardRootEl.removeAttribute('aria-busy');
@@ -7626,11 +7655,15 @@ function renderDashboardApp() {
    ═══════════════════════════════════════════════════════════════════════════ */
 function initFundManagement() {
     /* Only mount for admin */
-    if (typeof isAdminRole === 'function' && !isAdminRole()) return;
+    if (typeof isAdminRole === 'function' && !isAdminRole()) {
+        return;
+    }
 
     /* ── DOM refs ── */
     const section       = document.getElementById('fund-management-section');
-    if (!section) return;  /* section not in DOM → do nothing */
+    if (!section) {
+        return;  /* section not in DOM → do nothing */
+    }
 
     const form          = document.getElementById('fundEntryForm');
     const sourceTypeEl  = document.getElementById('fundSourceType');
@@ -7663,14 +7696,13 @@ function initFundManagement() {
 
     /* ── Module state ── */
     const FUND_PAGE_SIZE = 20;
-    let allEntries   = [];   /* full list from API */
     let sortKey      = 'date';
     let sortDir      = 'desc';
     let currentPage  = 1;
 
     const SOURCE_LABELS = {
         opening_balance:        'Opening Balance',
-        principal_contribution: 'Principal Contribution',
+        principal_contribution: 'College Contribution',
         sponsorship:            'Sponsorship',
         donation:               'Donation',
         other_income:           'Other Income'
@@ -7750,38 +7782,35 @@ function initFundManagement() {
             if (!q) return true;
             const label = (SOURCE_LABELS[e.sourceType] || e.sourceType || '').toLowerCase();
             const desc  = (e.description || '').toLowerCase();
-            const addedBy = e.addedBy && e.addedBy.name ? e.addedBy.name.toLowerCase() : '';
-            return label.includes(q) || desc.includes(q) || addedBy.includes(q);
+            return label.includes(q) || desc.includes(q);
         });
     }
 
     function getSorted(list) {
+        const key = sortKey;
+        const dir = sortDir === 'asc' ? 1 : -1;
         return [...list].sort((a, b) => {
-            let va, vb;
-            if (sortKey === 'amount') {
-                va = Number(a.amount) || 0;
-                vb = Number(b.amount) || 0;
-            } else if (sortKey === 'date') {
-                va = new Date(a.date || a.createdAt).getTime() || 0;
-                vb = new Date(b.date || b.createdAt).getTime() || 0;
-            } else if (sortKey === 'sourceType') {
-                va = (SOURCE_LABELS[a.sourceType] || '').toLowerCase();
-                vb = (SOURCE_LABELS[b.sourceType] || '').toLowerCase();
+            let va = a[key];
+            let vb = b[key];
+            if (key === 'amount') {
+                va = Number(va) || 0;
+                vb = Number(vb) || 0;
             } else {
-                va = String(a[sortKey] || '').toLowerCase();
-                vb = String(b[sortKey] || '').toLowerCase();
+                va = String(va || '').toLowerCase();
+                vb = String(vb || '').toLowerCase();
             }
-            if (va < vb) return sortDir === 'asc' ? -1 : 1;
-            if (va > vb) return sortDir === 'asc' ?  1 : -1;
+            if (va < vb) return dir === 1 ? -1 : 1;
+            if (va > vb) return dir === 1 ?  1 : -1;
             return 0;
         });
     }
 
     /* ── Update KPI cards ── */
     function updateKpis() {
-        /* Balance = server-computed, already in state.finance.totalFunds */
-        const balance = (typeof state !== 'undefined' && state.finance)
-            ? state.finance.totalFunds
+        /* Balance = server-computed, already in window.__dashboardState.finance.totalFunds */
+        const dashState = (typeof window.__dashboardState !== 'undefined') ? window.__dashboardState : null;
+        const balance = (dashState && dashState.finance)
+            ? dashState.finance.totalFunds
             : allEntries.reduce((s, e) => s + (Number(e.amount) || 0), 0);
 
         const openingEntry = allEntries.find((e) => e.sourceType === 'opening_balance');
@@ -7793,15 +7822,16 @@ function initFundManagement() {
             .reduce((s, e) => s + (Number(e.amount) || 0), 0);
 
         /* Member fee income, total expenses, reimbursements paid — from dashboard state */
-        const memberFeeAmt   = (typeof state !== 'undefined' && state.finance)
-            ? (Number(state.finance.totalIncome) || 0)
+        const memberFeeAmt   = (dashState && dashState.finance)
+            ? (Number(dashState.finance.totalIncome) || 0)
             : 0;
-        const expensesAmt    = (typeof state !== 'undefined' && state.finance)
-            ? (Number(state.finance.totalExpenses) || 0)
+        const expensesAmt    = (dashState && dashState.finance)
+            ? (Number(dashState.finance.totalExpenses) || 0)
             : 0;
-        /* reimbursed paid: derive from state summary if available */
-        const reimbursedAmt  = (typeof state !== 'undefined' && state.summary)
-            ? 0   /* not directly in state — leave 0; populated by reports */
+        const reimbursedAmt  = Array.isArray(dashState?.enterprise?.reimbursements)
+            ? dashState.enterprise.reimbursements
+                .filter((claim) => String(claim.status || '').toLowerCase() === 'reimbursed')
+                .reduce((sum, claim) => sum + (Number(claim.reimbursedAmount ?? claim.approvedAmount ?? claim.totalAmount) || 0), 0)
             : 0;
 
         if (kpiBalance)       kpiBalance.textContent       = fmt(balance);
@@ -7964,9 +7994,8 @@ function initFundManagement() {
                 if (typeof showDashboardToast === 'function') showDashboardToast('Fund entry added.', 'success');
             }
             resetFormToAddMode();
-            await loadFundEntries();
-            /* Refresh the dashboard balance KPIs silently */
-            if (typeof refreshDashboardFromApi === 'function') refreshDashboardFromApi().catch(() => {});
+            await refreshDashboardFromApi();
+            if (typeof renderAll === 'function') renderAll();
         } catch (err) {
             if (typeof handleAuthFailure === 'function' && handleAuthFailure(err)) return;
             const msg = err.message || 'Operation failed';
@@ -7984,8 +8013,8 @@ function initFundManagement() {
         try {
             await apiFundRequest(`/${id}`, { method: 'DELETE' });
             if (typeof showDashboardToast === 'function') showDashboardToast('Fund entry deleted.', 'success');
-            await loadFundEntries();
-            if (typeof refreshDashboardFromApi === 'function') refreshDashboardFromApi().catch(() => {});
+            await refreshDashboardFromApi();
+            if (typeof renderAll === 'function') renderAll();
         } catch (err) {
             if (typeof handleAuthFailure === 'function' && handleAuthFailure(err)) return;
             const msg = err.message || 'Delete failed';
@@ -8032,7 +8061,7 @@ function initFundManagement() {
 
             if (editBtn) {
                 const id    = editBtn.getAttribute('data-entry-id');
-                const entry = allEntries.find((en) => String(en._id) === id);
+                const entry = state.fundEntries.find((en) => String(en._id) === id);
                 if (entry) populateFormForEdit(entry);
             }
 
@@ -8057,8 +8086,16 @@ function initFundManagement() {
     /* Set today's date as default */
     resetFormToAddMode();
 
-    /* Initial load */
-    loadFundEntries();
+    /* Initial load of fund entries from state.fundEntries populated by refreshDashboardFromApi */
+    if (Array.isArray(state.fundEntries) && state.fundEntries.length > 0) {
+        renderAll();
+    } else {
+        /* If state.fundEntries is empty, load directly from API */
+        loadFundEntries();
+    }
+
+    /* Expose renderAll globally for external refresh calls */
+    window.renderAllFundManagement = renderAll;
 }
 renderDashboardApp();
 
