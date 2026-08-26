@@ -1471,12 +1471,21 @@ Secured 2nd Place in Robo Race, demonstrating speed, precision, and engineering 
                 statusDiv.textContent = '';
                 
                 try {
-                  const response = await fetch('http://localhost:3000/api/contact', {
+                  const response = await fetch(`${window.location.origin}/api/collaboration`, {
                     method: 'POST',
                     headers: {
                       'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify(formData)
+                    body: JSON.stringify({
+                      fullName: formData.name,
+                      email: formData.email,
+                      phone: formData.phone,
+                      college: formData.college,
+                      roleInterested: formData.roleInterested,
+                      skills: formData.skills,
+                      collaborationReason: formData.message,
+                      portfolioLink: formData.portfolioLink
+                    })
                   });
                   
                   const data = await response.json();
