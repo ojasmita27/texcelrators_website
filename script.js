@@ -2787,8 +2787,7 @@ function renderDashboardApp() {
         profileEditor: {
             isEditing: false,
             draft: null,
-            saving: false,
-            clearProfilePic: false
+            saving: false
         }
     };
 
@@ -3584,7 +3583,6 @@ function renderDashboardApp() {
         if (!state.profileEditor.isEditing) {
             state.profileEditor.draft = null;
             state.profileEditor.saving = false;
-            state.profileEditor.clearProfilePic = false;
         }
         renderMemberProfile();
     }
@@ -3596,7 +3594,6 @@ function renderDashboardApp() {
         const phoneInput = document.getElementById('profileEditPhone');
         const skillsInput = document.getElementById('profileEditSkills');
         const certsInput = document.getElementById('profileEditCertificates');
-        const profilePicInput = document.getElementById('profilePicInput');
         const profileCertificatesInput = document.getElementById('profileCertificatesInput');
 
         const name = nameInput ? nameInput.value.trim() : '';
@@ -3609,20 +3606,7 @@ function renderDashboardApp() {
         renderMemberProfile();
 
         try {
-            // 1) Upload profile picture if selected
-            let uploadedProfileUser = null;
-            if (!state.profileEditor.clearProfilePic && profilePicInput && profilePicInput.files && profilePicInput.files.length) {
-                const f = profilePicInput.files[0];
-                const fd = new FormData();
-                fd.append('profilePic', f);
-                const upRes = await apiRequest('/members/upload-profile-pic', { method: 'POST', body: fd, isForm: true });
-                if (upRes && upRes.user) {
-                    uploadedProfileUser = upRes.user;
-                    state.user.profilePic = upRes.user.profilePic || state.user.profilePic;
-                }
-            }
-
-            // 2) Upload certificates if any selected
+            // 1) Upload certificates if any selected
             let uploadedCertsUser = null;
             if (profileCertificatesInput && profileCertificatesInput.files && profileCertificatesInput.files.length) {
                 const fd = new FormData();
@@ -3635,7 +3619,7 @@ function renderDashboardApp() {
                 }
             }
 
-            // 3) Build payload for textual fields (merge certificates if upload returned them)
+            // 2) Build payload for textual fields (merge certificates if upload returned them)
             const payload = {
                 name,
                 phone: phoneInput ? phoneInput.value.trim() : '',
@@ -3645,15 +3629,10 @@ function renderDashboardApp() {
                     : parseProfileListInput(certsInput ? certsInput.value : '')
             };
 
-            if (state.profileEditor.clearProfilePic) {
-                payload.profilePic = '';
-            }
-
-            // 4) Persist textual changes
+            // 3) Persist textual changes
             const result = await apiRequest('/members/update-my-profile', { method: 'PUT', body: payload });
 
             if (result && result.user) {
-                const hasProfilePic = Object.prototype.hasOwnProperty.call(result.user, 'profilePic');
                 state.user = {
                     ...state.user,
                     name: result.user.name,
@@ -3661,7 +3640,6 @@ function renderDashboardApp() {
                     phone: result.user.phone || '',
                     skills: Array.isArray(result.user.skills) ? result.user.skills : [],
                     certificates: Array.isArray(result.user.certificates) ? result.user.certificates : [],
-                    profilePic: hasProfilePic ? (result.user.profilePic || '') : state.user.profilePic,
                     createdAt: result.user.createdAt || state.user.createdAt || null,
                     updatedAt: result.user.updatedAt || state.user.updatedAt || null
                 };
@@ -3674,8 +3652,7 @@ function renderDashboardApp() {
                         name: state.user.name,
                         phone: state.user.phone,
                         skills: state.user.skills,
-                        certificates: state.user.certificates,
-                        profilePic: state.user.profilePic
+                        certificates: state.user.certificates
                     };
                 }
             }
@@ -3684,7 +3661,6 @@ function renderDashboardApp() {
             state.profileEditor.isEditing = false;
             state.profileEditor.draft = null;
             state.profileEditor.saving = false;
-            state.profileEditor.clearProfilePic = false;
             renderMemberProfile();
             showDashboardToast('Profile updated successfully.', 'success');
         } catch (err) {
@@ -4204,10 +4180,10 @@ function renderDashboardApp() {
                         <div id="profilePicPreview" class="profile-pic-preview profile-avatar-wrap">
                             ${getAvatarMarkup({
                                 name: state.user.name,
-                                profilePic: state.profileEditor.clearProfilePic ? '' : state.user.profilePic,
+                                profilePic: '',
                                 imageClass: 'profile-thumb profile-thumb-avatar',
                                 placeholderClass: 'profile-thumb-placeholder profile-thumb-avatar-placeholder',
-                                alt: 'Profile photo'
+                                alt: 'Profile avatar'
                             })}
                         </div>
                         <span class="status-pill ${memberStatusClass} profile-member-status">${memberStatusLabel}</span>
@@ -4258,24 +4234,19 @@ function renderDashboardApp() {
                     <div id="profilePicPreview" class="profile-pic-preview profile-avatar-wrap">
                         ${getAvatarMarkup({
                             name: state.user.name,
-                            profilePic: state.profileEditor.clearProfilePic ? '' : state.user.profilePic,
+                            profilePic: '',
                             imageClass: 'profile-thumb profile-thumb-avatar',
                             placeholderClass: 'profile-thumb-placeholder profile-thumb-avatar-placeholder',
-                            alt: 'Profile photo'
+                            alt: 'Profile avatar'
                         })}
                     </div>
-                    <div class="profile-photo-actions">
-                        <label for="profilePicInput" class="profile-photo-trigger"><i class="fas fa-camera"></i> Change Photo</label>
-                        <button class="profile-photo-remove" id="profileRemovePhotoButton" type="button" ${state.profileEditor.saving ? 'disabled' : ''}><i class="fas fa-trash"></i> Remove Photo</button>
-                    </div>
-                    <input type="file" id="profilePicInput" class="profile-photo-input" accept="image/*">
                     <span class="status-pill ${memberStatusClass} profile-member-status">${memberStatusLabel}</span>
                 </aside>
                 <div class="profile-content-wrap">
                     <div class="profile-section-header profile-section-header-edit">
                         <div>
                             <h3 class="profile-section-title">Profile</h3>
-                            <p class="profile-section-subtitle">Edit your name, phone, skills, photo, and certificates.</p>
+                            <p class="profile-section-subtitle">Edit your name, phone, skills, and certificates.</p>
                         </div>
                         <div class="profile-section-actions">
                             <button class="profile-action profile-action-secondary" id="profileCancelButton" type="button" ${state.profileEditor.saving ? 'disabled' : ''}>Cancel</button>
@@ -4346,59 +4317,10 @@ function renderDashboardApp() {
             });
         });
 
-        // Preview selected files for profile photo and certificates
-        const profilePicInput = document.getElementById('profilePicInput');
+        // Preview selected files for certificates
         const profileCertificatesInput = document.getElementById('profileCertificatesInput');
-        const profilePicPreview = document.getElementById('profilePicPreview');
         const certsExistingRoot = document.getElementById('profileCertificatesExisting');
         const certsPendingRoot = document.getElementById('profileCertificatesPending');
-
-        if (profilePicInput) {
-            profilePicInput.addEventListener('change', () => {
-                const f = profilePicInput.files && profilePicInput.files[0];
-                if (!f) {
-                    if (profilePicPreview) {
-                        profilePicPreview.innerHTML = getAvatarMarkup({
-                            name: state.user.name,
-                            profilePic: state.profileEditor.clearProfilePic ? '' : state.user.profilePic,
-                            imageClass: 'profile-thumb profile-thumb-avatar',
-                            placeholderClass: 'profile-thumb-placeholder profile-thumb-avatar-placeholder',
-                            alt: 'Profile photo'
-                        });
-                    }
-                    return;
-                }
-                state.profileEditor.clearProfilePic = false;
-                if (f.type && f.type.startsWith('image/')) {
-                    const url = URL.createObjectURL(f);
-                    if (profilePicPreview) profilePicPreview.innerHTML = `<img src="${url}" alt="Profile preview" class="profile-thumb profile-thumb-avatar">`;
-                } else {
-                    if (profilePicPreview) profilePicPreview.innerHTML = `<div class="profile-thumb-placeholder profile-thumb-avatar-placeholder">${f.name}</div>`;
-                }
-            });
-        }
-
-        const editPhotoButton = document.getElementById('profileEditPhotoButton');
-        if (editPhotoButton && profilePicInput) {
-            editPhotoButton.addEventListener('click', () => profilePicInput.click());
-        }
-
-        const removePhotoButton = document.getElementById('profileRemovePhotoButton');
-        if (removePhotoButton && profilePicInput) {
-            removePhotoButton.addEventListener('click', () => {
-                state.profileEditor.clearProfilePic = true;
-                profilePicInput.value = '';
-                if (profilePicPreview) {
-                    profilePicPreview.innerHTML = getAvatarMarkup({
-                        name: state.user.name,
-                        profilePic: '',
-                        imageClass: 'profile-thumb profile-thumb-avatar',
-                        placeholderClass: 'profile-thumb-placeholder profile-thumb-avatar-placeholder',
-                        alt: 'Profile photo'
-                    });
-                }
-            });
-        }
 
         if (profileCertificatesInput) {
             profileCertificatesInput.addEventListener('change', () => {
@@ -5954,6 +5876,9 @@ function renderDashboardApp() {
             await refreshDashboardFromApi();
             renderReimbursements();
             renderMemberReceiptStatus();
+            renderExpenses();
+            renderMemberExpenses();
+            renderFinance();
             if (typeof window.renderAllFundManagement === 'function') window.renderAllFundManagement();
             showDashboardToast('Reimbursement approved.', 'success');
         } catch (err) {
@@ -5978,6 +5903,9 @@ function renderDashboardApp() {
             await refreshDashboardFromApi();
             renderReimbursements();
             renderMemberReceiptStatus();
+            renderExpenses();
+            renderMemberExpenses();
+            renderFinance();
             if (typeof window.renderAllFundManagement === 'function') window.renderAllFundManagement();
             showDashboardToast('Reimbursement rejected.', 'success');
         } catch (err) {
@@ -5997,6 +5925,9 @@ function renderDashboardApp() {
             await refreshDashboardFromApi();
             renderReimbursements();
             renderMemberReceiptStatus();
+            renderExpenses();
+            renderMemberExpenses();
+            renderFinance();
             if (typeof window.renderAllFundManagement === 'function') window.renderAllFundManagement();
             showDashboardToast('Reimbursement marked as paid.', 'success');
         } catch (err) {
@@ -6017,6 +5948,9 @@ function renderDashboardApp() {
             await refreshDashboardFromApi();
             renderReimbursements();
             renderMemberReceiptStatus();
+            renderExpenses();
+            renderMemberExpenses();
+            renderFinance();
             if (typeof window.renderAllFundManagement === 'function') window.renderAllFundManagement();
             showDashboardToast('Reimbursement deleted.', 'success');
         } catch (err) {
@@ -6063,6 +5997,9 @@ function renderDashboardApp() {
             await refreshDashboardFromApi();
             renderReimbursements();
             renderContributionAnalytics();
+            renderExpenses();
+            renderMemberExpenses();
+            renderFinance();
             if (typeof window.renderAllFundManagement === 'function') window.renderAllFundManagement();
             showDashboardToast('Reimbursement submitted successfully.', 'success');
         } catch (err) {
@@ -6479,6 +6416,11 @@ function renderDashboardApp() {
         try {
             await apiRequest(`/expenses/${expenseId}`, { method: 'DELETE' });
             await refreshDashboardFromApi();
+            renderProjects();
+            renderEvents();
+            renderMemberTransactions();
+            renderReimbursements();
+            renderContributionAnalytics();
             renderMemberExpenses();
             renderExpenses();
             renderFinance();
@@ -7612,7 +7554,7 @@ function renderDashboardApp() {
         bindCertUploadForm();
         populateCertFilterMember();
         bindAdminVerificationNavigation();
-        initFundManagement();   /* ← Fund Management module (uses state.fundEntries populated by refreshDashboardFromApi) */
+        initFundManagement();   /* ← Fund Management module (uses local allEntries, loads from /funds API) */
         setDashboardLoadingState(false);
         if (dashboardRootEl) {
             dashboardRootEl.removeAttribute('aria-busy');
@@ -7696,6 +7638,7 @@ function initFundManagement() {
 
     /* ── Module state ── */
     const FUND_PAGE_SIZE = 20;
+    let allEntries   = [];
     let sortKey      = 'date';
     let sortDir      = 'desc';
     let currentPage  = 1;
@@ -8061,7 +8004,7 @@ function initFundManagement() {
 
             if (editBtn) {
                 const id    = editBtn.getAttribute('data-entry-id');
-                const entry = state.fundEntries.find((en) => String(en._id) === id);
+                const entry = allEntries.find((en) => String(en._id) === id);
                 if (entry) populateFormForEdit(entry);
             }
 
@@ -8086,11 +8029,11 @@ function initFundManagement() {
     /* Set today's date as default */
     resetFormToAddMode();
 
-    /* Initial load of fund entries from state.fundEntries populated by refreshDashboardFromApi */
-    if (Array.isArray(state.fundEntries) && state.fundEntries.length > 0) {
+    /* Initial load of fund entries */
+    if (Array.isArray(allEntries) && allEntries.length > 0) {
         renderAll();
     } else {
-        /* If state.fundEntries is empty, load directly from API */
+        /* If allEntries is empty, load directly from API */
         loadFundEntries();
     }
 
