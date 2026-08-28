@@ -97,6 +97,24 @@ async function loadEnterpriseData(user, isAdmin) {
         .populate(['teamLead', 'teamMembers', 'createdBy'])
         .sort({ startDate: -1 })
         .limit(50);
+
+      if (enterpriseData.projects.length > 0) {
+        const projectIds = enterpriseData.projects.map((project) => project._id);
+        const projectExpenseTotals = await Expense.aggregate([
+          { $match: { linkedProject: { $in: projectIds } } },
+          { $group: { _id: '$linkedProject', totalExpense: { $sum: '$amount' } } }
+        ]);
+        const totalsByProject = new Map(projectExpenseTotals.map((entry) => [String(entry._id), Number(entry.totalExpense) || 0]));
+
+        enterpriseData.projects = enterpriseData.projects.map((project) => {
+          const totalExpense = totalsByProject.get(String(project._id)) || 0;
+          const allocated = Number(project.budgetAllocated) || 0;
+          const remaining = allocated - totalExpense;
+          project.totalExpense = totalExpense;
+          project.budgetRemainingPercentage = allocated > 0 ? ((remaining / allocated) * 100) : 0;
+          return project;
+        });
+      }
     }
 
     if (Event) {

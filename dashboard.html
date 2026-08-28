@@ -780,7 +780,9 @@
                         <input type="date" id="reimbursementPurchaseDate" required>
                         <input type="text" id="reimbursementVendorName" placeholder="Vendor name">
                         <input type="text" id="reimbursementVendorContact" placeholder="Vendor contact">
-                        <input type="text" id="reimbursementLinkedProjectId" placeholder="Project ID (optional)">
+                        <select id="reimbursementLinkedProjectId">
+                            <option value="">Select Project (Optional)</option>
+                        </select>
                         <input type="file" id="reimbursementReceipt" accept="image/*,.pdf" required>
                         <button type="submit" class="dashboard-button primary">Submit Claim</button>
                     </form>
@@ -814,7 +816,7 @@
                             <option value="workshop_research">Workshop Research</option>
                             <option value="other">Other</option>
                         </select>
-                        <input type="number" id="projectBudgetAllocated" placeholder="Budget" min="1" required>
+                        <input type="number" id="projectFormBudgetAllocated" placeholder="Budget" min="1" required>
                         <input type="date" id="projectStartDate" required>
                         <input type="date" id="projectEndDate">
                         <select id="projectVisibility">
@@ -1192,14 +1194,13 @@
                         </button>
                     </div>
                     
-                    <!-- Add Expense Form (Hidden by default) -->
                     <form id="projectExpenseForm" class="expense-form modal-form" style="display: none;">
                         <div class="form-row-2">
-                            <input type="text" id="expenseTitle" placeholder="Expense title" required>
-                            <input type="number" id="expenseAmount" placeholder="Amount" min="0.01" step="0.01" required>
+                            <input type="text" id="projectExpenseTitle" placeholder="Expense title" required>
+                            <input type="number" id="projectExpenseAmount" placeholder="Amount" min="0.01" step="0.01" required>
                         </div>
                         <div class="form-row-2">
-                            <select id="expenseCategory">
+                            <select id="projectExpenseCategory">
                                 <option value="">Category</option>
                                 <option value="parts">Parts & Components</option>
                                 <option value="materials">Materials</option>
@@ -1208,12 +1209,12 @@
                                 <option value="venue">Venue</option>
                                 <option value="other">Other</option>
                             </select>
-                            <input type="date" id="expenseDate" required>
+                            <input type="date" id="projectExpenseDate" required>
                         </div>
-                        <textarea id="expenseNotes" placeholder="Notes / Receipt reference"></textarea>
+                        <textarea id="projectExpenseNotes" placeholder="Notes / Receipt reference"></textarea>
                         <div style="margin-top:8px;">
                             <label class="form-label">Upload receipt (optional)</label>
-                            <input type="file" id="expenseReceiptInput" accept="image/*,.pdf">
+                            <input type="file" id="projectExpenseReceiptInput" accept="image/*,.pdf">
                         </div>
                         <div class="form-actions">
                             <button type="submit" class="dashboard-button primary">Save Expense</button>

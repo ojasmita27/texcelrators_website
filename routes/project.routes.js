@@ -160,7 +160,7 @@ router.get(
     const expenseSummary = await Expense.aggregate([
       {
         $match: {
-          linkedProject: require('mongoose').Types.ObjectId(project._id)
+          linkedProject: new (require('mongoose').Types.ObjectId)(project._id.toString())
         }
       },
       {
@@ -173,8 +173,10 @@ router.get(
     ]);
 
     const summary = expenseSummary[0] || { totalExpense: 0, count: 0 };
-    project.totalExpense = summary.totalExpense;
-    project.budgetRemainingPercentage = ((project.budgetAllocated - summary.totalExpense) / project.budgetAllocated) * 100;
+    project.totalExpense = Number(summary.totalExpense) || 0;
+    project.budgetRemainingPercentage = project.budgetAllocated > 0
+      ? ((project.budgetAllocated - project.totalExpense) / project.budgetAllocated) * 100
+      : 0;
 
     return res.json(project);
   })
@@ -199,18 +201,19 @@ router.get(
       .sort({ date: -1 });
 
     const totalAmount = expenses.reduce((sum, e) => sum + e.amount, 0);
+    const allocatedBudget = Number(project.budgetAllocated) || 0;
 
     return res.json({
       project: {
         id: project._id,
         name: project.name,
-        budgetAllocated: project.budgetAllocated
+        budgetAllocated: allocatedBudget
       },
       expenses,
       summary: {
         totalExpense: totalAmount,
-        budgetRemaining: project.budgetAllocated - totalAmount,
-        percentageUsed: (totalAmount / project.budgetAllocated) * 100,
+        budgetRemaining: allocatedBudget - totalAmount,
+        percentageUsed: allocatedBudget > 0 ? (totalAmount / allocatedBudget) * 100 : 0,
         count: expenses.length
       }
     });
@@ -222,11 +225,15 @@ router.get(
  * 
  * Link an existing or new expense to a project
  */
+const { receiptUploader } = require('../utils/upload');
+const upload = receiptUploader();
+
 router.post(
   '/:id/add-expense',
   requireAuth,
   requireRole('admin'),
   blockIfMustChangePassword,
+  upload.single('receipt'),
   asyncHandler(async (req, res) => {
     const { title, amount, category, notes, expenseDate } = req.body;
 
@@ -239,7 +246,7 @@ router.post(
       return res.status(400).json({ message: 'title and amount are required' });
     }
 
-    const expense = await Expense.create({
+    const expenseData = {
       title,
       amount: Number(amount),
       category: category || '',
@@ -247,8 +254,19 @@ router.post(
       notes: notes || '',
       linkedProject: project._id,
       addedBy: req.user._id
-    });
+    };
 
+    if (req.file) {
+      const uploadDir = String(process.env.RECEIPT_UPLOAD_DIR || 'uploads/receipts').replace(/\\/g, '/');
+      const publicBase = uploadDir.startsWith('uploads/') ? `/${uploadDir}` : '/uploads/receipts';
+      expenseData.receipt = {
+        path: `${publicBase}/${req.file.filename}`,
+        originalName: req.file.originalname,
+        uploadedAt: new Date()
+      };
+    }
+
+    const expense = await Expense.create(expenseData);
     await expense.populate(['addedBy']);
 
     return res.status(201).json({
@@ -269,7 +287,7 @@ router.put(
   requireRole('admin'),
   blockIfMustChangePassword,
   asyncHandler(async (req, res) => {
-    const { description, status, budgetAllocated, teamLeadId, teamMemberIds, endDate, notes, tags, visibility, name } = req.body;
+    const { description, status, budgetAllocated, teamLeadId, teamMemberIds, endDate, notes, tags, visibility, name, milestones } = req.body;
 
     const project = await Project.findById(req.params.id);
     if (!project) {
@@ -296,6 +314,17 @@ router.put(
 
     if (teamMemberIds !== undefined && Array.isArray(teamMemberIds)) {
       project.teamMembers = teamMemberIds;
+    }
+
+    // Support updating milestones: accept array of completed titles (strings)
+    // or array of milestone objects { title, status }
+    if (milestones !== undefined && Array.isArray(milestones)) {
+      const canonical = ['Design','Fabrication','Programming','Testing','Competition'];
+      if (milestones.length > 0 && typeof milestones[0] === 'string') {
+        project.milestones = canonical.map((title) => ({ title, status: milestones.includes(title) ? 'completed' : 'pending' }));
+      } else {
+        project.milestones = milestones.map((m) => ({ title: String(m && m.title ? m.title : m || ''), status: (m && m.status === 'completed') ? 'completed' : 'pending' }));
+      }
     }
 
     project.lastModifiedBy = req.user._id;

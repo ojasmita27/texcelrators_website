@@ -3,6 +3,7 @@ const { asyncHandler } = require('../utils/asyncHandler');
 const { receiptUploader } = require('../utils/upload');
 const { Reimbursement } = require('../models/Reimbursement');
 const { Expense } = require('../models/Expense');
+const { Project } = require('../models/Project');
 const { User } = require('../models/User');
 const { requireAuth, requireRole, blockIfMustChangePassword } = require('../middleware/auth');
 
@@ -40,6 +41,21 @@ router.post(
 
     if (!req.file) {
       return res.status(400).json({ message: 'Receipt file is required' });
+    }
+
+    if (!linkedProjectId) {
+      return res.status(400).json({ message: 'Please select a project assigned to you for this reimbursement.' });
+    }
+
+    const project = await Project.findById(linkedProjectId);
+    if (!project) {
+      return res.status(404).json({ message: 'Project not found' });
+    }
+
+    const isAssignedMember = project.teamMembers.some((memberId) => memberId.toString() === req.user._id.toString());
+    const isTeamLead = project.teamLead && project.teamLead.toString() === req.user._id.toString();
+    if (!isAssignedMember && !isTeamLead) {
+      return res.status(403).json({ message: 'You can only submit reimbursements for projects assigned to you.' });
     }
 
     const quantity_num = Number(quantity);

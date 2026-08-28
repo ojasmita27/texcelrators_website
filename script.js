@@ -1,4 +1,4 @@
-﻿document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', () => {
     const hamburger = document.getElementById('hamburger');
     const navMenu = document.getElementById('navMenu');
     const navLinks = document.querySelectorAll('.nav-link');
@@ -3449,7 +3449,7 @@ function renderDashboardApp() {
         projectForm: document.getElementById('projectForm'),
         projectName: document.getElementById('projectName'),
         projectCategory: document.getElementById('projectCategory'),
-        projectBudgetAllocated: document.getElementById('projectBudgetAllocated'),
+        projectBudgetAllocated: document.getElementById('projectFormBudgetAllocated'),
         projectStartDate: document.getElementById('projectStartDate'),
         projectEndDate: document.getElementById('projectEndDate'),
         projectVisibility: document.getElementById('projectVisibility'),
@@ -3715,6 +3715,35 @@ function renderDashboardApp() {
             <option value="">Select Member</option>
             ${memberOptions.map((member) => `<option value="${member.id}">${member.name}</option>`).join('')}
         `;
+    }
+
+    function populateMemberProjectSelect() {
+        if (!elements.reimbursementLinkedProjectId) return;
+        const allProjects = Array.isArray(state.enterprise && state.enterprise.projects) ? state.enterprise.projects : [];
+        const memberProjects = allProjects.filter((project) => {
+            const teamLeadId = project.teamLead && (project.teamLead._id || project.teamLead.id || project.teamLead);
+            if (String(teamLeadId) === String(state.user.id)) {
+                return true;
+            }
+            const teamMembers = Array.isArray(project.teamMembers) ? project.teamMembers : [];
+            return teamMembers.some((member) => {
+                const memberId = member && (member._id || member.id || member);
+                return String(memberId) === String(state.user.id);
+            });
+        });
+
+        if (memberProjects.length === 0) {
+            elements.reimbursementLinkedProjectId.innerHTML = `
+                <option value="">No assigned projects available for reimbursement</option>
+            `;
+            elements.reimbursementLinkedProjectId.disabled = true;
+        } else {
+            elements.reimbursementLinkedProjectId.innerHTML = `
+                <option value="">Select Project (Optional)</option>
+                ${memberProjects.map((project) => `<option value="${project._id}">${project.name}</option>`).join('')}
+            `;
+            elements.reimbursementLinkedProjectId.disabled = false;
+        }
     }
 
     function populateMemberReceiverSelect() {
@@ -5979,6 +6008,11 @@ function renderDashboardApp() {
             return;
         }
 
+        if (!linkedProjectId) {
+            alert('Please select one of your assigned projects for this reimbursement.');
+            return;
+        }
+
         const formData = new FormData();
         formData.append('itemName', itemName);
         formData.append('category', category);
@@ -6163,65 +6197,65 @@ function renderDashboardApp() {
     let currentProjectId = null;
     let currentProjectExpenses = [];
 
-    function openProjectDetailModal(projectId) {
+    async function openProjectDetailModal(projectId) {
         currentProjectId = projectId;
         const modal = document.getElementById('projectDetailModal');
-        const projects = state.enterprise?.projects || [];
-        const project = projects.find(p => p._id === projectId);
 
-        if (!project) {
-            alert('Project not found');
-            return;
+        try {
+            const project = await apiRequest(`/projects/${projectId}`, { method: 'GET' });
+            const teamMembers = Array.isArray(project.teamMembers) ? project.teamMembers : [];
+
+            document.getElementById('projectModalTitle').textContent = project.name || 'Project Details';
+            document.getElementById('projectModalSubtitle').textContent = `${project.category} • ${formatDate(project.createdAt)}`;
+            document.getElementById('projectDisplayName').textContent = project.name || '—';
+            document.getElementById('projectDisplayCategory').textContent = project.category || '—';
+            document.getElementById('projectDisplayDescription').value = project.description || '';
+            document.getElementById('projectDisplayVisibility').textContent = project.visibility || '—';
+
+            const statusEl = document.getElementById('projectDisplayStatus');
+            statusEl.textContent = project.status || 'planning';
+            statusEl.className = `status-pill status-${project.status || 'planning'}`;
+
+            const teamLeadName = project.teamLead?.name || project.teamLead?.email || 'Not assigned';
+            document.getElementById('projectDisplayTeamLead').textContent = teamLeadName;
+            document.getElementById('projectDisplayStartDate').textContent = formatDate(project.startDate) || '—';
+            document.getElementById('projectDisplayEndDate').textContent = formatDate(project.endDate) || '—';
+
+            const allocated = Number(project.budgetAllocated) || 0;
+            const spent = Number(project.totalExpense) || 0;
+            const remaining = allocated - spent;
+            const usedPercent = allocated > 0 ? Math.round((spent / allocated) * 100) : 0;
+
+            document.getElementById('projectBudgetAllocated').textContent = formatCurrency(allocated);
+            document.getElementById('projectBudgetSpent').textContent = formatCurrency(spent);
+            document.getElementById('projectBudgetRemaining').textContent = formatCurrency(remaining);
+            document.getElementById('projectBudgetUsedPercent').textContent = `${usedPercent}%`;
+            document.getElementById('projectBudgetBar').style.width = `${Math.min(usedPercent, 100)}%`;
+
+            // Prefer milestone-based progress if milestones are defined, otherwise fallback to time-based progress
+            let progress = 0;
+            if (Array.isArray(project.milestones) && project.milestones.length > 0) {
+                const completed = project.milestones.filter((m) => {
+                    if (!m) return false;
+                    if (typeof m === 'string') return true; // legacy format: array of completed titles
+                    return m.status === 'completed';
+                }).length;
+                progress = Math.round((completed / 5) * 100);
+            } else {
+                progress = calculateProjectProgress(project.startDate, project.endDate);
+            }
+            document.getElementById('projectDisplayProgress').textContent = `${progress}%`;
+
+            await loadProjectExpenses(projectId);
+            await loadProjectTeamMembers(teamMembers);
+            await loadProjectReimbursements(projectId);
+            modal.classList.remove('modal-hidden');
+        } catch (err) {
+            console.error('Open project detail failed:', err);
+            if (!handleAuthFailure(err)) {
+                alert(err.message || 'Project details could not be loaded.');
+            }
         }
-
-        // Set project info
-        document.getElementById('projectModalTitle').textContent = project.name || 'Project Details';
-        document.getElementById('projectModalSubtitle').textContent = `${project.category} • ${formatDate(project.createdAt)}`;
-        document.getElementById('projectDisplayName').textContent = project.name || '—';
-        document.getElementById('projectDisplayCategory').textContent = project.category || '—';
-        document.getElementById('projectDisplayDescription').value = project.description || '';
-        document.getElementById('projectDisplayVisibility').textContent = project.visibility || '—';
-
-        // Status badge
-        const statusEl = document.getElementById('projectDisplayStatus');
-        statusEl.textContent = project.status || 'planning';
-        statusEl.className = `status-pill status-${project.status || 'planning'}`;
-
-        // Team lead
-        const teamLeadName = project.teamLead?.name || project.teamLead?.email || 'Not assigned';
-        document.getElementById('projectDisplayTeamLead').textContent = teamLeadName;
-
-        // Dates
-        document.getElementById('projectDisplayStartDate').textContent = formatDate(project.startDate) || '—';
-        document.getElementById('projectDisplayEndDate').textContent = formatDate(project.endDate) || '—';
-
-        // Budget information
-        const allocated = Number(project.budgetAllocated) || 0;
-        const spent = Number(project.totalExpense) || 0;
-        const remaining = allocated - spent;
-        const usedPercent = allocated > 0 ? Math.round((spent / allocated) * 100) : 0;
-
-        document.getElementById('projectBudgetAllocated').textContent = formatCurrency(allocated);
-        document.getElementById('projectBudgetSpent').textContent = formatCurrency(spent);
-        document.getElementById('projectBudgetRemaining').textContent = formatCurrency(remaining);
-        document.getElementById('projectBudgetUsedPercent').textContent = `${usedPercent}%`;
-        document.getElementById('projectBudgetBar').style.width = `${Math.min(usedPercent, 100)}%`;
-
-        // Progress calculation based on dates
-        const progress = calculateProjectProgress(project.startDate, project.endDate);
-        document.getElementById('projectDisplayProgress').textContent = `${progress}%`;
-
-        // Load expenses
-        loadProjectExpenses(projectId);
-
-        // Load team members
-        loadProjectTeamMembers(project.teamMembers || []);
-
-        // Load reimbursements
-        loadProjectReimbursements(projectId);
-
-        // Show modal
-        modal.classList.remove('modal-hidden');
     }
 
     function closeProjectDetailModal() {
@@ -6292,15 +6326,20 @@ function renderDashboardApp() {
 
     async function loadProjectTeamMembers(teamMemberIds) {
         const container = document.getElementById('projectTeamList');
-        
+
+        if (!container) return;
+
         if (!teamMemberIds || teamMemberIds.length === 0) {
             container.innerHTML = '<p class="empty-state-text">No team members assigned.</p>';
             return;
         }
 
-        const normalizedTeamIds = teamMemberIds.map((member) => String(member._id || member.id || member));
-        const members = state.members || [];
-        const teamMembers = members.filter((member) => normalizedTeamIds.includes(String(member.id)));
+        const normalizedTeamIds = teamMemberIds.map((member) => String(member && (member._id || member.id || member)));
+        const members = state.members || state.users || [];
+        const teamMembers = members.filter((member) => {
+            const candidateId = member && (member.id || member._id || member.userId);
+            return normalizedTeamIds.includes(String(candidateId));
+        });
 
         if (teamMembers.length === 0) {
             container.innerHTML = '<p class="empty-state-text">No team members assigned.</p>';
@@ -6322,10 +6361,11 @@ function renderDashboardApp() {
     async function loadProjectReimbursements(projectId) {
         try {
             // Get reimbursements linked to this project
-            const allReimbursements = state.enterprise?.memberTransactions || [];
-            const projectReimbursements = allReimbursements.filter(t => 
-                t.linkedProject?.toString() === projectId || t.linkedProject === projectId
-            );
+            const allReimbursements = state.enterprise?.reimbursements || [];
+            const projectReimbursements = allReimbursements.filter(t => {
+                const linkedId = t.linkedProject?._id || t.linkedProject || '';
+                return String(linkedId) === String(projectId);
+            });
 
             const tbody = document.getElementById('reimbursementsTableBody');
             const emptyState = document.getElementById('reimbursementsEmptyState');
@@ -6339,18 +6379,21 @@ function renderDashboardApp() {
                 table.style.display = 'table';
                 emptyState.style.display = 'none';
                 tbody.innerHTML = projectReimbursements.map((reimb) => {
-                    const memberName = reimb.sender?.name || reimb.sender?.email || 'Unknown';
+                    const memberName = reimb.member?.name || reimb.member?.email || 'Unknown';
+                    const actions = userRole === 'admin'
+                        ? `<div style="display:flex;gap:4px;">
+                             <button class="dashboard-button small" data-action="approve" data-tx-id="${reimb._id}">Approve</button>
+                             <button class="dashboard-button small" data-action="reject" data-tx-id="${reimb._id}">Reject</button>
+                             <button class="dashboard-button small" data-action="paid" data-tx-id="${reimb._id}">Mark Paid</button>
+                           </div>`
+                        : `—`;
                     return `
-                        <tr>
+                        <tr data-tx-id="${reimb._id}">
                             <td>${memberName}</td>
-                            <td>${reimb.description || reimb.reason}</td>
-                            <td>${formatCurrency(reimb.amount)}</td>
+                            <td>${reimb.itemName || reimb.description || 'Reimbursement'}</td>
+                            <td>${formatCurrency(reimb.totalAmount || reimb.amount)}</td>
                             <td><span class="status-pill status-${reimb.status}">${reimb.status}</span></td>
-                            <td>
-                                <button class="icon-btn" title="View details">
-                                    <i class="fas fa-external-link-alt"></i>
-                                </button>
-                            </td>
+                            <td>${actions}</td>
                         </tr>
                     `;
                 }).join('');
@@ -6368,13 +6411,13 @@ function renderDashboardApp() {
             return;
         }
 
-        const title = document.getElementById('expenseTitle')?.value?.trim();
-        const amount = Number(document.getElementById('expenseAmount')?.value);
-        const category = document.getElementById('expenseCategory')?.value;
-        const date = document.getElementById('expenseDate')?.value;
-        const notes = document.getElementById('expenseNotes')?.value?.trim() || '';
+        const title = document.getElementById('projectExpenseTitle')?.value?.trim();
+        const amount = Number(document.getElementById('projectExpenseAmount')?.value);
+        const category = document.getElementById('projectExpenseCategory')?.value;
+        const date = document.getElementById('projectExpenseDate')?.value;
+        const notes = document.getElementById('projectExpenseNotes')?.value?.trim() || '';
 
-        if (!title || !amount || !date) {
+        if (!title || !Number.isFinite(amount) || amount <= 0 || !date) {
             alert('Please fill in title, amount, and date');
             return;
         }
@@ -6391,12 +6434,14 @@ function renderDashboardApp() {
                 }
             });
 
-            document.getElementById('projectExpenseForm').reset();
-            document.getElementById('projectExpenseForm').style.display = 'none';
-            document.getElementById('addExpenseToProjectBtn').style.display = 'inline-flex';
+            const projectExpenseForm = document.getElementById('projectExpenseForm');
+            projectExpenseForm.reset();
+            projectExpenseForm.style.display = 'none';
+            const addExpenseButton = document.getElementById('addExpenseToProjectBtn');
+            if (addExpenseButton) addExpenseButton.style.display = 'inline-flex';
 
-            await loadProjectExpenses(currentProjectId);
             await refreshDashboardFromApi();
+            await openProjectDetailModal(currentProjectId);
             renderProjects();
             if (typeof window.renderAllFundManagement === 'function') window.renderAllFundManagement();
 
@@ -6546,6 +6591,9 @@ function renderDashboardApp() {
         const allProjects = Array.isArray(state.enterprise && state.enterprise.projects) ? state.enterprise.projects : [];
         const projects = isMemberRole()
             ? allProjects.filter((project) => {
+                if (project.visibility === 'public') {
+                    return true;
+                }
                 const teamLeadId = project.teamLead && (project.teamLead._id || project.teamLead.id || project.teamLead);
                 if (String(teamLeadId) === String(state.user.id)) {
                     return true;
@@ -6567,7 +6615,17 @@ function renderDashboardApp() {
         }
 
         container.innerHTML = projects.map((project) => {
-            const progress = calculateProjectProgress(project.startDate, project.endDate);
+            let progress = 0;
+            if (Array.isArray(project.milestones) && project.milestones.length > 0) {
+                const completed = project.milestones.filter((m) => {
+                    if (!m) return false;
+                    if (typeof m === 'string') return true;
+                    return m.status === 'completed';
+                }).length;
+                progress = Math.round((completed / 5) * 100);
+            } else {
+                progress = calculateProjectProgress(project.startDate, project.endDate);
+            }
             const allocated = Number(project.budgetAllocated) || 0;
             const spent = Number(project.totalExpense) || 0;
             const usedPercent = allocated > 0 ? Math.round((spent / allocated) * 100) : 0;
@@ -7515,6 +7573,7 @@ function renderDashboardApp() {
         syncHeader();
         populateAdminMemberSelect();
         populateMemberReceiverSelect();
+        populateMemberProjectSelect();
         const today = new Date().toISOString().slice(0, 10);
         const tomorrow = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
         if (elements.adminPaymentDate && !elements.adminPaymentDate.value) elements.adminPaymentDate.value = today;

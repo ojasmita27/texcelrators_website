@@ -40,14 +40,31 @@
 
   async function loadExtendedProjectData(projectId) {
     const s = safeGetState();
-    const projects = s.enterprise.projects || [];
-    const project = projects.find(p => p._id === projectId) || {};
+    let project = (s.enterprise.projects || []).find(p => String(p._id) === String(projectId)) || null;
 
-    // Populate team select
+    try {
+      const projectRes = await apiRequestWrapper(`/projects/${projectId}`, { method: 'GET' });
+      if (projectRes && projectRes._id) {
+        project = projectRes;
+      }
+    } catch (err) {
+      console.warn('Extended project fetch fallback used:', err);
+    }
+
     const memberSelect = document.getElementById('projectAddMemberSelect');
     if (memberSelect) {
       memberSelect.innerHTML = '<option value="">Select member</option>';
-      (s.members || []).forEach(m => {
+      // If state.members not populated, fetch dashboard data to get members list
+      let membersList = (s.members || []).slice();
+      if ((!membersList || membersList.length === 0) && typeof apiRequestWrapper === 'function') {
+        try {
+          const dash = await apiRequestWrapper('/dashboard/data', { method: 'GET' });
+          membersList = Array.isArray(dash.members) ? dash.members : membersList;
+        } catch (e) {
+          // ignore: we'll fallback to state.members if dashboard fetch fails
+        }
+      }
+      (membersList || []).forEach(m => {
         const opt = document.createElement('option');
         opt.value = m._id || m.id || m.email;
         opt.textContent = (m.name || m.displayName || m.email);
@@ -55,11 +72,11 @@
       });
     }
 
-    renderTeamList(project);
-    renderMilestones(project);
+    renderTeamList(project || {});
+    renderMilestones(project || {});
     bindExtendedEventHandlers(projectId);
-    renderExpensesActions(project);
-    renderReimbursementsActions(project);
+    renderExpensesActions(project || {});
+    renderReimbursementsActions(project || {});
   }
 
   function renderTeamList(project) {
@@ -74,14 +91,17 @@
     members.forEach(tm => {
       const card = document.createElement('div');
       card.className = 'team-member-card';
-      const initials = (tm.name || tm.displayName || tm.memberName || '').split(' ').map(x=>x[0]).join('').slice(0,2).toUpperCase() || 'MB';
+      const name = tm.name || tm.displayName || tm.email || 'Member';
+      const initials = name.split(' ').map(x=>x[0]).join('').slice(0,2).toUpperCase() || 'MB';
+      const role = tm.role || 'Member';
+      const memberId = tm._id || tm.id || tm;
       card.innerHTML = `
         <div class="team-member-avatar">${initials}</div>
-        <div class="team-member-name">${tm.name || tm.displayName || tm.memberName || tm.memberId || 'Member'}</div>
-        <div class="team-member-role">${tm.role || 'Member'}</div>
+        <div class="team-member-name">${name}</div>
+        <div class="team-member-role">${role}</div>
         <div style="margin-top:8px;display:flex;gap:8px;justify-content:center;">
-          <button class="dashboard-button small" data-action="assignLead" data-member-id="${tm.memberId || tm._id || ''}">Lead</button>
-          <button class="dashboard-button small" data-action="removeMember" data-member-id="${tm.memberId || tm._id || ''}"><i class="fas fa-trash"></i></button>
+          <button class="dashboard-button small" data-action="assignLead" data-member-id="${memberId}">Lead</button>
+          <button class="dashboard-button small" data-action="removeMember" data-member-id="${memberId}"><i class="fas fa-trash"></i></button>
         </div>
       `;
       container.appendChild(card);
@@ -92,20 +112,31 @@
     const all = ['Design','Fabrication','Programming','Testing','Competition'];
     const list = document.getElementById('projectMilestonesList');
     if (!list) return;
-    // Ensure checkboxes reflect project.milestones
-    const projectMilestones = (project.milestones && project.milestones.length) ? project.milestones : [];
+    // Ensure checkboxes reflect project.milestones (project.milestones may be objects or array of completed titles)
+    const projectMilestones = Array.isArray(project.milestones) ? project.milestones : [];
+    const completedTitles = projectMilestones.map((m) => (typeof m === 'string' ? m : (m && m.title))).filter(Boolean).filter((t) => {
+      // If milestone is object, only consider completed ones
+      const raw = projectMilestones.find(x => (x && (x.title === t)) || x === t);
+      if (typeof raw === 'string') return true;
+      return raw && raw.status === 'completed';
+    });
     const boxes = list.querySelectorAll('.milestone-checkbox');
     boxes.forEach(box => {
       const name = box.getAttribute('data-milestone');
-      box.checked = projectMilestones.includes(name);
+      box.checked = completedTitles.includes(name);
       box.disabled = true; // default read-only
     });
     updateProgressFromMilestones(project);
   }
 
   function updateProgressFromMilestones(project) {
-    const total = 5; // fixed set
-    const completed = (project.milestones || []).length;
+    const total = 5; // fixed set of known milestones
+    const milestones = Array.isArray(project.milestones) ? project.milestones : [];
+    const completed = milestones.filter((m) => {
+      if (!m) return false;
+      if (typeof m === 'string') return true; // saved as list of completed titles
+      return m.status === 'completed';
+    }).length;
     const percent = total === 0 ? 0 : Math.round((completed / total) * 100);
     const progEl = document.getElementById('projectDisplayProgress');
     const bar = document.getElementById('projectBudgetBar');
@@ -116,22 +147,31 @@
   }
 
   function bindExtendedEventHandlers(projectId) {
-    // Add Member button
     const addBtn = document.getElementById('addMemberToProjectBtn');
-    addBtn?.addEventListener('click', () => {
-      document.getElementById('projectAddMemberForm').style.display = 'block';
+    const cancelBtn = document.getElementById('cancelAddMemberBtn');
+    const addMemberForm = document.getElementById('projectAddMemberForm');
+
+    if (!addBtn || !cancelBtn || !addMemberForm) return;
+
+    if (addBtn.dataset.bound === 'true') return;
+    addBtn.dataset.bound = 'true';
+    cancelBtn.dataset.bound = 'true';
+    addMemberForm.dataset.bound = 'true';
+
+    addBtn.addEventListener('click', () => {
+      addMemberForm.style.display = 'block';
     });
-    document.getElementById('cancelAddMemberBtn')?.addEventListener('click', () => {
-      document.getElementById('projectAddMemberForm').style.display = 'none';
+    cancelBtn.addEventListener('click', () => {
+      addMemberForm.style.display = 'none';
     });
-    document.getElementById('projectAddMemberForm')?.addEventListener('submit', async (e) => {
+    addMemberForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       const projId = window.currentProjectId || projectId;
       const memberId = document.getElementById('projectAddMemberSelect').value;
       const role = document.getElementById('projectAddMemberRole').value || 'member';
       if (!memberId) return alert('Select a member');
       await addMemberToProject(projId, memberId, role);
-      document.getElementById('projectAddMemberForm').style.display = 'none';
+      addMemberForm.style.display = 'none';
     });
 
     // Milestones edit toggle
@@ -171,12 +211,12 @@
     document.getElementById('projectExpenseForm')?.addEventListener('submit', async (e) => {
       e.preventDefault();
       const projId = window.currentProjectId || projectId;
-      const title = document.getElementById('expenseTitle').value.trim();
-      const amount = Number(document.getElementById('expenseAmount').value);
-      const category = document.getElementById('expenseCategory').value;
-      const date = document.getElementById('expenseDate').value;
-      const notes = document.getElementById('expenseNotes').value;
-      const receiptInput = document.getElementById('expenseReceiptInput');
+      const title = document.getElementById('projectExpenseTitle').value.trim();
+      const amount = Number(document.getElementById('projectExpenseAmount').value);
+      const category = document.getElementById('projectExpenseCategory').value;
+      const date = document.getElementById('projectExpenseDate').value;
+      const notes = document.getElementById('projectExpenseNotes').value;
+      const receiptInput = document.getElementById('projectExpenseReceiptInput');
       const fd = new FormData();
       fd.append('title', title);
       fd.append('amount', amount);
@@ -196,9 +236,18 @@
         await refreshDashboardFromApi?.();
         // reload expenses table via existing code path if available
         if (typeof loadProjectExpenses === 'function') await loadProjectExpenses(projId);
+        
+        // Refresh details modal statistics
+        const projects = (window.state?.enterprise?.projects || []);
+        const project = projects.find(p => p._id === projId);
+        if (project) {
+          if (typeof window.openProjectDetailModal === 'function') {
+            window.openProjectDetailModal(projId);
+          }
+        }
       } catch (err) {
         console.error('add expense failed', err);
-        alert('Add expense failed. Backend endpoint may not support file uploads; fallback used.');
+        alert('Add expense failed: ' + err.message);
       }
       // hide form
       document.getElementById('projectExpenseForm').style.display = 'none';
@@ -210,12 +259,17 @@
       // Fetch project, modify teamMembers array and PUT update
       const s = safeGetState();
       const project = (s.enterprise.projects || []).find(p => p._id === projectId) || {};
-      const team = project.teamMembers ? project.teamMembers.slice() : [];
-      team.push({ memberId, role, name: null });
-      await apiRequestWrapper(`/projects/${projectId}`, { method: 'PUT', body: { teamMembers: team } });
+      const team = project.teamMembers ? project.teamMembers.map(m => m._id || m.id || m) : [];
+      if (!team.includes(memberId)) {
+        team.push(memberId);
+      }
+      await apiRequestWrapper(`/projects/${projectId}`, { method: 'PUT', body: { teamMemberIds: team } });
       showDashboardToast && showDashboardToast('Member added to project');
       await refreshDashboardFromApi?.();
-      renderTeamList(Object.assign({}, project, { teamMembers: team }));
+      // Trigger modal re-open/render to get newly populated data from API/state
+      if (typeof window.openProjectDetailModal === 'function') {
+        window.openProjectDetailModal(projectId);
+      }
     } catch (err) {
       console.error('addMemberToProject', err);
       alert('Failed to add member. Ensure backend allows updating project team via PUT /projects/:id');
@@ -267,17 +321,65 @@
   async function updateReimbursementStatus(txId, status) {
     if (!confirm(`Set reimbursement ${txId} to ${status}?`)) return;
     try {
-      // Try a generic update endpoint on member-transactions
-      const resp = await fetch(`/member-transactions/${txId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status }) });
+      let path = '';
+      let opts = { method: 'POST', headers: { 'Content-Type': 'application/json' } };
+      if (status === 'approved') {
+        const adminNotes = prompt('Admin notes (optional):') || '';
+        path = `/reimbursements/${txId}/approve`;
+        opts.body = JSON.stringify({ adminNotes });
+      } else if (status === 'rejected') {
+        const reason = prompt('Rejection reason:');
+        if (!reason || !reason.trim()) return;
+        path = `/reimbursements/${txId}/reject`;
+        opts.body = JSON.stringify({ reason: reason.trim() });
+      } else if (status === 'reimbursed') {
+        path = `/reimbursements/${txId}/process-reimbursement`;
+        opts.body = JSON.stringify({ reimbursedVia: 'club_fund' });
+      }
+
+      const resp = await fetch(path, opts);
       if (resp.ok) {
-        showDashboardToast && showDashboardToast('Reimbursement status updated');
+        showDashboardToast && showDashboardToast(`Reimbursement ${status} successful`, 'success');
         await refreshDashboardFromApi?.();
+        // Trigger global page renders if exist
+        if (typeof renderReimbursements === 'function') renderReimbursements();
+        if (typeof renderMemberReceiptStatus === 'function') renderMemberReceiptStatus();
+        if (typeof renderExpenses === 'function') renderExpenses();
+        if (typeof renderMemberExpenses === 'function') renderMemberExpenses();
+        if (typeof renderFinance === 'function') renderFinance();
+        if (typeof window.renderAllFundManagement === 'function') window.renderAllFundManagement();
+        // Refresh details modal lists
+        const projId = window.currentProjectId;
+        if (projId) {
+          if (typeof loadProjectReimbursements === 'function') await loadProjectReimbursements(projId);
+          if (typeof loadProjectExpenses === 'function') await loadProjectExpenses(projId);
+          // refresh details stats
+          const projects = (window.state?.enterprise?.projects || []);
+          const project = projects.find(p => p._id === projId);
+          if (project) {
+            const allocated = Number(project.budgetAllocated) || 0;
+            const spent = Number(project.totalExpense) || 0;
+            const remaining = allocated - spent;
+            const usedPercent = allocated > 0 ? Math.round((spent / allocated) * 100) : 0;
+            const budgetAllocatedEl = document.getElementById('projectBudgetAllocated');
+            const budgetSpentEl = document.getElementById('projectBudgetSpent');
+            const budgetRemainingEl = document.getElementById('projectBudgetRemaining');
+            const budgetUsedPercentEl = document.getElementById('projectBudgetUsedPercent');
+            const budgetBarEl = document.getElementById('projectBudgetBar');
+            if (budgetAllocatedEl) budgetAllocatedEl.textContent = formatCurrency(allocated);
+            if (budgetSpentEl) budgetSpentEl.textContent = formatCurrency(spent);
+            if (budgetRemainingEl) budgetRemainingEl.textContent = formatCurrency(remaining);
+            if (budgetUsedPercentEl) budgetUsedPercentEl.textContent = `${usedPercent}%`;
+            if (budgetBarEl) budgetBarEl.style.width = `${Math.min(usedPercent, 100)}%`;
+          }
+        }
       } else {
-        throw new Error('Update failed');
+        const errObj = await resp.json().catch(() => ({}));
+        throw new Error(errObj.message || 'Update failed');
       }
     } catch (err) {
       console.error('updateReimbursementStatus', err);
-      alert('Update failed. Backend may not provide a direct update endpoint for reimbursements.');
+      alert('Update failed: ' + err.message);
     }
   }
 
